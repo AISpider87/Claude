@@ -28,8 +28,16 @@ Per la modalità a schermo intero: `Ctrl + Cmd + F` in Safari.
 
 ## Comandi
 
-- **Batti** (o barra spaziatrice) — avvia la sequenza
-- **Ripristina** (o `Esc`) — annulla e azzera tutto, anche a sequenza avviata
+- **Batti** (o barra spaziatrice) — avvia la sequenza. Il pulsante resta sempre
+  a schermo: premendolo a conteggio avviato la sequenza riparte da zero e i
+  colpi gia' programmati vengono zittiti
+- **Azzera** (o `Esc`) — ferma e riporta tutto a zero
+
+## Pacchetto per macOS
+
+La cartella `mac/` contiene i pezzi del bundle `Battitore d'Asta.app`:
+`Info.plist`, lo script di avvio `BattitoreAsta`, l'icona `icona.icns` e
+l'installatore `INSTALLA.command`.
 
 ## Note tecniche
 

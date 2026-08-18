@@ -10,179 +10,145 @@
     --oro-chiaro:#f6d67e;
     --oro-scuro:#8a5f18;
     --rosso:#c0392b;
-    --verde:#1e6f4c;
     --fondo:#14100c;
-    --legno:#3a2416;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   html,body{height:100%;}
   body{
     font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Arial,sans-serif;
-    background:
-      radial-gradient(ellipse at 50% 8%, #4a3220 0%, #241608 45%, var(--fondo) 100%);
+    background:radial-gradient(ellipse at 50% 8%, #4a3220 0%, #241608 45%, var(--fondo) 100%);
     color:#f3e6cf;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    min-height:100vh;
-    padding:24px;
-    overflow:hidden;
-    -webkit-user-select:none;
-    user-select:none;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    min-height:100vh;padding:20px;overflow:hidden;
+    -webkit-user-select:none;user-select:none;
   }
-  /* texture legno leggera */
   body::before{
-    content:"";
-    position:fixed;inset:0;pointer-events:none;
+    content:"";position:fixed;inset:0;pointer-events:none;
     background:repeating-linear-gradient(96deg, rgba(255,255,255,.018) 0 2px, transparent 2px 7px);
     mix-blend-mode:overlay;
   }
 
-  header{text-align:center;margin-bottom:18px;}
+  header{text-align:center;margin-bottom:14px;}
   h1{
-    font-size:clamp(22px,3.4vw,38px);
-    letter-spacing:.22em;
-    text-transform:uppercase;
-    font-weight:700;
+    font-size:clamp(20px,3vw,34px);letter-spacing:.22em;text-transform:uppercase;font-weight:700;
     background:linear-gradient(180deg,var(--oro-chiaro),var(--oro),var(--oro-scuro));
     -webkit-background-clip:text;background-clip:text;color:transparent;
     text-shadow:0 2px 18px rgba(217,164,65,.18);
   }
   .sottotitolo{
-    margin-top:8px;font-size:13px;letter-spacing:.34em;text-transform:uppercase;
+    margin-top:7px;font-size:12px;letter-spacing:.32em;text-transform:uppercase;
     color:rgba(243,230,207,.42);
   }
 
-  /* ---------- DISPLAY ---------- */
+  /* ---------- QUADRANTE ---------- */
   .scena{
-    position:relative;
-    width:min(70vh,460px);
-    aspect-ratio:1;
-    display:grid;
-    place-items:center;
+    position:relative;width:min(52vh,400px);aspect-ratio:1;display:grid;place-items:center;
   }
   svg.anello{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg);}
   .traccia{fill:none;stroke:rgba(255,255,255,.07);stroke-width:8;}
   .progresso{
     fill:none;stroke:url(#gradOro);stroke-width:8;stroke-linecap:round;
-    filter:drop-shadow(0 0 10px rgba(217,164,65,.55));
-    transition:stroke .3s ease;
+    filter:drop-shadow(0 0 10px rgba(217,164,65,.55));transition:stroke .3s ease;
   }
   .scena.finale .progresso{stroke:url(#gradRosso);filter:drop-shadow(0 0 16px rgba(192,57,43,.7));}
   .scena.aggiudicato .progresso{stroke:url(#gradVerde);filter:drop-shadow(0 0 16px rgba(30,111,76,.7));}
 
-  /* ---------- PULSANTE ---------- */
-  .martelletto{
-    position:relative;
-    width:64%;aspect-ratio:1;border-radius:50%;
-    border:none;cursor:pointer;
-    background:
-      radial-gradient(circle at 34% 26%, #ffe9b0 0%, var(--oro-chiaro) 16%, var(--oro) 46%, #a9761f 74%, #5e3f0d 100%);
-    box-shadow:
-      inset 0 3px 10px rgba(255,255,255,.55),
-      inset 0 -12px 26px rgba(0,0,0,.45),
-      0 22px 46px rgba(0,0,0,.6),
-      0 0 0 10px rgba(217,164,65,.08),
-      0 0 60px rgba(217,164,65,.22);
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
-    transition:transform .12s cubic-bezier(.34,1.56,.64,1), box-shadow .2s ease, filter .3s ease;
-    outline:none;
-  }
-  .martelletto:hover{transform:translateY(-3px) scale(1.02);}
-  .martelletto:active{transform:translateY(4px) scale(.97);
-    box-shadow:inset 0 3px 10px rgba(255,255,255,.35),inset 0 -6px 18px rgba(0,0,0,.55),0 8px 18px rgba(0,0,0,.6);}
-  .martelletto:disabled{cursor:default;filter:saturate(.55) brightness(.72);transform:none;}
-  .martelletto svg.gavel{width:40%;filter:drop-shadow(0 3px 5px rgba(0,0,0,.45));}
-  .etichetta-btn{
-    font-size:clamp(11px,1.3vw,15px);letter-spacing:.3em;text-transform:uppercase;
-    font-weight:800;color:#4a3208;text-shadow:0 1px 0 rgba(255,255,255,.4);
-  }
-
-  /* ---------- CONTATORE ---------- */
   .contatore{
-    position:absolute;inset:0;display:none;
-    flex-direction:column;align-items:center;justify-content:center;gap:6px;
+    position:absolute;inset:0;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
     pointer-events:none;
   }
-  .attivo .contatore{display:flex;}
-  .attivo .martelletto{opacity:0;pointer-events:none;}
   .numero{
-    font-size:min(30vh,190px);line-height:.92;font-weight:800;
-    font-variant-numeric:tabular-nums;
+    font-size:min(22vh,150px);line-height:.92;font-weight:800;font-variant-numeric:tabular-nums;
     background:linear-gradient(180deg,#fff6de,var(--oro),var(--oro-scuro));
     -webkit-background-clip:text;background-clip:text;color:transparent;
     text-shadow:0 0 60px rgba(217,164,65,.25);
   }
-  .scena.finale .numero{background:linear-gradient(180deg,#ffd7cf,#e4533f,#7d2015);-webkit-background-clip:text;background-clip:text;}
+  .scena.finale .numero{background:linear-gradient(180deg,#ffd7cf,#e4533f,#7d2015);
+    -webkit-background-clip:text;background-clip:text;}
   .fase{
-    font-size:clamp(12px,1.5vw,17px);letter-spacing:.34em;text-transform:uppercase;
-    color:rgba(243,230,207,.6);
+    font-size:clamp(11px,1.4vw,15px);letter-spacing:.32em;text-transform:uppercase;
+    color:rgba(243,230,207,.6);text-align:center;
   }
   .cronometro{
-    font-size:14px;letter-spacing:.12em;color:rgba(243,230,207,.34);
-    font-variant-numeric:tabular-nums;
+    font-size:13px;letter-spacing:.12em;color:rgba(243,230,207,.34);font-variant-numeric:tabular-nums;
   }
-  .esito{
-    display:none;text-align:center;max-width:90%;
-  }
-  .aggiudicato .esito{pointer-events:auto;cursor:pointer;}
+  .esito{display:none;text-align:center;max-width:90%;}
   .aggiudicato .esito{display:block;}
   .aggiudicato .numero,.aggiudicato .fase,.aggiudicato .cronometro{display:none;}
   .esito .parola{
-    font-size:clamp(18px,3vw,40px);font-weight:800;letter-spacing:.05em;text-transform:uppercase;
+    font-size:clamp(18px,2.8vw,38px);font-weight:800;letter-spacing:.05em;text-transform:uppercase;
     padding-right:.12em;white-space:nowrap;
     background:linear-gradient(180deg,#d8ffe9,#4fd18f,#12603f);
     -webkit-background-clip:text;background-clip:text;color:transparent;
     animation:timbro .5s cubic-bezier(.2,1.6,.4,1);
   }
-  .esito .nota{margin-top:10px;font-size:13px;letter-spacing:.28em;text-transform:uppercase;color:rgba(243,230,207,.45);}
+  .esito .nota{margin-top:8px;font-size:12px;letter-spacing:.26em;text-transform:uppercase;color:rgba(243,230,207,.45);}
   @keyframes timbro{from{transform:scale(2.4);opacity:0;}to{transform:scale(1);opacity:1;}}
 
-  /* pulsazione ad ogni colpo */
-  @keyframes colpo{
-    0%{transform:scale(1);}
-    35%{transform:scale(1.14);}
-    100%{transform:scale(1);}
-  }
+  @keyframes colpo{0%{transform:scale(1);}35%{transform:scale(1.14);}100%{transform:scale(1);}}
   .batti .numero{animation:colpo .42s ease-out;}
   @keyframes lampo{0%{opacity:.55;}100%{opacity:0;}}
   .flash{
-    position:fixed;inset:0;pointer-events:none;background:radial-gradient(circle,#fff 0%,transparent 65%);
-    animation:lampo .32s ease-out forwards;
+    position:fixed;inset:0;pointer-events:none;
+    background:radial-gradient(circle,#fff 0%,transparent 65%);animation:lampo .32s ease-out forwards;
   }
   .flash.rosso{background:radial-gradient(circle,#ff6a4d 0%,transparent 65%);}
 
+  /* ---------- PULSANTE, SEMPRE A SCHERMO ---------- */
+  .comandi{margin-top:22px;}
+  .martelletto{
+    display:flex;align-items:center;justify-content:center;gap:16px;
+    min-width:min(78vw,300px);padding:22px 40px;border:none;border-radius:999px;cursor:pointer;
+    background:linear-gradient(180deg,#ffe9b0 0%,var(--oro-chiaro) 18%,var(--oro) 52%,#a9761f 82%,#6d4a12 100%);
+    box-shadow:
+      inset 0 2px 6px rgba(255,255,255,.6),
+      inset 0 -8px 18px rgba(0,0,0,.4),
+      0 16px 34px rgba(0,0,0,.55),
+      0 0 0 8px rgba(217,164,65,.07),
+      0 0 46px rgba(217,164,65,.22);
+    transition:transform .1s cubic-bezier(.34,1.56,.64,1), box-shadow .2s ease, background .3s ease;
+    outline:none;
+  }
+  .martelletto:hover{transform:translateY(-2px);}
+  .martelletto:active{
+    transform:translateY(3px) scale(.985);
+    box-shadow:inset 0 2px 6px rgba(255,255,255,.35),inset 0 -4px 12px rgba(0,0,0,.5),0 6px 14px rgba(0,0,0,.6);
+  }
+  .martelletto:focus-visible{box-shadow:0 0 0 4px rgba(246,214,126,.8),0 16px 34px rgba(0,0,0,.55);}
+  .martelletto svg.gavel{width:clamp(30px,4.4vw,44px);flex:none;filter:drop-shadow(0 2px 3px rgba(0,0,0,.4));}
+  .etichetta-btn{
+    font-size:clamp(15px,2vw,22px);letter-spacing:.28em;text-transform:uppercase;font-weight:800;
+    color:#4a3208;text-shadow:0 1px 0 rgba(255,255,255,.4);
+  }
+  /* mentre conta, il pulsante annuncia che ricomincia da capo */
+  .martelletto.in-corso{
+    background:linear-gradient(180deg,#ffd9c8 0%,#f0a68e 18%,#d9694a 52%,#9e3a22 82%,#6b230f 100%);
+  }
+  .martelletto.in-corso .etichetta-btn{color:#3d1206;}
+  .martelletto.in-corso svg.gavel g{fill:#3d1206;}
+
   /* ---------- PIEDE ---------- */
-  footer{
-    margin-top:26px;display:flex;flex-direction:column;align-items:center;gap:14px;
-  }
-  .tappe{display:flex;gap:10px;}
+  footer{margin-top:20px;display:flex;flex-direction:column;align-items:center;gap:12px;}
+  .tappe{display:flex;gap:9px;}
   .tappa{
-    display:flex;align-items:center;gap:8px;
-    font-size:11px;letter-spacing:.16em;text-transform:uppercase;
-    padding:8px 14px;border-radius:999px;
-    border:1px solid rgba(217,164,65,.22);
-    background:rgba(255,255,255,.03);
-    color:rgba(243,230,207,.4);
-    transition:all .25s ease;
+    display:flex;align-items:center;gap:8px;font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+    padding:7px 13px;border-radius:999px;border:1px solid rgba(217,164,65,.22);
+    background:rgba(255,255,255,.03);color:rgba(243,230,207,.4);transition:all .25s ease;
   }
-  .tappa.on{
-    border-color:rgba(217,164,65,.85);color:#f6d67e;
-    background:rgba(217,164,65,.14);
-    box-shadow:0 0 18px rgba(217,164,65,.28);
-  }
-  .tappa.on.ultima{border-color:rgba(192,57,43,.9);color:#ff9a86;background:rgba(192,57,43,.16);box-shadow:0 0 18px rgba(192,57,43,.35);}
-  .pallino{width:7px;height:7px;border-radius:50%;background:currentColor;}
+  .tappa.on{border-color:rgba(217,164,65,.85);color:#f6d67e;background:rgba(217,164,65,.14);
+    box-shadow:0 0 18px rgba(217,164,65,.28);}
+  .tappa.on.ultima{border-color:rgba(192,57,43,.9);color:#ff9a86;background:rgba(192,57,43,.16);
+    box-shadow:0 0 18px rgba(192,57,43,.35);}
+  .pallino{width:6px;height:6px;border-radius:50%;background:currentColor;}
   .azioni{display:flex;gap:12px;align-items:center;}
   .mini{
-    background:rgba(255,255,255,.05);border:1px solid rgba(243,230,207,.16);
-    color:rgba(243,230,207,.72);padding:9px 18px;border-radius:999px;
-    font-size:11px;letter-spacing:.2em;text-transform:uppercase;cursor:pointer;
-    transition:all .2s ease;
+    background:rgba(255,255,255,.05);border:1px solid rgba(243,230,207,.16);color:rgba(243,230,207,.72);
+    padding:8px 17px;border-radius:999px;font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+    cursor:pointer;transition:all .2s ease;
   }
   .mini:hover{background:rgba(255,255,255,.11);color:#f6d67e;border-color:rgba(217,164,65,.5);}
-  .suggerimento{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:rgba(243,230,207,.26);}
+  .suggerimento{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:rgba(243,230,207,.26);}
 </style>
 </head>
 <body>
@@ -210,31 +176,31 @@
             stroke-dasharray="578.05" stroke-dashoffset="578.05"/>
   </svg>
 
-  <button class="martelletto" id="pulsante" aria-label="Avvia l'aggiudicazione">
+  <div class="contatore">
+    <div class="numero" id="numero">0</div>
+    <div class="fase" id="fase">Pronto</div>
+    <div class="cronometro" id="cronometro">0.00 s</div>
+    <div class="esito">
+      <div class="parola">Aggiudicato</div>
+      <div class="nota">Premi per ribattere</div>
+    </div>
+  </div>
+</div>
+
+<div class="comandi">
+  <button class="martelletto" id="pulsante" aria-label="Avvia o riavvia l'aggiudicazione">
     <svg class="gavel" viewBox="0 0 64 64" aria-hidden="true">
       <g fill="#4a3208">
-        <!-- martelletto: testa + manico, inclinato -->
         <g transform="rotate(-32 32 20)">
           <rect x="8"  y="10" width="22" height="20" rx="5"/>
           <rect x="28" y="17" width="28" height="6"  rx="3"/>
         </g>
-        <!-- ceppo di battuta -->
         <rect x="14" y="42" width="36" height="6" rx="3"/>
         <rect x="6"  y="49" width="52" height="8" rx="4"/>
       </g>
     </svg>
-    <span class="etichetta-btn">Batti</span>
+    <span class="etichetta-btn" id="etichetta">Batti</span>
   </button>
-
-  <div class="contatore">
-    <div class="numero" id="numero">0</div>
-    <div class="fase" id="fase">In attesa</div>
-    <div class="cronometro" id="cronometro">0.00 s</div>
-    <div class="esito">
-      <div class="parola">Aggiudicato</div>
-      <div class="nota">Clic o spazio per ribattere</div>
-    </div>
-  </div>
 </div>
 
 <footer>
@@ -244,8 +210,8 @@
     <div class="tappa ultima" id="t1"><span class="pallino"></span>3&deg; colpo &middot; 8s</div>
   </div>
   <div class="azioni">
-    <button class="mini" id="reset">Ripristina</button>
-    <span class="suggerimento">Spazio = batti &middot; Esc = annulla</span>
+    <button class="mini" id="reset">Azzera</button>
+    <span class="suggerimento">Spazio = batti / ribatti &middot; Esc = azzera</span>
   </div>
 </footer>
 
@@ -258,12 +224,13 @@
    6s      2º colpo  (conteggio "2")
    8s      3º colpo  (conteggio "1") — ritardato di 2 secondi in più
 */
-const ATTESA      = 5;
-const COLPI       = [5, 6, 8];
-const FINE        = COLPI[2] + 1.2;
+const ATTESA = 5;
+const COLPI  = [5, 6, 8];
+const FINE   = COLPI[2] + 1.2;
 
 const scena     = document.getElementById('scena');
 const pulsante  = document.getElementById('pulsante');
+const etichetta = document.getElementById('etichetta');
 const numero    = document.getElementById('numero');
 const fase      = document.getElementById('fase');
 const cronometro= document.getElementById('cronometro');
@@ -273,7 +240,8 @@ const tappe     = [document.getElementById('t3'), document.getElementById('t2'),
 const CIRCONFERENZA = 2 * Math.PI * 92;
 
 let ctx = null;          // AudioContext
-let t0 = 0;              // istante di avvio (tempo audio)
+let corsa = null;        // nodo di uscita della battuta in corso: staccarlo la zittisce
+let t0 = 0;              // istante di avvio (orologio audio)
 let raf = 0;
 let colpiFatti = 0;
 let ultimoSecondo = -1;
@@ -305,7 +273,7 @@ function uscita(){
 }
 
 // rumore breve = impatto del legno
-function impatto(t, dur, vol){
+function impatto(t, dur, vol, dest){
   const n = Math.floor(ctx.sampleRate * dur);
   const buf = ctx.createBuffer(1, n, ctx.sampleRate);
   const d = buf.getChannelData(0);
@@ -318,12 +286,12 @@ function impatto(t, dur, vol){
   const g = ctx.createGain();
   g.gain.setValueAtTime(vol, t);
   g.gain.exponentialRampToValueAtTime(.0001, t + dur);
-  src.connect(filtro).connect(g).connect(uscita());
+  src.connect(filtro).connect(g).connect(dest);
   src.start(t); src.stop(t + dur);
 }
 
 // corpo tonale del colpo
-function tono(t, freq, dur, vol, tipo){
+function tono(t, freq, dur, vol, tipo, dest){
   const o = ctx.createOscillator();
   const g = ctx.createGain();
   o.type = tipo || 'sine';
@@ -332,27 +300,32 @@ function tono(t, freq, dur, vol, tipo){
   g.gain.setValueAtTime(0, t);
   g.gain.linearRampToValueAtTime(vol, t + .006);
   g.gain.exponentialRampToValueAtTime(.0001, t + dur);
-  o.connect(g).connect(uscita());
+  o.connect(g).connect(dest);
   o.start(t); o.stop(t + dur + .05);
 }
 
 // colpo 1 e 2: secco e brillante — colpo 3: pieno, grave, risonante
-function colpo(t, finale){
+function colpo(t, finale, dest){
   if(finale){
-    impatto(t, .30, .95);
-    tono(t, 150, 1.10, .85, 'sine');     // tonfo profondo
-    tono(t, 320, .70, .40, 'triangle');  // corpo
-    tono(t + .004, 980, 1.60, .28, 'sine'); // risonanza lunga
-    tono(t + .004, 1470, 1.20, .16, 'sine');
+    impatto(t, .30, .95, dest);
+    tono(t, 150, 1.10, .85, 'sine', dest);        // tonfo profondo
+    tono(t, 320, .70, .40, 'triangle', dest);     // corpo
+    tono(t + .004, 980, 1.60, .28, 'sine', dest); // risonanza lunga
+    tono(t + .004, 1470, 1.20, .16, 'sine', dest);
   } else {
-    impatto(t, .13, .55);
-    tono(t, 220, .34, .55, 'sine');
-    tono(t + .003, 880, .42, .30, 'sine');
-    tono(t + .003, 1320, .30, .14, 'sine');
+    impatto(t, .13, .55, dest);
+    tono(t, 220, .34, .55, 'sine', dest);
+    tono(t + .003, 880, .42, .30, 'sine', dest);
+    tono(t + .003, 1320, .30, .14, 'sine', dest);
   }
 }
 
-/* ---------- FLASH a schermo ---------- */
+// stacca i colpi già programmati: serve per riavviare o azzerare a metà conteggio
+function zittisci(){
+  if(corsa){ corsa.disconnect(); corsa = null; }
+}
+
+/* ---------- EFFETTI ---------- */
 function flash(finale){
   const el = document.createElement('div');
   el.className = 'flash' + (finale ? ' rosso' : '');
@@ -367,21 +340,28 @@ function pulsa(){
 }
 
 /* ---------- CICLO ---------- */
+// Si può premere in qualsiasi momento: a riposo avvia, durante il conteggio
+// riparte da zero, a fine asta ribatte.
 function avvia(){
-  if(inCorso) return;
   const a = audio();
-  inCorso = true;
+
+  zittisci();                       // taglia i colpi della battuta precedente
+  cancelAnimationFrame(raf);
+
   colpiFatti = 0;
   ultimoSecondo = -1;
-  t0 = a.currentTime + .06;    // piccolo margine di sicurezza
+  inCorso = true;
+  t0 = a.currentTime + .06;         // piccolo margine di sicurezza
 
-  scena.classList.add('attivo');
+  corsa = a.createGain();
+  corsa.connect(uscita());
+  COLPI.forEach((s, i) => colpo(t0 + s, i === 2, corsa));
+
   scena.classList.remove('finale', 'aggiudicato');
   tappe.forEach(t => t.classList.remove('on'));
-  pulsante.disabled = true;
-
-  // i tre colpi vengono programmati sul clock audio: precisione al campione
-  COLPI.forEach((s, i) => colpo(t0 + s, i === 2));
+  pulsante.classList.add('in-corso');
+  etichetta.textContent = 'Ribatti';
+  pulsa();
 
   raf = requestAnimationFrame(disegna);
 }
@@ -420,31 +400,36 @@ function disegna(){
     scena.classList.add('aggiudicato');
     scena.classList.remove('finale');
     inCorso = false;
-    pulsante.disabled = false;
+    corsa = null;                   // la battuta è finita: nulla da zittire
+    pulsante.classList.remove('in-corso');
+    etichetta.textContent = 'Batti';
     return;
   }
   raf = requestAnimationFrame(disegna);
 }
 
-function annulla(){
+function azzera(){
   cancelAnimationFrame(raf);
+  zittisci();
   inCorso = false;
-  if(ctx){ ctx.close(); ctx = null; }   // ferma anche i colpi già programmati
-  scena.classList.remove('attivo', 'finale', 'aggiudicato', 'batti');
+  colpiFatti = 0;
+  ultimoSecondo = -1;
+  scena.classList.remove('finale', 'aggiudicato', 'batti');
   tappe.forEach(t => t.classList.remove('on'));
   progresso.style.strokeDashoffset = CIRCONFERENZA;
   numero.textContent = '0';
   cronometro.textContent = '0.00 s';
-  fase.textContent = 'In attesa';
-  pulsante.disabled = false;
+  fase.textContent = 'Pronto';
+  pulsante.classList.remove('in-corso');
+  etichetta.textContent = 'Batti';
 }
 
 pulsante.addEventListener('click', avvia);
-document.querySelector('.esito').addEventListener('click', avvia);
-reset.addEventListener('click', annulla);
+reset.addEventListener('click', azzera);
 document.addEventListener('keydown', e => {
+  if(e.repeat) return;
   if(e.code === 'Space'){ e.preventDefault(); avvia(); }
-  if(e.code === 'Escape'){ annulla(); }
+  if(e.code === 'Escape'){ azzera(); }
 });
 </script>
 </body>

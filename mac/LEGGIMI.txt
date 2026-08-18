@@ -1,0 +1,37 @@
+BATTITORE D'ASTA — installazione su Mac
+=======================================
+
+1. Estrai questo archivio (doppio clic sullo zip, se non è già fatto).
+2. Doppio clic su INSTALLA.command
+   → copia l'app in Applicazioni, toglie il blocco di macOS e la avvia.
+
+Se al doppio clic macOS dice "impossibile aprire perché proviene da uno
+sviluppatore non identificato": clic destro sul file → Apri → Apri.
+Capita perché l'app non ha una firma Apple a pagamento; succede una volta sola.
+
+In alternativa puoi saltare l'installazione: doppio clic direttamente su
+"Battitore d'Asta.app". Funziona anche dalla cartella Download.
+
+
+COME SI USA
+-----------
+Premi il pulsante BATTI (o la barra spaziatrice).
+
+  0 → 5 s   silenzio, i secondi scorrono a schermo
+  5 s       1º colpo
+  6 s       2º colpo
+  8 s       3º colpo, ritardato di 2 secondi in più
+            → AGGIUDICATO
+
+Esc azzera. Il pulsante resta sempre a schermo: premendolo a conteggio
+avviato la sequenza riparte da zero.
+Per il tutto schermo: Ctrl + Cmd + F.
+
+
+NOTE
+----
+L'app non ha bisogno di internet e non installa nulla nel sistema.
+Se hai Chrome, Edge o Brave si apre in una finestra pulita senza barra
+degli indirizzi; altrimenti usa Safari.
+
+Il suono esce dagli altoparlanti del Mac: alza il volume prima dell'asta.

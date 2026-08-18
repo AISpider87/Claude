@@ -1,0 +1,32 @@
+#!/bin/bash
+# Battitore d'Asta — apre l'interfaccia in una finestra dedicata.
+# Preferisce Chrome/Edge in modalità applicazione (finestra pulita, senza
+# barra degli indirizzi); in mancanza ricade sul browser predefinito.
+
+RISORSE="$(cd "$(dirname "$0")/../Resources" && pwd)"
+PAGINA="file://$RISORSE/index.html"
+
+apri_in_modalita_app() {
+    local app="$1"
+    [ -d "$app" ] || return 1
+    open -na "$app" --args --app="$PAGINA" \
+        --window-size=1180,900 \
+        --user-data-dir="$HOME/Library/Application Support/BattitoreAsta/browser" \
+        --no-first-run --no-default-browser-check 2>/dev/null
+}
+
+for candidato in \
+    "/Applications/Google Chrome.app" \
+    "$HOME/Applications/Google Chrome.app" \
+    "/Applications/Microsoft Edge.app" \
+    "$HOME/Applications/Microsoft Edge.app" \
+    "/Applications/Brave Browser.app" \
+    "/Applications/Chromium.app"
+do
+    if apri_in_modalita_app "$candidato"; then
+        exit 0
+    fi
+done
+
+# nessun browser Chromium installato: si usa quello predefinito (di norma Safari)
+open "$RISORSE/index.html"
