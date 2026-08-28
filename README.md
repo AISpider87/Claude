@@ -50,3 +50,11 @@ l'installatore `INSTALLA.command`.
   saturare (picco verificato a 0,88 su fondo scala).
 - Per modificare i tempi basta cambiare le costanti `ATTESA` e `COLPI`
   in cima allo script dentro `index.html`.
+
+---
+
+## Altri progetti in questo repository
+
+- **`birra/`** — [Luppolo Nostrano](birra/README.md): negozio online di birre
+  artigianali italiane, con catalogo, carrello, checkout e pagamento con carta
+  (Stripe). Si apre con doppio clic su `birra/apri-negozio.command`.

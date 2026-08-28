@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Luppolo Nostrano — birre artigianali italiane</title>
+<meta name="description" content="Birre artigianali italiane selezionate da microbirrifici. Spedizione in 24/48 ore, imballo antiurto, pagamento con carta, bonifico o ordine su WhatsApp.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --primary:#1C1917; --on-primary:#FFFFFF;
+  --secondary:#44403C;
+  --accent:#A16207; --accent-scuro:#7d4c05; --on-accent:#FFFFFF;
+  --bg:#FAFAF9; --fg:#0C0A09;
+  --card:#FFFFFF; --card-fg:#0C0A09;
+  --muted:#EFEDEA; --muted-fg:#57534E;
+  --bordo:#D6D3D1; --danger:#DC2626; --ok:#15803D;
+  --raggio:14px; --raggio-s:9px;
+  --ombra:0 1px 2px rgba(12,10,9,.05), 0 8px 24px rgba(12,10,9,.06);
+  --ombra-alta:0 24px 60px rgba(12,10,9,.18);
+  --titolo:"Cormorant", Georgia, "Times New Roman", serif;
+  --testo:"Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --t:200ms cubic-bezier(.2,.7,.3,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--testo); background:var(--bg); color:var(--fg);
+  font-size:16px; line-height:1.55; -webkit-font-smoothing:antialiased;
+}
+img,svg{max-width:100%;display:block}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:none}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:4px}
+.contenitore{width:min(1200px,100% - 40px);margin-inline:auto}
+@media(max-width:600px){.contenitore{width:min(1200px,100% - 28px)}}
+h1,h2,h3{font-family:var(--titolo);font-weight:600;line-height:1.12;letter-spacing:-.01em}
+.occhiello{font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--accent);font-weight:600}
+
+/* ---------- BOTTONI ---------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:46px;padding:0 20px;border-radius:999px;font-size:14px;font-weight:600;
+  letter-spacing:.02em;text-decoration:none;white-space:nowrap;
+  transition:background var(--t),color var(--t),transform var(--t),box-shadow var(--t);
+}
+.btn:active{transform:translateY(1px)}
+.btn-primario{background:var(--accent);color:var(--on-accent)}
+.btn-primario:hover{background:var(--accent-scuro)}
+.btn-scuro{background:var(--primary);color:var(--on-primary)}
+.btn-scuro:hover{background:#302b28}
+.btn-bordo{border:1px solid var(--bordo);background:var(--card)}
+.btn-bordo:hover{border-color:var(--primary);background:var(--muted)}
+.btn-blocco{width:100%}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn-icona{min-height:44px;min-width:44px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center}
+
+/* ---------- VERIFICA ETA' ---------- */
+#eta{
+  position:fixed;inset:0;z-index:120;background:rgba(12,10,9,.92);
+  display:flex;align-items:center;justify-content:center;padding:20px;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+}
+#eta[hidden]{display:none}
+#eta .riquadro{
+  background:var(--card);border-radius:var(--raggio);padding:34px 30px;max-width:430px;text-align:center;box-shadow:var(--ombra-alta);
+}
+#eta h2{font-size:30px;margin-bottom:10px}
+#eta p{font-size:14px;color:var(--muted-fg);margin-bottom:22px}
+#eta .azioni{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+#eta .no{font-size:12px;color:var(--muted-fg);margin-top:16px}
+
+/* ---------- TESTATA ---------- */
+header.sito{
+  position:sticky;top:0;z-index:60;
+  background:rgba(250,250,249,.82);backdrop-filter:saturate(1.6) blur(14px);-webkit-backdrop-filter:saturate(1.6) blur(14px);
+  border-bottom:1px solid var(--bordo);
+}
+.barra{display:flex;align-items:center;gap:18px;min-height:70px}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;margin-right:auto}
+.logo .marchio{font-family:var(--titolo);font-size:25px;font-weight:700;line-height:1}
+.logo .paletta{font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted-fg)}
+nav.menu{display:flex;gap:24px}
+nav.menu a{text-decoration:none;font-size:13px;font-weight:500;color:var(--secondary);transition:color var(--t)}
+nav.menu a:hover{color:var(--accent)}
+.carrello-btn{position:relative;background:var(--primary);color:var(--on-primary);padding:0 18px;min-height:44px;border-radius:999px;display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600}
+.carrello-btn:hover{background:#302b28}
+.pallino{
+  position:absolute;top:-4px;right:-4px;min-width:21px;height:21px;padding:0 5px;border-radius:999px;
+  background:var(--accent);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;
+  border:2px solid var(--bg);
+}
+.pallino[hidden]{display:none}
+@media(max-width:820px){nav.menu{display:none}}
+
+/* ---------- HERO ---------- */
+.hero{padding:60px 0 46px;position:relative;overflow:hidden}
+.hero::before{
+  content:"";position:absolute;inset:0;z-index:-1;
+  background:radial-gradient(120% 90% at 82% 8%, rgba(161,98,7,.16) 0%, rgba(161,98,7,0) 55%),
+             radial-gradient(90% 70% at 8% 100%, rgba(28,25,23,.07) 0%, rgba(28,25,23,0) 60%);
+}
+.hero-griglia{display:grid;grid-template-columns:1.15fr .85fr;gap:44px;align-items:center}
+.hero h1{font-size:clamp(40px,6.4vw,72px);margin:14px 0 16px}
+.hero h1 em{font-style:italic;color:var(--accent)}
+.hero p.intro{font-size:17px;color:var(--muted-fg);max-width:46ch;margin-bottom:26px}
+.hero .azioni{display:flex;gap:12px;flex-wrap:wrap}
+.plus{display:flex;gap:26px;margin-top:34px;flex-wrap:wrap}
+.plus div{font-size:12.5px;color:var(--muted-fg);display:flex;align-items:center;gap:8px}
+.plus svg{width:17px;height:17px;color:var(--accent);flex:0 0 auto}
+.vetrina{display:flex;justify-content:center;align-items:flex-end;gap:6px}
+.vetrina svg{filter:drop-shadow(0 18px 28px rgba(12,10,9,.22))}
+.vetrina .b2{transform:translateY(-22px) scale(1.12)}
+@media(max-width:900px){
+  .hero-griglia{grid-template-columns:1fr;gap:26px}
+  .vetrina{order:-1}
+  .vetrina svg{height:180px}
+}
+
+/* ---------- STRISCIA ---------- */
+.striscia{background:var(--primary);color:#e7e5e4}
+.striscia .contenitore{display:flex;gap:36px;justify-content:space-between;padding:16px 0;flex-wrap:wrap;font-size:12.5px}
+.striscia b{color:#fff;font-weight:600}
+
+/* ---------- CATALOGO ---------- */
+section.catalogo{padding:56px 0 70px}
+.testa-sezione{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-bottom:24px}
+.testa-sezione h2{font-size:clamp(30px,4vw,44px)}
+.testa-sezione p{color:var(--muted-fg);font-size:14px;margin-top:6px}
+.filtri{
+  display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+  background:var(--card);border:1px solid var(--bordo);border-radius:var(--raggio);padding:12px;margin-bottom:26px;
+  position:sticky;top:70px;z-index:40;box-shadow:var(--ombra);
+}
+.campo-cerca{position:relative;flex:1 1 220px;min-width:180px}
+.campo-cerca svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--muted-fg)}
+.filtri input[type=search],.filtri select{
+  min-height:44px;border:1px solid var(--bordo);border-radius:var(--raggio-s);background:var(--bg);
+  padding:0 12px;font-size:13.5px;width:100%;
+}
+.filtri input[type=search]{padding-left:36px}
+.filtri select{width:auto;min-width:132px;cursor:pointer}
+.spunta{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--muted-fg);cursor:pointer;padding:0 6px;min-height:44px}
+.spunta input{width:17px;height:17px;accent-color:var(--accent);cursor:pointer}
+.conteggio{font-size:12.5px;color:var(--muted-fg);margin-left:auto;padding-right:4px}
+@media(max-width:700px){.filtri{position:static}.filtri select{flex:1 1 auto}}
+
+.griglia{display:grid;grid-template-columns:repeat(auto-fill,minmax(238px,1fr));gap:20px}
+.scheda{
+  background:var(--card);border:1px solid var(--bordo);border-radius:var(--raggio);overflow:hidden;
+  display:flex;flex-direction:column;transition:transform var(--t),box-shadow var(--t),border-color var(--t);
+}
+.scheda:hover{transform:translateY(-4px);box-shadow:var(--ombra);border-color:#bfbab6}
+.scheda .figura{
+  position:relative;background:linear-gradient(170deg,#f5f3f1,#e9e5e1);
+  display:flex;align-items:center;justify-content:center;padding:22px 0 16px;cursor:pointer;
+}
+.scheda .figura svg{height:158px;width:auto;filter:drop-shadow(0 10px 16px rgba(12,10,9,.16))}
+.etichette{position:absolute;top:10px;left:10px;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.tag{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:4px 9px;border-radius:999px;background:var(--primary);color:#fff}
+.tag.novita{background:var(--accent)}
+.tag.regalo{background:#5b21b6}
+.tag.esaurito{background:var(--danger)}
+.corpo{padding:15px 16px 17px;display:flex;flex-direction:column;flex:1;gap:4px}
+.corpo .birrificio{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-fg)}
+.corpo h3{font-size:22px;line-height:1.15}
+.dati{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
+.dato{font-size:11px;background:var(--muted);color:var(--muted-fg);padding:3px 9px;border-radius:999px;font-weight:500}
+.prezzo-riga{display:flex;align-items:baseline;gap:8px;margin-top:auto}
+.prezzo{font-size:22px;font-weight:700;font-family:var(--titolo)}
+.al-litro{font-size:11px;color:var(--muted-fg)}
+.azioni-scheda{display:flex;gap:8px;margin-top:12px}
+.azioni-scheda .btn{min-height:44px;flex:1;font-size:13px}
+.stock-basso{font-size:11px;color:var(--danger);font-weight:600;margin-top:7px}
+.vuoto{text-align:center;padding:60px 20px;color:var(--muted-fg)}
+
+/* ---------- SEZIONI INFORMATIVE ---------- */
+.come{padding:64px 0;background:var(--card);border-block:1px solid var(--bordo)}
+.passi{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:26px;margin-top:30px}
+.passo{display:flex;flex-direction:column;gap:9px}
+.passo .num{font-family:var(--titolo);font-size:40px;color:var(--accent);line-height:1}
+.passo h3{font-size:20px}
+.passo p{font-size:14px;color:var(--muted-fg)}
+
+/* ---------- FOOTER ---------- */
+footer.sito{background:var(--primary);color:#d6d3d1;padding:54px 0 26px;font-size:13.5px}
+.piede{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:30px}
+footer.sito h4{font-family:var(--testo);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#fff;margin-bottom:12px;font-weight:600}
+footer.sito a{color:#d6d3d1;text-decoration:none;display:block;padding:4px 0;transition:color var(--t)}
+footer.sito a:hover{color:var(--accent)}
+footer.sito .marchio-piede{font-family:var(--titolo);font-size:27px;color:#fff;margin-bottom:8px}
+.legale{border-top:1px solid #3f3a37;margin-top:34px;padding-top:18px;font-size:11.5px;color:#a8a29e;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+@media(max-width:820px){.piede{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.piede{grid-template-columns:1fr}}
+
+/* ---------- PANNELLI (carrello, prodotto, checkout) ---------- */
+.velo{position:fixed;inset:0;background:rgba(12,10,9,.5);z-index:90;opacity:0;pointer-events:none;transition:opacity var(--t);backdrop-filter:blur(3px)}
+.velo.aperto{opacity:1;pointer-events:auto}
+.cassetto{
+  position:fixed;top:0;right:0;height:100%;width:min(430px,100%);background:var(--bg);z-index:100;
+  transform:translateX(102%);transition:transform 280ms cubic-bezier(.2,.7,.3,1);
+  display:flex;flex-direction:column;box-shadow:var(--ombra-alta);
+}
+.cassetto.aperto{transform:none}
+.cassetto header,.modale header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px;border-bottom:1px solid var(--bordo);background:var(--card)}
+.cassetto header h2,.modale header h2{font-size:24px}
+.chiudi{width:40px;height:40px;border-radius:999px;display:flex;align-items:center;justify-content:center;color:var(--muted-fg);transition:background var(--t)}
+.chiudi:hover{background:var(--muted);color:var(--fg)}
+.cassetto .lista{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:14px}
+.riga{display:grid;grid-template-columns:52px 1fr auto;gap:12px;align-items:center;background:var(--card);border:1px solid var(--bordo);border-radius:var(--raggio-s);padding:10px}
+.riga .mini{background:var(--muted);border-radius:6px;display:flex;align-items:center;justify-content:center;padding:5px}
+.riga .mini svg{height:44px;width:auto}
+.riga .nome{font-size:14px;font-weight:600;line-height:1.25}
+.riga .sotto{font-size:11.5px;color:var(--muted-fg)}
+.riga .sconto{font-size:11px;color:var(--ok);font-weight:600}
+.qta{display:flex;align-items:center;gap:2px;border:1px solid var(--bordo);border-radius:999px;overflow:hidden;background:var(--bg)}
+.qta button{width:34px;height:34px;font-size:17px;color:var(--secondary);display:flex;align-items:center;justify-content:center}
+.qta button:hover{background:var(--muted)}
+.qta span{min-width:26px;text-align:center;font-size:14px;font-weight:600}
+.riga .prezzo-riga2{text-align:right;font-weight:600;font-size:14px;margin-top:5px}
+.elimina{font-size:11.5px;color:var(--muted-fg);text-decoration:underline;margin-top:4px}
+.elimina:hover{color:var(--danger)}
+.totali{border-top:1px solid var(--bordo);background:var(--card);padding:16px 20px 20px}
+.totali .r{display:flex;justify-content:space-between;font-size:13.5px;padding:4px 0;color:var(--muted-fg)}
+.totali .r.grande{font-size:19px;font-weight:700;color:var(--fg);border-top:1px solid var(--bordo);margin-top:8px;padding-top:12px;font-family:var(--titolo)}
+.totali .r .ok{color:var(--ok);font-weight:600}
+.avviso{background:#fef3c7;border:1px solid #fcd34d;color:#78350f;font-size:12.5px;padding:9px 12px;border-radius:var(--raggio-s);margin-bottom:10px}
+.barra-avanzamento{height:5px;background:var(--muted);border-radius:999px;overflow:hidden;margin:2px 0 10px}
+.barra-avanzamento i{display:block;height:100%;background:var(--accent);transition:width var(--t)}
+
+.modale{
+  position:fixed;z-index:100;inset:auto;left:50%;top:50%;transform:translate(-50%,-46%) scale(.98);
+  width:min(720px,calc(100% - 28px));max-height:88vh;background:var(--bg);border-radius:var(--raggio);
+  display:flex;flex-direction:column;box-shadow:var(--ombra-alta);opacity:0;pointer-events:none;
+  transition:opacity var(--t),transform var(--t);
+}
+.modale.aperto{opacity:1;pointer-events:auto;transform:translate(-50%,-50%)}
+.modale .contenuto{overflow-y:auto;padding:20px 22px 26px}
+.dettaglio{display:grid;grid-template-columns:210px 1fr;gap:24px}
+.dettaglio .foto{background:linear-gradient(170deg,#f5f3f1,#e9e5e1);border-radius:var(--raggio);display:flex;align-items:center;justify-content:center;padding:20px}
+.dettaglio .foto svg{height:230px;width:auto;filter:drop-shadow(0 12px 20px rgba(12,10,9,.18))}
+.dettaglio h3{font-size:32px;margin:4px 0 6px}
+.dettaglio .descr{font-size:14.5px;color:var(--secondary);margin:12px 0}
+.specifiche{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:14px 0;font-size:13px}
+.specifiche div{background:var(--card);border:1px solid var(--bordo);border-radius:var(--raggio-s);padding:8px 11px}
+.specifiche b{display:block;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted-fg);font-weight:600}
+@media(max-width:640px){.dettaglio{grid-template-columns:1fr}.dettaglio .foto svg{height:160px}}
+
+/* ---------- FORM CHECKOUT ---------- */
+.form-griglia{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.campo{display:flex;flex-direction:column;gap:5px}
+.campo.largo{grid-column:1/-1}
+.campo label{font-size:12px;font-weight:600;color:var(--secondary)}
+.campo input,.campo select,.campo textarea{
+  min-height:46px;border:1px solid var(--bordo);border-radius:var(--raggio-s);background:var(--card);padding:10px 12px;font-size:14px;width:100%;
+  transition:border-color var(--t),box-shadow var(--t);
+}
+.campo textarea{min-height:74px;resize:vertical}
+.campo input:focus,.campo select:focus,.campo textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(161,98,7,.14);outline:none}
+.campo .errore{font-size:11.5px;color:var(--danger);font-weight:600;display:none}
+.campo.ko input,.campo.ko select{border-color:var(--danger)}
+.campo.ko .errore{display:block}
+.pagamenti{display:flex;flex-direction:column;gap:9px;margin-top:6px}
+.metodo{display:flex;gap:11px;align-items:flex-start;border:1px solid var(--bordo);border-radius:var(--raggio-s);padding:13px;background:var(--card);cursor:pointer;transition:border-color var(--t),background var(--t)}
+.metodo:hover{border-color:var(--accent)}
+.metodo input{margin-top:3px;width:18px;height:18px;accent-color:var(--accent);flex:0 0 auto}
+.metodo.scelto{border-color:var(--accent);background:#fdfaf4}
+.metodo .t{font-size:14px;font-weight:600}
+.metodo .d{font-size:12px;color:var(--muted-fg)}
+.metodo.spento{opacity:.5;cursor:not-allowed}
+.consensi{display:flex;flex-direction:column;gap:9px;margin:16px 0 4px}
+.consenso{display:flex;gap:10px;align-items:flex-start;font-size:12.5px;color:var(--secondary)}
+.consenso input{width:19px;height:19px;accent-color:var(--accent);flex:0 0 auto;margin-top:1px}
+.riepilogo-ordine{background:var(--card);border:1px solid var(--bordo);border-radius:var(--raggio-s);padding:14px;margin-bottom:16px;font-size:13.5px}
+.riepilogo-ordine .r{display:flex;justify-content:space-between;padding:3px 0}
+.riepilogo-ordine .r.tot{font-weight:700;border-top:1px solid var(--bordo);margin-top:6px;padding-top:8px}
+.iban{background:var(--muted);border-radius:var(--raggio-s);padding:12px;font-size:13px;margin-top:10px;line-height:1.7}
+.iban code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;font-weight:600}
+.testo-legale{font-size:13.5px;color:var(--secondary)}
+.testo-legale h3{font-size:19px;margin:18px 0 6px;font-family:var(--testo);font-weight:700}
+.testo-legale h3:first-child{margin-top:0}
+.testo-legale p{margin-bottom:8px}
+.testo-legale ul{margin:0 0 10px 20px}
+@media(max-width:560px){.form-griglia{grid-template-columns:1fr}}
+
+/* ---------- ESITO / TOAST ---------- */
+.toast{
+  position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);z-index:130;
+  background:var(--primary);color:#fff;padding:13px 20px;border-radius:999px;font-size:13.5px;font-weight:500;
+  box-shadow:var(--ombra-alta);opacity:0;pointer-events:none;transition:opacity var(--t),transform var(--t);max-width:90vw;text-align:center;
+}
+.toast.vedi{opacity:1;transform:translate(-50%,0)}
+.esito{text-align:center;padding:26px 10px}
+.esito .cerchio{width:64px;height:64px;border-radius:999px;background:#dcfce7;color:var(--ok);display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+.esito h3{font-size:28px;margin-bottom:8px}
+.esito p{font-size:14px;color:var(--muted-fg);margin-bottom:6px}
+.esito .codice{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:17px;font-weight:700;color:var(--fg);background:var(--muted);display:inline-block;padding:6px 14px;border-radius:8px;margin:10px 0 18px}
+
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important}
+  html{scroll-behavior:auto}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ VERIFICA ETA' ============ -->
+<div id="eta" hidden>
+  <div class="riquadro" role="dialog" aria-modal="true" aria-labelledby="eta-t">
+    <div class="occhiello">Vendita di alcolici</div>
+    <h2 id="eta-t">Hai almeno 18 anni?</h2>
+    <p>La legge vieta la vendita di bevande alcoliche ai minori di 18 anni. Confermando dichiari di essere maggiorenne.</p>
+    <div class="azioni">
+      <button class="btn btn-primario" id="eta-si">Sì, ho più di 18 anni</button>
+      <button class="btn btn-bordo" id="eta-no">No</button>
+    </div>
+    <p class="no">Bevi responsabilmente. Non guidare dopo aver bevuto.</p>
+  </div>
+</div>
+
+<!-- ============ TESTATA ============ -->
+<header class="sito">
+  <div class="contenitore barra">
+    <a class="logo" href="#top">
+      <svg width="26" height="34" viewBox="0 0 26 34" aria-hidden="true"><path d="M9 1h8v5l3 5v21a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V11l3-5V1z" fill="#1C1917"/><rect x="7.6" y="15" width="10.8" height="10" rx="1.4" fill="#A16207"/></svg>
+      <span>
+        <span class="marchio" id="marchio-testata">Luppolo Nostrano</span>
+        <span class="paletta">Birre artigianali italiane</span>
+      </span>
+    </a>
+    <nav class="menu">
+      <a href="#catalogo">Catalogo</a>
+      <a href="#come-funziona">Come funziona</a>
+      <a href="#spedizioni">Spedizioni</a>
+      <a href="#contatti">Contatti</a>
+    </nav>
+    <button class="carrello-btn" id="apri-carrello" aria-label="Apri il carrello">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.6 12.4a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.6L21 7H6"/></svg>
+      <span>Carrello</span>
+      <span class="pallino" id="pallino" hidden>0</span>
+    </button>
+  </div>
+</header>
+
+<main id="top">
+  <!-- ============ HERO ============ -->
+  <section class="hero">
+    <div class="contenitore hero-griglia">
+      <div>
+        <div class="occhiello">Selezione da microbirrifici italiani</div>
+        <h1>Birra <em>artigianale</em>,<br>consegnata a casa.</h1>
+        <p class="intro" id="claim">Selezioniamo microbirrifici italiani e te li portiamo a casa in 48 ore.</p>
+        <div class="azioni">
+          <a class="btn btn-primario" href="#catalogo">Sfoglia il catalogo</a>
+          <a class="btn btn-bordo" href="#come-funziona">Come funziona</a>
+        </div>
+        <div class="plus">
+          <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg> Spedizione in 24/48 ore</div>
+          <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18M8 3v4"/></svg> Imballo antiurto certificato</div>
+          <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l8 4v6c0 5-3.4 8.6-8 10-4.6-1.4-8-5-8-10V6l8-4z"/></svg> Pagamenti sicuri</div>
+        </div>
+      </div>
+      <div class="vetrina" id="vetrina" aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <div class="striscia">
+    <div class="contenitore">
+      <span><b>Spedizione gratuita</b> sopra <span id="soglia-striscia">79 €</span></span>
+      <span><b>Cassa intera</b> <span id="sconto-striscia">−10%</span> su ogni referenza</span>
+      <span><b>Ordine minimo</b> <span id="minimo-striscia">15 €</span></span>
+      <span><b>Assistenza</b> WhatsApp e email</span>
+    </div>
+  </div>
+
+  <!-- ============ CATALOGO ============ -->
+  <section class="catalogo contenitore" id="catalogo">
+    <div class="testa-sezione">
+      <div>
+        <div class="occhiello">Il catalogo</div>
+        <h2>Le birre in cantina</h2>
+        <p>Prezzi IVA inclusa. Le quantità disponibili sono aggiornate in tempo reale.</p>
+      </div>
+    </div>
+
+    <div class="filtri" role="search">
+      <div class="campo-cerca">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input type="search" id="cerca" placeholder="Cerca birra, birrificio, stile…" aria-label="Cerca nel catalogo">
+      </div>
+      <select id="f-stile" aria-label="Filtra per stile"><option value="">Tutti gli stili</option></select>
+      <select id="f-formato" aria-label="Filtra per formato"><option value="">Tutti i formati</option></select>
+      <select id="f-regione" aria-label="Filtra per regione"><option value="">Tutte le regioni</option></select>
+      <select id="ordina" aria-label="Ordina i risultati">
+        <option value="consigliati">Consigliati</option>
+        <option value="prezzo-su">Prezzo crescente</option>
+        <option value="prezzo-giu">Prezzo decrescente</option>
+        <option value="abv">Gradazione</option>
+        <option value="nome">Nome A→Z</option>
+      </select>
+      <label class="spunta"><input type="checkbox" id="f-disponibili"> Solo disponibili</label>
+      <span class="conteggio" id="conteggio" aria-live="polite"></span>
+    </div>
+
+    <div class="griglia" id="griglia"></div>
+  </section>
+
+  <!-- ============ COME FUNZIONA ============ -->
+  <section class="come" id="come-funziona">
+    <div class="contenitore">
+      <div class="occhiello">Come funziona</div>
+      <h2>Dall'ordine al bicchiere</h2>
+      <div class="passi">
+        <div class="passo"><span class="num">1</span><h3>Scegli le birre</h3><p>Componi la cassa come vuoi: prendendo una cassa intera della stessa referenza hai lo sconto automatico.</p></div>
+        <div class="passo"><span class="num">2</span><h3>Paga come preferisci</h3><p>Carta di credito, Apple Pay e Google Pay con pagamento sicuro, oppure bonifico. Se preferisci parlare con noi, ordina su WhatsApp.</p></div>
+        <div class="passo"><span class="num">3</span><h3>Prepariamo il pacco</h3><p>Ogni bottiglia viaggia in alveare di cartone antiurto. Ti mandiamo il codice di tracciamento appena parte.</p></div>
+        <div class="passo"><span class="num">4</span><h3>Consegna in 24/48 ore</h3><p>Corriere espresso in tutta Italia. Se qualcosa arriva rotto, lo sostituiamo senza discussioni.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SPEDIZIONI ============ -->
+  <section class="catalogo contenitore" id="spedizioni">
+    <div class="testa-sezione"><div><div class="occhiello">Spedizioni e resi</div><h2>Le regole, in chiaro</h2></div></div>
+    <div class="passi">
+      <div class="passo"><h3>Costi</h3><p id="testo-costi"></p></div>
+      <div class="passo"><h3>Tempi</h3><p id="testo-tempi"></p></div>
+      <div class="passo"><h3>Rotture</h3><p>Bottiglie rotte in transito: mandaci una foto entro 48 ore dalla consegna e ti rispediamo il prodotto o ti rimborsiamo.</p></div>
+      <div class="passo"><h3>Diritto di recesso</h3><p>Hai 14 giorni per ripensarci. Il reso vale per le confezioni integre e non refrigerate: le spese di rientro sono a tuo carico.</p></div>
+    </div>
+  </section>
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer class="sito" id="contatti">
+  <div class="contenitore">
+    <div class="piede">
+      <div>
+        <div class="marchio-piede" id="marchio-piede">Luppolo Nostrano</div>
+        <p id="sottotitolo-piede">Birre artigianali italiane, dal birrificio a casa tua</p>
+      </div>
+      <div>
+        <h4>Contatti</h4>
+        <a id="link-email" href="#">email</a>
+        <a id="link-tel" href="#">telefono</a>
+        <a id="link-wa" href="#" target="_blank" rel="noopener">WhatsApp</a>
+        <span id="indirizzo-piede" style="display:block;padding:4px 0"></span>
+      </div>
+      <div>
+        <h4>Negozio</h4>
+        <a href="#catalogo">Catalogo</a>
+        <a href="#come-funziona">Come funziona</a>
+        <a href="#spedizioni">Spedizioni e resi</a>
+      </div>
+      <div>
+        <h4>Informazioni</h4>
+        <a href="#" data-legale="condizioni">Condizioni di vendita</a>
+        <a href="#" data-legale="privacy">Privacy e cookie</a>
+        <a href="#" data-legale="recesso">Diritto di recesso</a>
+      </div>
+    </div>
+    <div class="legale">
+      <span id="dati-fiscali"></span>
+      <span>Vietata la vendita di alcolici ai minori di 18 anni. Bevi responsabilmente.</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ============ CARRELLO ============ -->
+<div class="velo" id="velo"></div>
+<aside class="cassetto" id="carrello" role="dialog" aria-modal="true" aria-labelledby="tit-carrello" aria-hidden="true">
+  <header>
+    <h2 id="tit-carrello">Il tuo carrello</h2>
+    <button class="chiudi" data-chiudi aria-label="Chiudi il carrello">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </header>
+  <div class="lista" id="lista-carrello"></div>
+  <div class="totali" id="totali-carrello"></div>
+</aside>
+
+<!-- ============ SCHEDA PRODOTTO ============ -->
+<div class="modale" id="modale-prodotto" role="dialog" aria-modal="true" aria-hidden="true">
+  <header>
+    <h2>Scheda prodotto</h2>
+    <button class="chiudi" data-chiudi aria-label="Chiudi">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </header>
+  <div class="contenuto" id="contenuto-prodotto"></div>
+</div>
+
+<!-- ============ CHECKOUT ============ -->
+<div class="modale" id="modale-checkout" role="dialog" aria-modal="true" aria-hidden="true">
+  <header>
+    <h2 id="tit-checkout">Completa l'ordine</h2>
+    <button class="chiudi" data-chiudi aria-label="Chiudi">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </header>
+  <div class="contenuto" id="contenuto-checkout"></div>
+</div>
+
+<!-- ============ TESTI LEGALI ============ -->
+<div class="modale" id="modale-legale" role="dialog" aria-modal="true" aria-hidden="true">
+  <header>
+    <h2 id="tit-legale">Informazioni</h2>
+    <button class="chiudi" data-chiudi aria-label="Chiudi">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </header>
+  <div class="contenuto testo-legale" id="contenuto-legale"></div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="prodotti.js"></script>
+<script>
+"use strict";
+/* =========================================================
+   LUPPOLO NOSTRANO — logica del negozio
+   Catalogo e regole commerciali stanno in prodotti.js
+   ========================================================= */
+
+const $  = (s,r=document)=>r.querySelector(s);
+const $$ = (s,r=document)=>[...r.querySelectorAll(s)];
+const euro = n => n.toLocaleString("it-IT",{style:"currency",currency:CONFIG.valuta||"EUR"});
+const esc  = s => String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const trova = id => CATALOGO.find(p=>p.id===id);
+
+/* ---------- disegno della bottiglia ---------- */
+function bottiglia(p, classe=""){
+  const magnum = p.formato >= 75;
+  const corpo = magnum
+    ? "M22 40h20c0 0 8 9 8 22v100a6 6 0 0 1-6 6H20a6 6 0 0 1-6-6V62c0-13 8-22 8-22z"
+    : "M24 44h16c0 0 7 8 7 20v98a6 6 0 0 1-6 6H23a6 6 0 0 1-6-6V64c0-12 7-20 7-20z";
+  const collo = magnum ? "M26 12h12v30H26z" : "M27 16h10v28H27z";
+  const tappo = magnum ? "M24 6h16v9H24z" : "M25 10h14v8H25z";
+  const et = magnum ? {x:16,y:86,w:36,h:52} : {x:19,y:88,w:30,h:48};
+  const g = "g"+p.id.replace(/[^a-z0-9]/gi,"");
+  return `<svg class="${classe}" viewBox="0 0 64 172" role="img" aria-label="Bottiglia ${esc(p.nome)}">
+    <defs>
+      <linearGradient id="${g}" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#2f1a09"/><stop offset=".28" stop-color="#7a4415"/>
+        <stop offset=".55" stop-color="#4a2810"/><stop offset="1" stop-color="#241205"/>
+      </linearGradient>
+    </defs>
+    <path d="${tappo}" fill="#57534E"/>
+    <path d="${collo}" fill="url(#${g})"/>
+    <path d="${corpo}" fill="url(#${g})"/>
+    <rect x="${et.x}" y="${et.y}" width="${et.w}" height="${et.h}" rx="2" fill="${esc(p.colore)}"/>
+    <rect x="${et.x}" y="${et.y}" width="${et.w}" height="9" fill="rgba(0,0,0,.16)"/>
+    <text x="32" y="${et.y+7}" text-anchor="middle" font-size="6" fill="#fff" font-family="Montserrat,sans-serif" letter-spacing=".5">${esc(p.formato)} CL</text>
+    <text x="32" y="${et.y+26}" text-anchor="middle" font-size="${p.stile.length>9?6.2:p.stile.length>6?7.4:8.5}" font-weight="700" fill="#1C1917" font-family="Montserrat,sans-serif">${esc(p.stile.toUpperCase())}</text>
+    <text x="32" y="${et.y+38}" text-anchor="middle" font-size="7" fill="#1C1917" font-family="Montserrat,sans-serif">${String(p.abv).replace(".",",")}%</text>
+    <path d="${magnum?"M20 46c-3 6-4 12-4 18v92":"M22 48c-2 5-3 10-3 16v90"}" stroke="rgba(255,255,255,.22)" stroke-width="3" fill="none" stroke-linecap="round"/>
+  </svg>`;
+}
+
+/* ---------- stato ---------- */
+const CHIAVE_CARRELLO = "ln_carrello_v1";
+const CHIAVE_ETA = "ln_maggiorenne";
+let carrello = caricaCarrello();
+let provinciaConsegna = "";
+
+function caricaCarrello(){
+  try{
+    const d = JSON.parse(localStorage.getItem(CHIAVE_CARRELLO) || "{}");
+    const pulito = {};
+    for(const [id,q] of Object.entries(d)){
+      const p = trova(id);
+      if(p && Number.isFinite(+q) && +q > 0) pulito[id] = Math.min(Math.round(+q), p.scorta);
+    }
+    return pulito;
+  }catch(e){ return {}; }
+}
+function salvaCarrello(){
+  try{ localStorage.setItem(CHIAVE_CARRELLO, JSON.stringify(carrello)); }catch(e){}
+}
+
+/* ---------- calcolo del totale ---------- */
+function conti(){
+  let pezzi = 0, pieno = 0, sconto = 0;
+  const righe = [];
+  for(const [id,q] of Object.entries(carrello)){
+    const p = trova(id); if(!p) continue;
+    const casse = p.cartone > 0 && q >= p.cartone;
+    const lordo = p.prezzo * q;
+    const sc = casse ? lordo * CONFIG.scontoCassa / 100 : 0;
+    pezzi += q; pieno += lordo; sconto += sc;
+    righe.push({p, q, lordo, sconto:sc, netto:lordo-sc, casse});
+  }
+  const merce = pieno - sconto;
+  const isola = CONFIG.provinceIsole.includes(provinciaConsegna.toUpperCase());
+  let spedizione = 0;
+  if(pezzi > 0) spedizione = merce >= CONFIG.sogliaPortoFranco ? 0 : (isola ? CONFIG.spedizioneIsole : CONFIG.spedizione);
+  const totale = merce + spedizione;
+  const iva = totale - totale / (1 + CONFIG.iva/100);
+  return {righe, pezzi, pieno, sconto, merce, spedizione, totale, iva, isola,
+          mancaPortoFranco: Math.max(0, CONFIG.sogliaPortoFranco - merce),
+          sottoMinimo: pezzi > 0 && merce < CONFIG.ordineMinimo};
+}
+
+/* ---------- catalogo ---------- */
+const stato = {cerca:"", stile:"", formato:"", regione:"", ordina:"consigliati", soloDisp:false};
+
+function riempiFiltri(){
+  const uniche = (k) => [...new Set(CATALOGO.map(p=>p[k]))].sort((a,b)=> typeof a==="number" ? a-b : String(a).localeCompare(b,"it"));
+  uniche("stile").forEach(v=> $("#f-stile").insertAdjacentHTML("beforeend",`<option value="${esc(v)}">${esc(v)}</option>`));
+  uniche("formato").forEach(v=> $("#f-formato").insertAdjacentHTML("beforeend",`<option value="${v}">${v} cl</option>`));
+  uniche("regione").forEach(v=> $("#f-regione").insertAdjacentHTML("beforeend",`<option value="${esc(v)}">${esc(v)}</option>`));
+}
+
+function filtra(){
+  const q = stato.cerca.trim().toLowerCase();
+  let out = CATALOGO.filter(p=>{
+    if(stato.stile && p.stile !== stato.stile) return false;
+    if(stato.formato && String(p.formato) !== stato.formato) return false;
+    if(stato.regione && p.regione !== stato.regione) return false;
+    if(stato.soloDisp && p.scorta <= 0) return false;
+    if(q){
+      const testo = [p.nome,p.birrificio,p.stile,p.regione,p.descrizione].join(" ").toLowerCase();
+      if(!q.split(/\s+/).every(t=>testo.includes(t))) return false;
+    }
+    return true;
+  });
+  const ord = {
+    "prezzo-su": (a,b)=>a.prezzo-b.prezzo,
+    "prezzo-giu":(a,b)=>b.prezzo-a.prezzo,
+    "abv":       (a,b)=>b.abv-a.abv,
+    "nome":      (a,b)=>a.nome.localeCompare(b.nome,"it"),
+    "consigliati":(a,b)=>(b.tag.length-a.tag.length)||(b.scorta-a.scorta)
+  }[stato.ordina];
+  return out.sort(ord);
+}
+
+function scheda(p){
+  const esaurito = p.scorta <= 0;
+  const nelCarrello = carrello[p.id] || 0;
+  const alLitro = p.prezzo / (p.formato/100);
+  const tag = esaurito ? '<span class="tag esaurito">Esaurito</span>'
+    : p.tag.map(t=>`<span class="tag ${t}">${{novita:"Novità",bestseller:"Più venduta",regalo:"Da regalo"}[t]||esc(t)}</span>`).join("");
+  return `<article class="scheda">
+    <div class="figura" data-scheda="${p.id}" role="button" tabindex="0" aria-label="Apri la scheda di ${esc(p.nome)}">
+      <div class="etichette">${tag}</div>
+      ${bottiglia(p)}
+    </div>
+    <div class="corpo">
+      <span class="birrificio">${esc(p.birrificio)}</span>
+      <h3>${esc(p.nome)}</h3>
+      <div class="dati">
+        <span class="dato">${esc(p.stile)}</span>
+        <span class="dato">${String(p.abv).replace(".",",")}% vol</span>
+        <span class="dato">${p.formato} cl</span>
+      </div>
+      <div class="prezzo-riga">
+        <span class="prezzo">${euro(p.prezzo)}</span>
+        <span class="al-litro">${euro(alLitro)}/litro</span>
+      </div>
+      ${!esaurito && p.scorta <= 24 ? `<div class="stock-basso">Ultimi ${p.scorta} pezzi</div>` : ""}
+      <div class="azioni-scheda">
+        <button class="btn btn-bordo" data-scheda="${p.id}">Dettagli</button>
+        <button class="btn btn-primario" data-aggiungi="${p.id}" ${esaurito?"disabled":""}>
+          ${esaurito ? "Esaurito" : (nelCarrello ? `Nel carrello (${nelCarrello})` : "Aggiungi")}
+        </button>
+      </div>
+    </div>
+  </article>`;
+}
+
+function disegnaCatalogo(){
+  const lista = filtra();
+  $("#griglia").innerHTML = lista.length
+    ? lista.map(scheda).join("")
+    : `<div class="vuoto" style="grid-column:1/-1"><p>Nessuna birra con questi filtri.</p><p style="margin-top:10px"><button class="btn btn-bordo" id="azzera-filtri">Azzera i filtri</button></p></div>`;
+  $("#conteggio").textContent = `${lista.length} ${lista.length===1?"birra":"birre"}`;
+}
+
+/* ---------- carrello: operazioni ---------- */
+function aggiungi(id, quanti=1){
+  const p = trova(id); if(!p || p.scorta<=0) return;
+  const nuova = Math.min((carrello[id]||0) + quanti, p.scorta);
+  if(nuova === (carrello[id]||0)){ avviso(`Disponibilità massima raggiunta: ${p.scorta} pezzi`); return; }
+  carrello[id] = nuova;
+  dopoModifica();
+  avviso(`${p.nome} aggiunta al carrello`);
+}
+function imposta(id, q){
+  const p = trova(id); if(!p) return;
+  q = Math.max(0, Math.min(Math.round(q), p.scorta));
+  if(q === 0) delete carrello[id]; else carrello[id] = q;
+  dopoModifica();
+}
+function dopoModifica(){
+  salvaCarrello(); disegnaCarrello(); disegnaCatalogo(); aggiornaPallino();
+}
+function aggiornaPallino(){
+  const n = conti().pezzi;
+  const b = $("#pallino");
+  b.textContent = n; b.hidden = n === 0;
+  $("#apri-carrello").setAttribute("aria-label", n ? `Apri il carrello, ${n} articoli` : "Apri il carrello");
+}
+
+function disegnaCarrello(){
+  const c = conti();
+  const lista = $("#lista-carrello");
+  if(!c.pezzi){
+    lista.innerHTML = `<div class="vuoto"><p>Il carrello è vuoto.</p><p style="margin-top:14px"><button class="btn btn-primario" data-chiudi>Sfoglia il catalogo</button></p></div>`;
+    $("#totali-carrello").innerHTML = "";
+    return;
+  }
+  lista.innerHTML = c.righe.map(r=>`
+    <div class="riga">
+      <div class="mini">${bottiglia(r.p)}</div>
+      <div>
+        <div class="nome">${esc(r.p.nome)}</div>
+        <div class="sotto">${esc(r.p.stile)} · ${r.p.formato} cl · ${euro(r.p.prezzo)} cad.</div>
+        ${r.casse ? `<div class="sconto">Cassa intera −${CONFIG.scontoCassa}% (−${euro(r.sconto)})</div>`
+                  : `<div class="sotto">Prendi ${r.p.cartone} pezzi e risparmi il ${CONFIG.scontoCassa}%</div>`}
+        <button class="elimina" data-togli="${r.p.id}">Rimuovi</button>
+      </div>
+      <div>
+        <div class="qta">
+          <button data-meno="${r.p.id}" aria-label="Togli uno">−</button>
+          <span aria-live="polite">${r.q}</span>
+          <button data-piu="${r.p.id}" aria-label="Aggiungi uno">+</button>
+        </div>
+        <div class="prezzo-riga2">${euro(r.netto)}</div>
+      </div>
+    </div>`).join("");
+
+  const barra = c.mancaPortoFranco > 0
+    ? `<div class="r"><span>Ti mancano <b>${euro(c.mancaPortoFranco)}</b> alla spedizione gratuita</span></div>
+       <div class="barra-avanzamento"><i style="width:${Math.min(100, c.merce/CONFIG.sogliaPortoFranco*100).toFixed(0)}%"></i></div>`
+    : `<div class="r"><span class="ok">Hai raggiunto la spedizione gratuita</span></div>`;
+
+  $("#totali-carrello").innerHTML = `
+    ${c.sottoMinimo ? `<div class="avviso">Ordine minimo ${euro(CONFIG.ordineMinimo)}: aggiungi ancora ${euro(CONFIG.ordineMinimo-c.merce)}.</div>` : ""}
+    ${barra}
+    <div class="r"><span>Merce (${c.pezzi} ${c.pezzi===1?"pezzo":"pezzi"})</span><span>${euro(c.pieno)}</span></div>
+    ${c.sconto ? `<div class="r"><span>Sconto casse</span><span class="ok">−${euro(c.sconto)}</span></div>` : ""}
+    <div class="r"><span>Spedizione${c.isola?" (isole)":""}</span><span>${c.spedizione ? euro(c.spedizione) : '<span class="ok">Gratis</span>'}</span></div>
+    <div class="r grande"><span>Totale</span><span>${euro(c.totale)}</span></div>
+    <div class="r" style="font-size:11.5px">di cui IVA ${CONFIG.iva}%: ${euro(c.iva)}</div>
+    <button class="btn btn-primario btn-blocco" id="vai-checkout" style="margin-top:12px" ${c.sottoMinimo?"disabled":""}>Procedi all'ordine</button>`;
+}
+
+/* ---------- pannelli ---------- */
+let ultimoFocus = null;
+function apri(el){
+  ultimoFocus = document.activeElement;
+  $("#velo").classList.add("aperto");
+  el.classList.add("aperto"); el.setAttribute("aria-hidden","false");
+  document.body.style.overflow = "hidden";
+  const f = el.querySelector("input,button,select,textarea");
+  if(f) setTimeout(()=>f.focus(), 60);
+}
+function chiudiTutto(){
+  $("#velo").classList.remove("aperto");
+  $$(".cassetto,.modale").forEach(e=>{ e.classList.remove("aperto"); e.setAttribute("aria-hidden","true"); });
+  document.body.style.overflow = "";
+  if(ultimoFocus) ultimoFocus.focus();
+}
+let timerToast;
+function avviso(testo){
+  const t = $("#toast"); t.textContent = testo; t.classList.add("vedi");
+  clearTimeout(timerToast); timerToast = setTimeout(()=>t.classList.remove("vedi"), 2600);
+}
+
+/* ---------- scheda prodotto ---------- */
+function apriProdotto(id){
+  const p = trova(id); if(!p) return;
+  const esaurito = p.scorta<=0;
+  $("#contenuto-prodotto").innerHTML = `
+    <div class="dettaglio">
+      <div class="foto">${bottiglia(p)}</div>
+      <div>
+        <span class="birrificio" style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-fg)">${esc(p.birrificio)} · ${esc(p.regione)}</span>
+        <h3>${esc(p.nome)}</h3>
+        <div class="dati">
+          <span class="dato">${esc(p.stile)}</span><span class="dato">${String(p.abv).replace(".",",")}% vol</span>
+          <span class="dato">${p.ibu} IBU</span><span class="dato">${p.formato} cl</span>
+        </div>
+        <p class="descr">${esc(p.descrizione)}</p>
+        <div class="specifiche">
+          <div><b>Abbinamenti</b>${esc(p.abbinamento)}</div>
+          <div><b>Ingredienti</b>${esc(p.ingredienti)}</div>
+          <div><b>Cassa</b>${p.cartone} pezzi · −${CONFIG.scontoCassa}%</div>
+          <div><b>Disponibilità</b>${esaurito ? "Esaurita" : p.scorta + " pezzi"}</div>
+        </div>
+        <div class="prezzo-riga" style="margin:14px 0">
+          <span class="prezzo">${euro(p.prezzo)}</span>
+          <span class="al-litro">IVA inclusa · ${euro(p.prezzo/(p.formato/100))}/litro</span>
+        </div>
+        <div class="azioni-scheda">
+          <button class="btn btn-primario" data-aggiungi="${p.id}" ${esaurito?"disabled":""}>${esaurito?"Esaurito":"Aggiungi al carrello"}</button>
+          <button class="btn btn-bordo" data-aggiungi-cassa="${p.id}" ${esaurito||p.scorta<p.cartone?"disabled":""}>Cassa da ${p.cartone} · −${CONFIG.scontoCassa}%</button>
+        </div>
+      </div>
+    </div>`;
+  apri($("#modale-prodotto"));
+}
+
+/* ---------- checkout ---------- */
+const PROVINCE = "AG AL AN AO AP AQ AR AT AV BA BG BI BL BN BO BR BS BT BZ CA CB CE CH CL CN CO CR CS CT CZ EN FC FE FG FI FM FR GE GO GR IM IS KR LC LE LI LO LT LU MB MC ME MI MN MO MS MT NA NO NU OR PA PC PD PE PG PI PN PO PR PT PU PV PZ RA RC RE RG RI RM RN RO SA SI SO SP SR SS SU SV TA TE TN TO TP TR TS TV UD VA VB VC VE VI VR VT VV".split(" ");
+
+function apriCheckout(){
+  const c = conti();
+  if(!c.pezzi){ avviso("Il carrello è vuoto"); return; }
+  if(c.sottoMinimo){ avviso(`Ordine minimo ${euro(CONFIG.ordineMinimo)}`); return; }
+  const pag = CONFIG.pagamenti;
+  const cartaAttiva = !!(pag.stripeEndpoint||"").trim();
+  $("#tit-checkout").textContent = "Completa l'ordine";
+  $("#contenuto-checkout").innerHTML = `
+    <div class="riepilogo-ordine" id="riepilogo">${riepilogoHTML(c)}</div>
+    <form id="form-ordine" novalidate>
+      <h3 style="font-family:var(--titolo);font-size:22px;margin-bottom:10px">Dati per la consegna</h3>
+      <div class="form-griglia">
+        <div class="campo"><label for="nome">Nome *</label><input id="nome" name="nome" autocomplete="given-name" required><span class="errore">Inserisci il nome</span></div>
+        <div class="campo"><label for="cognome">Cognome *</label><input id="cognome" name="cognome" autocomplete="family-name" required><span class="errore">Inserisci il cognome</span></div>
+        <div class="campo"><label for="email">Email *</label><input id="email" name="email" type="email" autocomplete="email" required><span class="errore">Indirizzo email non valido</span></div>
+        <div class="campo"><label for="telefono">Telefono *</label><input id="telefono" name="telefono" type="tel" autocomplete="tel" required><span class="errore">Serve per il corriere</span></div>
+        <div class="campo largo"><label for="via">Indirizzo e numero civico *</label><input id="via" name="via" autocomplete="street-address" required><span class="errore">Inserisci l'indirizzo</span></div>
+        <div class="campo"><label for="cap">CAP *</label><input id="cap" name="cap" inputmode="numeric" maxlength="5" autocomplete="postal-code" required><span class="errore">5 cifre</span></div>
+        <div class="campo"><label for="comune">Città *</label><input id="comune" name="comune" autocomplete="address-level2" required><span class="errore">Inserisci la città</span></div>
+        <div class="campo"><label for="provincia">Provincia *</label>
+          <select id="provincia" name="provincia" required><option value="">—</option>${PROVINCE.map(p=>`<option>${p}</option>`).join("")}</select>
+          <span class="errore">Scegli la provincia</span></div>
+        <div class="campo"><label for="citofono">Citofono / interno</label><input id="citofono" name="citofono"></div>
+        <div class="campo largo"><label for="note">Note per la consegna</label><textarea id="note" name="note" placeholder="Orari preferiti, indicazioni per il corriere…"></textarea></div>
+      </div>
+
+      <h3 style="font-family:var(--titolo);font-size:22px;margin:20px 0 6px">Come vuoi pagare</h3>
+      <div class="pagamenti">
+        <label class="metodo ${cartaAttiva?"":"spento"}">
+          <input type="radio" name="metodo" value="carta" ${cartaAttiva?"checked":"disabled"}>
+          <span><span class="t">Carta, Apple Pay, Google Pay</span>
+          <span class="d">${cartaAttiva ? "Pagamento sicuro con Stripe: vieni portato sulla pagina protetta e torni qui a conferma avvenuta." : "Non ancora attivo su questo sito (vedi README: avvia il server dei pagamenti)."}</span></span>
+        </label>
+        ${pag.bonifico.attivo ? `<label class="metodo"><input type="radio" name="metodo" value="bonifico" ${cartaAttiva?"":"checked"}>
+          <span><span class="t">Bonifico bancario</span><span class="d">Ti diamo IBAN e causale. Spediamo appena vediamo l'accredito.</span></span></label>`:""}
+        <label class="metodo"><input type="radio" name="metodo" value="whatsapp">
+          <span><span class="t">Ordina su WhatsApp</span><span class="d">Ti apriamo la chat con l'ordine già scritto: confermi e concordiamo il pagamento.</span></span></label>
+        <label class="metodo"><input type="radio" name="metodo" value="email">
+          <span><span class="t">Ordina via email</span><span class="d">Prepariamo l'email con il riepilogo, tu la invii.</span></span></label>
+      </div>
+
+      <div class="consensi">
+        <label class="consenso"><input type="checkbox" id="maggiorenne" required> Dichiaro di avere almeno 18 anni. *</label>
+        <label class="consenso"><input type="checkbox" id="condizioni" required> Ho letto e accetto le <a href="#" data-legale="condizioni" style="color:var(--accent)">condizioni di vendita</a> e l'<a href="#" data-legale="privacy" style="color:var(--accent)">informativa privacy</a>. *</label>
+      </div>
+      <div id="errore-generale" class="avviso" style="display:none"></div>
+      <button class="btn btn-primario btn-blocco" id="conferma" style="margin-top:16px">Conferma l'ordine · ${euro(c.totale)}</button>
+      <p style="font-size:11.5px;color:var(--muted-fg);text-align:center;margin-top:10px">I dati servono solo a spedire l'ordine e non vengono ceduti a terzi.</p>
+    </form>`;
+  apri($("#modale-checkout"));
+
+  const form = $("#form-ordine");
+  form.addEventListener("change", e=>{
+    $$(".metodo").forEach(m=>m.classList.toggle("scelto", m.querySelector("input").checked));
+    if(e.target.id === "provincia"){
+      provinciaConsegna = e.target.value;
+      const c2 = conti();
+      $("#riepilogo").innerHTML = riepilogoHTML(c2);
+      $("#conferma").textContent = `Conferma l'ordine · ${euro(c2.totale)}`;
+      disegnaCarrello();
+    }
+  });
+  $$(".metodo").forEach(m=>m.classList.toggle("scelto", m.querySelector("input").checked));
+  form.addEventListener("submit", e=>{ e.preventDefault(); inviaOrdine(); });
+}
+
+function riepilogoHTML(c){
+  return c.righe.map(r=>`<div class="r"><span>${r.q}× ${esc(r.p.nome)} ${r.p.formato}cl${r.casse?" (cassa −"+CONFIG.scontoCassa+"%)":""}</span><span>${euro(r.netto)}</span></div>`).join("")
+    + `<div class="r"><span>Spedizione${c.isola?" (isole)":""}</span><span>${c.spedizione?euro(c.spedizione):"Gratis"}</span></div>`
+    + `<div class="r tot"><span>Totale</span><span>${euro(c.totale)}</span></div>`;
+}
+
+function leggiForm(){
+  const d = {};
+  ["nome","cognome","email","telefono","via","cap","comune","provincia","citofono","note"].forEach(k=> d[k] = ($("#"+k).value||"").trim());
+  return d;
+}
+function valida(){
+  let ok = true;
+  const set = (id,cond)=>{ const c = $("#"+id).closest(".campo"); c.classList.toggle("ko", !cond); if(!cond) ok = false; };
+  const d = leggiForm();
+  set("nome", d.nome.length>1); set("cognome", d.cognome.length>1);
+  set("email", /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(d.email));
+  set("telefono", d.telefono.replace(/\D/g,"").length>=6);
+  set("via", d.via.length>4); set("cap", /^\d{5}$/.test(d.cap));
+  set("comune", d.comune.length>1); set("provincia", !!d.provincia);
+  const err = $("#errore-generale");
+  if(!$("#maggiorenne").checked || !$("#condizioni").checked){
+    ok = false; err.style.display="block";
+    err.textContent = "Per procedere devi confermare di essere maggiorenne e accettare le condizioni di vendita.";
+  } else err.style.display="none";
+  if(!ok) $(".campo.ko input, .campo.ko select")?.focus();
+  return ok;
+}
+
+function numeroOrdine(){
+  const d = new Date(), p = n=>String(n).padStart(2,"0");
+  return `LN-${String(d.getFullYear()).slice(2)}${p(d.getMonth()+1)}${p(d.getDate())}-${Math.random().toString(36).slice(2,6).toUpperCase()}`;
+}
+function testoOrdine(c, d, numero){
+  const righe = c.righe.map(r=>`• ${r.q} × ${r.p.nome} (${r.p.stile}, ${r.p.formato}cl) — ${euro(r.netto)}`).join("\n");
+  return `Ordine ${numero} — ${CONFIG.nome}\n\n${righe}\n\n`
+    + `Merce: ${euro(c.merce)}\nSpedizione: ${c.spedizione?euro(c.spedizione):"gratis"}\nTOTALE: ${euro(c.totale)}\n\n`
+    + `Consegna a:\n${d.nome} ${d.cognome}\n${d.via}${d.citofono?" ("+d.citofono+")":""}\n${d.cap} ${d.comune} (${d.provincia})\nTel. ${d.telefono}\nEmail: ${d.email}`
+    + (d.note ? `\n\nNote: ${d.note}` : "");
+}
+
+async function inviaOrdine(){
+  if(!valida()) return;
+  const d = leggiForm();
+  provinciaConsegna = d.provincia;
+  const c = conti();
+  const metodo = ($('input[name="metodo"]:checked')||{}).value;
+  const numero = numeroOrdine();
+  const testo = testoOrdine(c, d, numero);
+
+  if(metodo === "carta") return pagaConCarta(d, c);
+
+  if(metodo === "whatsapp"){
+    window.open(`https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(testo)}`, "_blank", "noopener");
+    return esitoOrdine(numero, "Ti abbiamo aperto WhatsApp con l'ordine già scritto: premi invio nella chat per confermarlo.");
+  }
+  if(metodo === "email"){
+    window.location.href = `mailto:${CONFIG.email}?subject=${encodeURIComponent("Ordine "+numero)}&body=${encodeURIComponent(testo)}`;
+    return esitoOrdine(numero, "Abbiamo preparato l'email con il riepilogo: invia il messaggio dal tuo programma di posta.");
+  }
+  if(metodo === "bonifico"){
+    const b = CONFIG.pagamenti.bonifico;
+    return esitoOrdine(numero,
+      `Effettua il bonifico e spediamo entro il giorno lavorativo successivo all'accredito.`,
+      `<div class="iban"><b>Intestatario:</b> ${esc(b.intestato)}<br><b>Banca:</b> ${esc(b.banca)}<br><b>IBAN:</b> <code>${esc(b.iban)}</code><br><b>Importo:</b> ${euro(c.totale)}<br><b>Causale:</b> Ordine ${numero}</div>
+       <p style="font-size:12.5px;color:var(--muted-fg);margin-top:12px">Mandaci anche il riepilogo così prepariamo il pacco:</p>
+       <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+         <a class="btn btn-bordo" style="flex:1" target="_blank" rel="noopener" href="https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(testo)}">Invia su WhatsApp</a>
+         <a class="btn btn-bordo" style="flex:1" href="mailto:${CONFIG.email}?subject=${encodeURIComponent("Ordine "+numero)}&body=${encodeURIComponent(testo)}">Invia via email</a>
+       </div>`);
+  }
+  avviso("Scegli un metodo di pagamento");
+}
+
+async function pagaConCarta(d, c){
+  const btn = $("#conferma");
+  const testoBtn = btn.textContent;
+  btn.disabled = true; btn.textContent = "Apertura del pagamento sicuro…";
+  try{
+    const risposta = await fetch(CONFIG.pagamenti.stripeEndpoint, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        articoli: Object.entries(carrello).map(([id,q])=>({id, qta:q})),
+        cliente: d,
+        ritorno: location.href.split("#")[0]
+      })
+    });
+    const dati = await risposta.json();
+    if(!risposta.ok || !dati.url) throw new Error(dati.errore || "Risposta non valida dal server dei pagamenti");
+    localStorage.setItem("ln_ordine_in_corso", "1");
+    window.location.href = dati.url;
+  }catch(err){
+    btn.disabled = false; btn.textContent = testoBtn;
+    const e = $("#errore-generale");
+    e.style.display = "block";
+    e.textContent = "Non riusciamo a raggiungere il servizio di pagamento (" + err.message + "). Puoi completare l'ordine con bonifico, WhatsApp o email.";
+  }
+}
+
+function esitoOrdine(numero, messaggio, extra=""){
+  carrello = {}; salvaCarrello(); disegnaCarrello(); disegnaCatalogo(); aggiornaPallino();
+  $("#tit-checkout").textContent = "Ordine registrato";
+  $("#contenuto-checkout").innerHTML = `
+    <div class="esito">
+      <div class="cerchio"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></div>
+      <h3>Grazie!</h3>
+      <p>Il tuo numero d'ordine è</p>
+      <div class="codice">${numero}</div>
+      <p>${messaggio}</p>
+      <div style="max-width:460px;margin:0 auto;text-align:left">${extra}</div>
+      <button class="btn btn-scuro" style="margin-top:22px" data-chiudi>Torna al negozio</button>
+    </div>`;
+}
+
+/* ---------- testi legali ---------- */
+const LEGALI = {
+  condizioni: {t:"Condizioni di vendita", h:`
+    <h3>1. Chi vende</h3><p>Il venditore è <b id="ls-rs"></b>, P. IVA <b id="ls-piva"></b>, con sede in <span id="ls-sede"></span>. Contatti: <span id="ls-contatti"></span>.</p>
+    <h3>2. Prodotti e prezzi</h3><p>I prezzi sono espressi in euro, IVA inclusa, e non comprendono le spese di spedizione, indicate separatamente prima della conferma dell'ordine. Le immagini dei prodotti sono illustrazioni: possono differire dall'etichetta reale.</p>
+    <h3>3. Divieto di vendita ai minori</h3><p>La vendita di bevande alcoliche ai minori di 18 anni è vietata. Al momento della consegna il corriere può chiedere un documento: se il destinatario è minorenne la consegna non viene effettuata e l'ordine è annullato con addebito delle spese di trasporto.</p>
+    <h3>4. Ordine e conferma</h3><p>L'ordine si perfeziona con la nostra email di conferma. Se un prodotto risulta indisponibile dopo l'ordine, ti proponiamo la sostituzione o il rimborso della parte mancante.</p>
+    <h3>5. Pagamenti</h3><p>Sono accettati: carta di credito e wallet (circuito sicuro esterno), bonifico bancario anticipato, e altre modalità concordate. Per il bonifico l'ordine viene spedito dopo l'accredito.</p>
+    <h3>6. Spedizione</h3><p id="ls-spedizione"></p>
+    <h3>7. Rotture e prodotti non conformi</h3><p>Segnala eventuali rotture entro 48 ore dalla consegna, con foto del pacco e delle bottiglie: provvediamo a rispedire il prodotto o a rimborsarlo.</p>
+    <h3>8. Garanzia e reclami</h3><p>Si applicano gli articoli 128 e seguenti del Codice del Consumo. Ogni reclamo può essere inviato ai contatti sopra indicati; è inoltre disponibile la piattaforma europea ODR per la risoluzione delle controversie online.</p>
+    <h3>9. Legge applicabile</h3><p>Al contratto si applica la legge italiana. Per il consumatore è competente il foro del suo luogo di residenza o domicilio.</p>`},
+  privacy: {t:"Privacy e cookie", h:`
+    <h3>Titolare del trattamento</h3><p><span id="lp-rs"></span>, <span id="lp-contatti"></span>.</p>
+    <h3>Quali dati raccogliamo</h3><p>Nome, cognome, indirizzo di spedizione, email e telefono: solo quelli che inserisci per completare l'ordine. Non chiediamo né conserviamo i dati della carta di pagamento, gestiti direttamente dal circuito di pagamento sicuro.</p>
+    <h3>Perché li trattiamo</h3><ul><li>eseguire il contratto: preparare, spedire e fatturare l'ordine;</li><li>obblighi di legge: contabilità e conservazione dei documenti fiscali;</li><li>assistenza post-vendita.</li></ul>
+    <h3>Per quanto tempo</h3><p>Per il tempo necessario alla consegna e, per i documenti fiscali, per i dieci anni previsti dalla legge.</p>
+    <h3>A chi li comunichiamo</h3><p>Al corriere per la consegna, al fornitore del servizio di pagamento e al commercialista. Nessuna cessione a fini pubblicitari.</p>
+    <h3>I tuoi diritti</h3><p>Puoi chiedere accesso, rettifica, cancellazione, limitazione e portabilità dei dati scrivendo ai contatti sopra, oppure proporre reclamo al Garante per la protezione dei dati personali.</p>
+    <h3>Cookie</h3><p>Questo sito non usa cookie di profilazione. Salviamo nel tuo browser (memoria locale) solo il contenuto del carrello e la conferma di essere maggiorenne: dati che restano sul tuo dispositivo e che puoi cancellare svuotando la cronologia.</p>`},
+  recesso: {t:"Diritto di recesso", h:`
+    <h3>Quando si può esercitare</h3><p>Se acquisti come consumatore hai 14 giorni dalla consegna per recedere senza doverne indicare il motivo (art. 52 del Codice del Consumo).</p>
+    <h3>Come si esercita</h3><p>Scrivi ai nostri contatti indicando il numero d'ordine e i prodotti che intendi restituire. Ti confermiamo l'indirizzo per la spedizione di rientro.</p>
+    <h3>Condizioni del reso</h3><ul><li>i prodotti devono essere integri, sigillati e nell'imballo originale;</li><li>le spese di rientro sono a carico dell'acquirente;</li><li>il rimborso avviene entro 14 giorni dal ricevimento del reso, con lo stesso mezzo di pagamento usato per l'acquisto.</li></ul>
+    <h3>Esclusioni</h3><p>Il recesso non si applica ai prodotti confezionati su misura o alle confezioni aperte, per ragioni igieniche e di sicurezza alimentare.</p>`}
+};
+function apriLegale(chiave){
+  const l = LEGALI[chiave]; if(!l) return;
+  $("#tit-legale").textContent = l.t;
+  $("#contenuto-legale").innerHTML = l.h;
+  const contatti = `${CONFIG.email} · ${CONFIG.telefono}`;
+  const metti = (id,v)=>{ const e = $("#"+id); if(e) e.textContent = v; };
+  metti("ls-rs",CONFIG.ragioneSociale); metti("ls-piva",CONFIG.piva); metti("ls-sede",CONFIG.indirizzo); metti("ls-contatti",contatti);
+  metti("lp-rs",CONFIG.ragioneSociale); metti("lp-contatti",contatti);
+  metti("ls-spedizione", testoSpedizione());
+  apri($("#modale-legale"));
+}
+function testoSpedizione(){
+  return `Spedizione in tutta Italia con corriere espresso a ${euro(CONFIG.spedizione)} (${euro(CONFIG.spedizioneIsole)} per Sicilia, Sardegna e isole minori), gratuita sopra ${euro(CONFIG.sogliaPortoFranco)} di merce. ${CONFIG.consegna}`;
+}
+
+/* ---------- testi dinamici dalla configurazione ---------- */
+function personalizza(){
+  document.title = `${CONFIG.nome} — birre artigianali italiane`;
+  $("#marchio-testata").textContent = CONFIG.nome;
+  $("#marchio-piede").textContent = CONFIG.nome;
+  $("#sottotitolo-piede").textContent = CONFIG.sottotitolo;
+  $("#claim").textContent = CONFIG.claim;
+  $("#soglia-striscia").textContent = euro(CONFIG.sogliaPortoFranco);
+  $("#sconto-striscia").textContent = "−" + CONFIG.scontoCassa + "%";
+  $("#minimo-striscia").textContent = euro(CONFIG.ordineMinimo);
+  $("#link-email").textContent = CONFIG.email; $("#link-email").href = "mailto:" + CONFIG.email;
+  $("#link-tel").textContent = CONFIG.telefono; $("#link-tel").href = "tel:" + CONFIG.telefono.replace(/\s/g,"");
+  $("#link-wa").href = "https://wa.me/" + CONFIG.whatsapp;
+  $("#indirizzo-piede").textContent = CONFIG.indirizzo;
+  $("#dati-fiscali").textContent = `${CONFIG.ragioneSociale} · P. IVA ${CONFIG.piva} · REA ${CONFIG.rea}`;
+  $("#testo-costi").textContent = testoSpedizione();
+  $("#testo-tempi").textContent = CONFIG.consegna + " Gli ordini ricevuti entro le 12 partono in giornata, dal lunedì al venerdì.";
+  const belle = [...CATALOGO].filter(p=>p.scorta>0).slice(0,3);
+  $("#vetrina").innerHTML = belle.map((p,i)=>bottiglia(p, i===1?"b2":"")).join("");
+  $$("#vetrina svg").forEach(s=>s.style.height="230px");
+}
+
+/* ---------- avvio ---------- */
+function verificaEta(){
+  if(localStorage.getItem(CHIAVE_ETA) === "si") return;
+  const box = $("#eta"); box.hidden = false;
+  $("#eta-si").addEventListener("click", ()=>{
+    try{ localStorage.setItem(CHIAVE_ETA,"si"); }catch(e){}
+    box.hidden = true;
+  });
+  $("#eta-no").addEventListener("click", ()=>{
+    box.querySelector(".riquadro").innerHTML =
+      `<h2>Ci vediamo tra qualche anno</h2><p style="margin-top:10px">Non possiamo vendere bevande alcoliche ai minori di 18 anni. Grazie della visita.</p>`;
+  });
+}
+
+function ritornoDalPagamento(){
+  const q = new URLSearchParams(location.search);
+  const esito = q.get("pagamento");
+  if(!esito) return;
+  if(esito === "ok"){
+    carrello = {}; salvaCarrello();
+    localStorage.removeItem("ln_ordine_in_corso");
+    setTimeout(()=>{
+      esitoOrdine(q.get("ordine") || numeroOrdine(),
+        "Pagamento ricevuto: ti abbiamo mandato la conferma per email. Prepariamo il pacco e ti mandiamo il tracking appena parte.");
+      apri($("#modale-checkout"));
+    }, 300);
+  } else if(esito === "annullato"){
+    avviso("Pagamento annullato: il carrello è ancora qui.");
+  }
+  history.replaceState(null, "", location.pathname);
+}
+
+document.addEventListener("click", e=>{
+  const t = e.target.closest("[data-aggiungi],[data-aggiungi-cassa],[data-scheda],[data-legale],[data-chiudi],[data-piu],[data-meno],[data-togli],#azzera-filtri,#vai-checkout");
+  if(!t) return;
+  if(t.dataset.aggiungi !== undefined){ aggiungi(t.dataset.aggiungi); return; }
+  if(t.dataset.aggiungiCassa !== undefined){
+    const p = trova(t.dataset.aggiungiCassa);
+    aggiungi(p.id, p.cartone); return;
+  }
+  if(t.dataset.scheda !== undefined){ apriProdotto(t.dataset.scheda); return; }
+  if(t.dataset.legale !== undefined){ e.preventDefault(); apriLegale(t.dataset.legale); return; }
+  if(t.dataset.piu !== undefined){ imposta(t.dataset.piu, (carrello[t.dataset.piu]||0)+1); return; }
+  if(t.dataset.meno !== undefined){ imposta(t.dataset.meno, (carrello[t.dataset.meno]||0)-1); return; }
+  if(t.dataset.togli !== undefined){ imposta(t.dataset.togli, 0); avviso("Prodotto rimosso"); return; }
+  if(t.id === "azzera-filtri"){
+    Object.assign(stato,{cerca:"",stile:"",formato:"",regione:"",soloDisp:false});
+    $("#cerca").value=""; $("#f-stile").value=""; $("#f-formato").value=""; $("#f-regione").value=""; $("#f-disponibili").checked=false;
+    disegnaCatalogo(); return;
+  }
+  if(t.id === "vai-checkout"){ chiudiTutto(); setTimeout(apriCheckout, 180); return; }
+  if(t.dataset.chiudi !== undefined){ chiudiTutto(); return; }
+});
+document.addEventListener("keydown", e=>{
+  if(e.key === "Escape") chiudiTutto();
+  const f = e.target.closest?.("[data-scheda].figura");
+  if(f && (e.key === "Enter" || e.key === " ")){ e.preventDefault(); apriProdotto(f.dataset.scheda); }
+});
+$("#velo").addEventListener("click", chiudiTutto);
+$("#apri-carrello").addEventListener("click", ()=>{ disegnaCarrello(); apri($("#carrello")); });
+$("#cerca").addEventListener("input", e=>{ stato.cerca = e.target.value; disegnaCatalogo(); });
+$("#f-stile").addEventListener("change", e=>{ stato.stile = e.target.value; disegnaCatalogo(); });
+$("#f-formato").addEventListener("change", e=>{ stato.formato = e.target.value; disegnaCatalogo(); });
+$("#f-regione").addEventListener("change", e=>{ stato.regione = e.target.value; disegnaCatalogo(); });
+$("#ordina").addEventListener("change", e=>{ stato.ordina = e.target.value; disegnaCatalogo(); });
+$("#f-disponibili").addEventListener("change", e=>{ stato.soloDisp = e.target.checked; disegnaCatalogo(); });
+
+personalizza();
+riempiFiltri();
+disegnaCatalogo();
+disegnaCarrello();
+aggiornaPallino();
+verificaEta();
+ritornoDalPagamento();
+</script>
+</body>
+</html>
