@@ -140,3 +140,21 @@ funzioni `admin_*`.
 | imports, league_settings, audit_log                                                                   | solo admin (league_code mai esposto ai manager)             | solo admin via funzioni |
 
 `is_admin()` e `is_league_member()` come funzioni helper `security definer stable`.
+
+## Aggiunte M6 (pannello admin)
+
+- `profiles.email` (copiata da `auth.users` dal trigger di signup e da un trigger
+  su cambio email): grant di colonna solo tramite le funzioni admin; il grant
+  SELECT di `authenticated` esclude la colonna.
+- `notifications` (`kind`, `subject`, `recipients`, `status sent|failed|skipped`,
+  `detail`, `created_by`, `created_at`): log delle email di lega, lettura solo
+  admin, scrittura via `log_notification()`.
+- Funzioni admin di sola lettura: `admin_list_users()`, `admin_notification_
+recipients()`, `admin_audit_log(limit)`.
+- `consume_rate_limit(bucket)`: bucket e limiti definiti nella funzione
+  (`market`, `import`, `export`, `email`, `admin`); tabella `private.rate_limits`.
+- `private.assert_no_open_session()`: usata da `admin_assign_player`,
+  `admin_remove_player`, `apply_rosters_import` (errore `SESSION_OPEN`).
+- `admin_set_setting(key, value)` valida forma e intervallo per ogni chiave nota
+  e rifiuta le chiavi sconosciute; nuova chiave `notifications_enabled`.
+- Indice unico `teams_short_name_key`.

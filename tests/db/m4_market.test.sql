@@ -285,19 +285,27 @@ begin
   exception when insufficient_privilege then null;
   end;
 
-  -- per-user attempt limiter: 3 allowed, the 4th within the window is refused
-  perform public.consume_rate_limit('test', 3, 60);
-  perform public.consume_rate_limit('test', 3, 60);
-  perform public.consume_rate_limit('test', 3, 60);
+  -- per-user attempt limiter with server-defined limits: 'email' allows 5 per hour,
+  -- the 6th is refused; unknown buckets are rejected (callers cannot pick limits)
+  perform public.consume_rate_limit('email');
+  perform public.consume_rate_limit('email');
+  perform public.consume_rate_limit('email');
+  perform public.consume_rate_limit('email');
+  perform public.consume_rate_limit('email');
   begin
-    perform public.consume_rate_limit('test', 3, 60);
+    perform public.consume_rate_limit('email');
     raise exception 'rate limit not enforced';
   exception when program_limit_exceeded then null;
   end;
+  begin
+    perform public.consume_rate_limit('made-up-bucket');
+    raise exception 'unknown bucket accepted';
+  exception when invalid_parameter_value then null;
+  end;
   perform auth.test_logout();
 
-  -- per-team committed-operation throttle (market_ops_per_minute): with the limit at 1,
-  -- the second swap in the same minute is refused
+  -- per-team committed-operation throttle (market_ops_per_minute): with the limit at 3
+  -- and 2 swaps already committed this minute, the second swap below is refused
   perform auth.test_login(v_admin, 'authenticated');
   perform public.admin_set_setting('market_ops_per_minute', '3');  -- Alpha already has 2 committed swaps this minute
   v_s1 := public.admin_create_session('Sessione throttle', now(), now() + interval '1 day', 0);

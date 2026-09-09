@@ -21,6 +21,9 @@ export type TransactionKind =
 export type AcquiredVia = "initial_import" | "admin" | "swap" | "free_swap" | "reversal";
 export type ReleasedVia = "swap" | "free_swap" | "admin" | "reversal";
 
+export type RateLimitBucket = "market" | "import" | "export" | "email" | "admin";
+export type NotificationStatus = "sent" | "failed" | "skipped";
+
 type ProfileRow = {
   user_id: string;
   display_name: string;
@@ -28,6 +31,39 @@ type ProfileRow = {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+};
+
+type NotificationRow = {
+  id: string;
+  kind: string;
+  subject: string;
+  recipients: number;
+  status: NotificationStatus;
+  detail: string | null;
+  created_by: string | null;
+  created_at: string;
+};
+
+type AdminUserRow = {
+  user_id: string;
+  display_name: string;
+  email: string | null;
+  role: ProfileRole;
+  is_active: boolean;
+  created_at: string;
+  team_id: string | null;
+  team_name: string | null;
+};
+
+type AuditEntryRow = {
+  id: number;
+  created_at: string;
+  user_id: string | null;
+  display_name: string | null;
+  action: string;
+  entity: string | null;
+  entity_id: string | null;
+  payload: Json | null;
 };
 
 type LeagueSettingRow = {
@@ -180,6 +216,7 @@ export type Database = {
       session_free_agents: ReadOnlyTable<SessionFreeAgentRow>;
       transactions: ReadOnlyTable<TransactionRow>;
       audit_log: ReadOnlyTable<AuditLogRow>;
+      notifications: ReadOnlyTable<NotificationRow>;
     };
     Views: {
       free_agents: { Row: PlayerRow; Relationships: [] };
@@ -271,8 +308,21 @@ export type Database = {
         Returns: string;
       };
       reverse_transaction: { Args: { p_tx_id: string; p_reason: string }; Returns: string };
-      consume_rate_limit: {
-        Args: { p_bucket: string; p_max: number; p_window_seconds: number };
+      consume_rate_limit: { Args: { p_bucket: RateLimitBucket }; Returns: undefined };
+      admin_list_users: { Args: Record<string, never>; Returns: AdminUserRow[] };
+      admin_notification_recipients: {
+        Args: Record<string, never>;
+        Returns: { email: string; display_name: string }[];
+      };
+      admin_audit_log: { Args: { p_limit?: number }; Returns: AuditEntryRow[] };
+      log_notification: {
+        Args: {
+          p_kind: string;
+          p_subject: string;
+          p_recipients: number;
+          p_status: NotificationStatus;
+          p_detail: string | null;
+        };
         Returns: undefined;
       };
     };
@@ -291,3 +341,6 @@ export type Import = Tables<"imports">;
 export type MarketSession = Tables<"market_sessions">;
 export type RosterPlayer = Tables<"roster_players">;
 export type Transaction = Tables<"transactions">;
+export type Notification = Tables<"notifications">;
+export type AdminUser = AdminUserRow;
+export type AuditEntry = AuditEntryRow;

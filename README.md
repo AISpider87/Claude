@@ -28,17 +28,24 @@ http://localhost:54324 (Inbucket).
 
 ## Comandi
 
-| Comando             | Cosa fa                                      |
-| ------------------- | -------------------------------------------- |
-| `npm run dev`       | server di sviluppo                           |
-| `npm run build`     | build di produzione                          |
-| `npm run lint`      | ESLint                                       |
-| `npm run typecheck` | TypeScript strict                            |
-| `npm run test`      | test unitari (Vitest)                        |
-| `npm run test:e2e`  | test end-to-end (Playwright, desktop+mobile) |
-| `npm run format`    | Prettier                                     |
+| Comando             | Cosa fa                                                   |
+| ------------------- | --------------------------------------------------------- |
+| `npm run dev`       | server di sviluppo                                        |
+| `npm run build`     | build di produzione                                       |
+| `npm run lint`      | ESLint                                                    |
+| `npm run typecheck` | TypeScript strict                                         |
+| `npm run test`      | test unitari (Vitest)                                     |
+| `npm run test:e2e`  | test end-to-end (Playwright, desktop+mobile)              |
+| `npm run format`    | Prettier                                                  |
+| `npm run test:db`   | test SQL su PostgreSQL locale (migrazioni, RLS, funzioni) |
 
 CI (GitHub Actions) esegue lint, typecheck, format check, unit test, build ed e2e.
+
+## Email di lega
+
+Apertura e chiusura delle sessioni inviano un'email a tutti i membri attivi via
+Resend (`RESEND_API_KEY`, `EMAIL_FROM`). Senza chiave le notifiche vengono
+saltate e registrate in Admin → Impostazioni. Sync quotazioni: `docs/SYNC.md`.
 
 ## Deploy
 

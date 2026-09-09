@@ -95,6 +95,20 @@ export function buildRostersPreview(
       if (match.player) roleCounts[match.player.role_classic]++;
       return { ...entry, status: match.status, player: match.player, candidates: match.candidates };
     });
+    // Two rows resolved to the same player (typically a manual resolution) would
+    // violate the roster uniqueness rule at apply time: flag the second one.
+    const seen = new Set<number>();
+    for (const e of entries) {
+      if (!e.player) continue;
+      if (seen.has(e.player.id)) {
+        roleCounts[e.player.role_classic]--;
+        e.status = "duplicate";
+        e.player = null;
+        e.candidates = [];
+      } else {
+        seen.add(e.player.id);
+      }
+    }
     const unresolvedCount = entries.filter((e) => !e.player).length;
     const compositionOk =
       unresolvedCount === 0 &&

@@ -142,3 +142,36 @@ richiedono l'ok dell'admin; le altre si annotano e si va avanti.
 - 2026-09-09 · **Seed del listone generato dalla fixture reale**
   (`scripts/generate-players-seed.mjs` → `supabase/seed/players.sql`), solo per
   sviluppo locale. · Dati realistici senza scrivere 600 righe a mano.
+- 2026-09-09 · **Limiti di rate definiti nel database, non dal chiamante**:
+  `consume_rate_limit(bucket)` conosce i bucket (`market` 10/min, `import`
+  10/10 min, `export` 10/10 min, `email` 5/ora, `admin` 60/min) e rifiuta quelli
+  sconosciuti; prima un manager poteva passare i propri limiti via RPC diretta.
+  · Finding QA M3/M4.
+- 2026-09-09 · **Niente modifiche admin alle rose a sessione aperta**
+  (`admin_assign_player`, `admin_remove_player`, `apply_rosters_import` →
+  `SESSION_OPEN`): bypasserebbero la foto svincolati e il registro; durante la
+  sessione si corregge solo con gli annullamenti. · Finding QA M3/M4.
+- 2026-09-09 · **`admin_set_setting` valida per chiave** (interi, composizione
+  {P,D,C,A}, regole ammesse, codice lega 4–64 normalizzato in maiuscolo, chiavi
+  sconosciute rifiutate); `teams.short_name` unico; le date `datetime-local`
+  impossibili (30 febbraio, ore 24) vengono rifiutate invece di scivolare al
+  giorno dopo. · Finding QA M3/M4.
+- 2026-09-09 · **Email degli utenti copiate in `profiles.email`** dal trigger di
+  signup e lette solo dagli admin tramite grant di colonna + funzioni
+  `admin_list_users` / `admin_notification_recipients`; i manager vedono
+  l'elenco nomi senza indirizzi. · Serve per il pannello utenti e le email di
+  lega senza esporre `auth.users`.
+- 2026-09-09 · **Email via API Resend con `fetch`** (niente SDK), endpoint batch
+  con un destinatario per messaggio (nessuno vede gli altri indirizzi), mittente
+  da `EMAIL_FROM`; esito in `notifications` (inviata/saltata/fallita) visibile in
+  Admin → Impostazioni. Un errore di invio **non annulla mai** l'apertura o la
+  chiusura della sessione (già committata). Senza `RESEND_API_KEY` le email
+  vengono saltate e registrate. · Brief §3.8, vincolo 0 €.
+- 2026-09-09 · **Export Excel come route handler** (`/api/admin/export/{rose,
+listone,operazioni}`) con exceljs, letture paginate (`fetchAll`) sotto la
+  sessione RLS dell'admin, bucket di rate limit `export`; il listone esportato
+  usa le stesse intestazioni del file ufficiale (rientra nel parser). · Brief
+  §3.7 e backup.
+- 2026-09-09 · **Anteprima rose: due righe risolte sullo stesso calciatore** →
+  stato `duplicate` (bloccante) invece di un errore 23505 alla conferma.
+  · Finding QA M3/M4.

@@ -22,6 +22,25 @@ describe("zonedLocalToUtc (Europe/Rome)", () => {
     expect(zonedLocalToUtc("")).toBeNull();
   });
 
+  it("rejects impossible calendar dates instead of rolling them over", () => {
+    expect(zonedLocalToUtc("2026-02-30T10:00")).toBeNull();
+    expect(zonedLocalToUtc("2026-13-01T10:00")).toBeNull();
+    expect(zonedLocalToUtc("2026-04-31T10:00")).toBeNull();
+    expect(zonedLocalToUtc("2026-09-06T24:00")).toBeNull();
+    expect(zonedLocalToUtc("2026-09-06T20:60")).toBeNull();
+    expect(zonedLocalToUtc("0099-09-06T20:00")).toBeNull();
+    expect(zonedLocalToUtc("2028-02-29T10:00")).not.toBeNull();
+  });
+
+  it("maps the DST gap and overlap deterministically", () => {
+    // 02:30 on 2026-03-29 does not exist in Rome: it resolves to a real instant, never null.
+    const gap = zonedLocalToUtc("2026-03-29T02:30");
+    expect(gap).not.toBeNull();
+    expect(["2026-03-29T00:30:00.000Z", "2026-03-29T01:30:00.000Z"]).toContain(gap!.toISOString());
+    // 02:30 on 2026-10-25 happens twice: the later (CET) instant is used.
+    expect(zonedLocalToUtc("2026-10-25T02:30")?.toISOString()).toBe("2026-10-25T01:30:00.000Z");
+  });
+
   it("round-trips with utcToZonedLocal", () => {
     const local = "2027-02-07T20:00";
     expect(utcToZonedLocal(zonedLocalToUtc(local)!)).toBe(local);

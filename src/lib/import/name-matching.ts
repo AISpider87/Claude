@@ -9,7 +9,7 @@ export interface ListonePlayer {
   status: "active" | "out_of_list";
 }
 
-export type MatchStatus = "matched" | "not_found" | "ambiguous";
+export type MatchStatus = "matched" | "not_found" | "ambiguous" | "duplicate";
 
 export interface NameMatch {
   query: string;

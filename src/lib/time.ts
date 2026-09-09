@@ -35,14 +35,23 @@ export function zonedLocalToUtc(local: string, timeZone = LEAGUE_TIME_ZONE): Dat
   const m = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?$/.exec(local.trim());
   if (!m) return null;
   const [, y, mo, d, h, mi, s] = m;
-  const naive = Date.UTC(
-    Number(y),
-    Number(mo) - 1,
-    Number(d),
-    Number(h),
-    Number(mi),
-    Number(s ?? 0),
-  );
+  const parts = [Number(y), Number(mo) - 1, Number(d), Number(h), Number(mi), Number(s ?? 0)];
+  const naive = Date.UTC(parts[0]!, parts[1]!, parts[2]!, parts[3]!, parts[4]!, parts[5]!);
+  // Date.UTC rolls impossible values over (30 Feb → 2 Mar, month 13 → January);
+  // a valid date reads back unchanged.
+  const check = new Date(naive);
+  if (
+    parts[0]! < 2000 ||
+    parts[0]! > 2100 ||
+    check.getUTCFullYear() !== parts[0] ||
+    check.getUTCMonth() !== parts[1] ||
+    check.getUTCDate() !== parts[2] ||
+    check.getUTCHours() !== parts[3] ||
+    check.getUTCMinutes() !== parts[4] ||
+    check.getUTCSeconds() !== parts[5]
+  ) {
+    return null;
+  }
   let guess = naive - offsetAt(new Date(naive), timeZone);
   guess = naive - offsetAt(new Date(guess), timeZone);
   const result = new Date(guess);

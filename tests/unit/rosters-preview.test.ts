@@ -94,3 +94,47 @@ describe("buildRostersPreview — unresolved entries and manual resolutions", ()
     expect(toRostersPayload(preview).teams[0]?.players.map((p) => p.player_id)).toEqual([1, 2, 3]);
   });
 });
+
+describe("buildRostersPreview — duplicate resolutions inside one team", () => {
+  const listone: ListonePlayer[] = [
+    { id: 1, name: "Uno", team: "Roma", role_classic: "P", qt_a: 1, status: "active" },
+    { id: 2, name: "Due", team: "Roma", role_classic: "P", qt_a: 1, status: "active" },
+  ];
+  const parsed = {
+    sheet: "ROSE",
+    anomalies: [],
+    teams: [
+      {
+        name: "Alpha",
+        headerRow: 1,
+        column: 1,
+        declaredTotal: 9,
+        total: 9,
+        entries: [
+          { name: "Uno", cost: 5, outOfList: false, row: 2 },
+          { name: "Sconosciuto", cost: 4, outOfList: false, row: 3 },
+        ],
+      },
+    ],
+  };
+
+  it("flags the second row resolved to an already-present player and is not ready", () => {
+    const preview = buildRostersPreview(parsed, listone, [], {
+      composition: { P: 2, D: 0, C: 0, A: 0 },
+      resolutions: { [resolutionKey("Alpha", 3)]: 1 },
+    });
+    const [alpha] = preview.teams;
+    expect(alpha?.entries.map((e) => e.status)).toEqual(["matched", "duplicate"]);
+    expect(alpha?.roleCounts).toEqual({ P: 1, D: 0, C: 0, A: 0 });
+    expect(preview.unresolved).toBe(1);
+    expect(preview.ready).toBe(false);
+  });
+
+  it("accepts the same rows once resolved to a different player", () => {
+    const preview = buildRostersPreview(parsed, listone, [], {
+      composition: { P: 2, D: 0, C: 0, A: 0 },
+      resolutions: { [resolutionKey("Alpha", 3)]: 2 },
+    });
+    expect(preview.ready).toBe(true);
+  });
+});

@@ -190,7 +190,9 @@ export default async function RostersImportPreviewPage({
                                 </select>
                               ) : (
                                 <span className="inline-flex flex-wrap items-center gap-2">
-                                  <Badge variant="danger">non trovato</Badge>
+                                  <Badge variant="danger">
+                                    {e.status === "duplicate" ? "già in rosa" : "non trovato"}
+                                  </Badge>
                                   <input
                                     name={`res:${key}`}
                                     type="number"

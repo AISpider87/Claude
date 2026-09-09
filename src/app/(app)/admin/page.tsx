@@ -1,5 +1,14 @@
 import Link from "next/link";
-import { ArrowRight, List, Repeat, ScrollText, Settings, Users } from "lucide-react";
+import {
+  ArrowRight,
+  History,
+  List,
+  Repeat,
+  ScrollText,
+  Settings,
+  UserCog,
+  Users,
+} from "lucide-react";
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { requireAdmin } from "@/lib/auth/dal";
@@ -36,11 +45,25 @@ const SECTIONS = [
     ready: true,
   },
   {
+    href: "/admin/utenti",
+    icon: UserCog,
+    title: "Utenti",
+    description: "Iscritti, ruoli admin/manager, disattivazione account.",
+    ready: true,
+  },
+  {
     href: "/admin/impostazioni",
     icon: Settings,
     title: "Impostazioni lega",
-    description: "Codice lega, budget, limiti, utenti e log.",
-    ready: false,
+    description: "Codice lega, budget e limiti, email, export Excel.",
+    ready: true,
+  },
+  {
+    href: "/admin/audit",
+    icon: History,
+    title: "Audit log",
+    description: "Chi ha fatto cosa e quando, comprese le azioni degli admin.",
+    ready: true,
   },
 ];
 

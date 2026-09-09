@@ -31,11 +31,7 @@ export async function previewRostersImport(
   await requireAdmin();
   {
     const supabase = await createClient();
-    const { error } = await supabase.rpc("consume_rate_limit", {
-      p_bucket: "import",
-      p_max: 5,
-      p_window_seconds: 600,
-    });
+    const { error } = await supabase.rpc("consume_rate_limit", { p_bucket: "import" });
     if (error)
       return {
         status: "error",

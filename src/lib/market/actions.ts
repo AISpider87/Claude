@@ -5,7 +5,9 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireAdmin, requireUser } from "@/lib/auth/dal";
 import type { FormState } from "@/lib/auth/schemas";
+import { notifySessionClosed, notifySessionOpened } from "@/lib/email/notify";
 import { createClient } from "@/lib/supabase/server";
+import type { RateLimitBucket } from "@/lib/supabase/database.types";
 import { zonedLocalToUtc } from "@/lib/time";
 
 function fieldErrors(error: z.ZodError) {
@@ -57,21 +59,17 @@ const swapSchema = z.object({
   playerIn: z.coerce.number().int().positive({ error: "Scegli il calciatore che entra." }),
 });
 
-/** Per-user throttle on attempts (the DB also throttles committed operations per team). */
-async function throttle(bucket: string, max: number, windowSeconds: number) {
+/** Per-user throttle on attempts; limits per bucket live in the database. */
+async function throttle(bucket: RateLimitBucket) {
   const supabase = await createClient();
-  const { error } = await supabase.rpc("consume_rate_limit", {
-    p_bucket: bucket,
-    p_max: max,
-    p_window_seconds: windowSeconds,
-  });
+  const { error } = await supabase.rpc("consume_rate_limit", { p_bucket: bucket });
   return error ? marketMessage(error.message, "Troppe richieste, riprova tra poco.") : null;
 }
 
 /** Manager: swap during an open session. */
 export async function swapPlayer(_prev: FormState, formData: FormData): Promise<FormState> {
   await requireUser();
-  const limited = await throttle("market", 10, 60);
+  const limited = await throttle("market");
   if (limited) return { status: "error", message: limited };
   const parsed = swapSchema.safeParse({
     teamId: formData.get("teamId"),
@@ -98,7 +96,7 @@ export async function swapPlayer(_prev: FormState, formData: FormData): Promise<
 /** Manager: free swap for a player who left Serie A. */
 export async function freeSwapPlayer(_prev: FormState, formData: FormData): Promise<FormState> {
   await requireUser();
-  const limited = await throttle("market", 10, 60);
+  const limited = await throttle("market");
   if (limited) return { status: "error", message: limited };
   const parsed = swapSchema.safeParse({
     teamId: formData.get("teamId"),
@@ -186,6 +184,7 @@ export async function openSession(_prev: FormState, formData: FormData): Promise
   const { error } = await supabase.rpc("open_market_session", { p_id: parsed.data.id });
   if (error)
     return { status: "error", message: marketMessage(error.message, "Apertura non riuscita.") };
+  await notifySessionOpened(parsed.data.id);
   revalidatePath("/admin/sessioni");
   revalidatePath("/mercato");
   revalidatePath("/rosa");
@@ -203,6 +202,7 @@ export async function closeSession(_prev: FormState, formData: FormData): Promis
   const { error } = await supabase.rpc("close_market_session", { p_id: parsed.data.id });
   if (error)
     return { status: "error", message: marketMessage(error.message, "Chiusura non riuscita.") };
+  await notifySessionClosed(parsed.data.id);
   revalidatePath("/admin/sessioni");
   revalidatePath("/mercato");
   redirect(`/admin/sessioni/${parsed.data.id}`);
