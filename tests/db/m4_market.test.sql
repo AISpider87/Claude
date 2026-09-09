@@ -148,8 +148,15 @@ begin
   end;
   perform auth.test_logout();
 
-  -- #9 free swap only for out-of-list players; #6 free swap also respects credits
+  -- an out-of-list player cannot be sold through a normal swap
   perform auth.test_login(v_mario, 'authenticated');
+  begin
+    perform public.swap_player(v_a, 7, 5);
+    raise exception 'out-of-list sold via normal swap';
+  exception when invalid_parameter_value then null;
+  end;
+
+  -- #9 free swap only for out-of-list players; #6 free swap also respects credits
   begin
     perform public.free_swap_player(v_a, 6, 5);  -- Att3 is active
     raise exception 'free swap on active player accepted';
@@ -276,6 +283,32 @@ begin
     insert into public.session_free_agents values (v_s1, 1);
     raise exception 'manager wrote snapshot';
   exception when insufficient_privilege then null;
+  end;
+
+  -- per-user attempt limiter: 3 allowed, the 4th within the window is refused
+  perform public.consume_rate_limit('test', 3, 60);
+  perform public.consume_rate_limit('test', 3, 60);
+  perform public.consume_rate_limit('test', 3, 60);
+  begin
+    perform public.consume_rate_limit('test', 3, 60);
+    raise exception 'rate limit not enforced';
+  exception when program_limit_exceeded then null;
+  end;
+  perform auth.test_logout();
+
+  -- per-team committed-operation throttle (market_ops_per_minute): with the limit at 1,
+  -- the second swap in the same minute is refused
+  perform auth.test_login(v_admin, 'authenticated');
+  perform public.admin_set_setting('market_ops_per_minute', '3');  -- Alpha already has 2 committed swaps this minute
+  v_s1 := public.admin_create_session('Sessione throttle', now(), now() + interval '1 day', 0);
+  perform public.open_market_session(v_s1);
+  perform auth.test_logout();
+  perform auth.test_login(v_mario, 'authenticated');
+  perform public.swap_player(v_a, 1, 2);
+  begin
+    perform public.swap_player(v_a, 2, 1);
+    raise exception 'market throttle not enforced';
+  exception when program_limit_exceeded then null;
   end;
   perform auth.test_logout();
 end $$;

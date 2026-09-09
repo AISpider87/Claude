@@ -29,6 +29,19 @@ export async function previewRostersImport(
   formData: FormData,
 ): Promise<FormState> {
   await requireAdmin();
+  {
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("consume_rate_limit", {
+      p_bucket: "import",
+      p_max: 5,
+      p_window_seconds: 600,
+    });
+    if (error)
+      return {
+        status: "error",
+        message: "Troppi import in poco tempo: riprova tra qualche minuto.",
+      };
+  }
 
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
@@ -128,10 +141,9 @@ function readResolutions(formData: FormData): ManualResolutions {
 /** Step 2: apply with the admin's manual resolutions. */
 export async function applyRostersImport(_prev: FormState, formData: FormData): Promise<FormState> {
   await requireAdmin();
-  const importId = formData.get("importId");
-  if (typeof importId !== "string" || !importId) {
-    return { status: "error", message: "Import non valido." };
-  }
+  const parsedId = z.uuid().safeParse(formData.get("importId"));
+  if (!parsedId.success) return { status: "error", message: "Import non valido." };
+  const importId = parsedId.data;
   const resolutions = readResolutions(formData);
   const loaded = await loadRostersPreview(importId, resolutions);
   if (!loaded?.preview) return { status: "error", message: "Import non trovato o già applicato." };
@@ -164,7 +176,10 @@ export async function applyRostersImport(_prev: FormState, formData: FormData): 
 
   const { error } = await supabase.rpc("apply_rosters_import", { p_import_id: frozenId });
   if (error) {
-    await supabase.rpc("fail_import", { p_import_id: frozenId, p_error: error.message });
+    await supabase.rpc("fail_import", {
+      p_import_id: frozenId,
+      p_error: rostersErrorMessage(error.message),
+    });
     return { status: "error", message: rostersErrorMessage(error.message) };
   }
   await supabase.rpc("fail_import", {
@@ -187,10 +202,13 @@ function rostersErrorMessage(message: string) {
 
 export async function discardRostersImport(formData: FormData) {
   await requireAdmin();
-  const importId = formData.get("importId");
-  if (typeof importId === "string" && importId) {
+  const parsedId = z.uuid().safeParse(formData.get("importId"));
+  if (parsedId.success) {
     const supabase = await createClient();
-    await supabase.rpc("fail_import", { p_import_id: importId, p_error: "Annullato dall'admin" });
+    await supabase.rpc("fail_import", {
+      p_import_id: parsedId.data,
+      p_error: "Annullato dall'admin",
+    });
     revalidatePath("/admin/squadre");
   }
   redirect("/admin/squadre");

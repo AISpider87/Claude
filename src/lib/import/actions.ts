@@ -23,6 +23,19 @@ export async function previewQuotationsImport(
   formData: FormData,
 ): Promise<FormState> {
   await requireAdmin();
+  {
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("consume_rate_limit", {
+      p_bucket: "import",
+      p_max: 5,
+      p_window_seconds: 600,
+    });
+    if (error)
+      return {
+        status: "error",
+        message: "Troppi import in poco tempo: riprova tra qualche minuto.",
+      };
+  }
 
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {

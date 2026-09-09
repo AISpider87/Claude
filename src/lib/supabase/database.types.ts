@@ -271,6 +271,10 @@ export type Database = {
         Returns: string;
       };
       reverse_transaction: { Args: { p_tx_id: string; p_reason: string }; Returns: string };
+      consume_rate_limit: {
+        Args: { p_bucket: string; p_max: number; p_window_seconds: number };
+        Returns: undefined;
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

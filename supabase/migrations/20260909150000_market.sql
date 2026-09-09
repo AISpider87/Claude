@@ -29,6 +29,7 @@ as $$
   where s.status = 'open' and now() < s.closes_at
   limit 1;
 $$;
+revoke all on function public.current_market_session() from public;
 grant execute on function public.current_market_session() to authenticated;
 
 create or replace function private.price_for(p_rule text, p_qt_a integer, p_paid integer)
@@ -38,6 +39,67 @@ as $$
   select case when p_rule = 'price_paid' then p_paid else p_qt_a end;
 $$;
 revoke all on function private.price_for(text, integer, integer) from public;
+
+-- ---------------------------------------------------------------------------
+-- rate limiting (no external service: the database is the only shared state)
+-- ---------------------------------------------------------------------------
+insert into public.league_settings (key, value) values ('market_ops_per_minute', '5')
+on conflict (key) do nothing;
+
+create table private.rate_limits (
+  user_id uuid not null,
+  bucket text not null,
+  window_start timestamptz not null default now(),
+  hits integer not null default 0,
+  primary key (user_id, bucket)
+);
+revoke all on private.rate_limits from public;
+
+-- Fixed-window counter per user and bucket. Raises RATE_LIMITED past p_max hits.
+create or replace function public.consume_rate_limit(p_bucket text, p_max integer, p_window_seconds integer)
+returns void
+language plpgsql security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_hits integer;
+begin
+  if auth.uid() is null then
+    raise exception 'UNAUTHENTICATED' using errcode = '42501';
+  end if;
+  insert into private.rate_limits (user_id, bucket, window_start, hits)
+  values (auth.uid(), p_bucket, now(), 1)
+  on conflict (user_id, bucket) do update
+  set hits = case when private.rate_limits.window_start < now() - make_interval(secs => p_window_seconds)
+                  then 1 else private.rate_limits.hits + 1 end,
+      window_start = case when private.rate_limits.window_start < now() - make_interval(secs => p_window_seconds)
+                          then now() else private.rate_limits.window_start end
+  returning hits into v_hits;
+  if v_hits > p_max then
+    raise exception 'RATE_LIMITED' using errcode = '54000';
+  end if;
+end;
+$$;
+revoke all on function public.consume_rate_limit(text, integer, integer) from public;
+grant execute on function public.consume_rate_limit(text, integer, integer) to authenticated;
+
+-- Committed market operations per team in the last minute (unbypassable throttle).
+create or replace function private.check_market_throttle(p_team_id uuid)
+returns void
+language plpgsql
+set search_path = public, pg_temp
+as $$
+declare
+  v_max integer := private.setting_int('market_ops_per_minute', 5);
+begin
+  if (select count(*) from public.transactions
+      where team_id = p_team_id and kind in ('swap', 'free_swap')
+        and created_at > now() - interval '1 minute') >= v_max then
+    raise exception 'RATE_LIMITED' using errcode = '54000';
+  end if;
+end;
+$$;
+revoke all on function private.check_market_throttle(uuid) from public;
 
 -- ---------------------------------------------------------------------------
 -- sessions (admin)
@@ -178,6 +240,7 @@ declare
   v_target integer := (v_comp ->> 'P')::int + (v_comp ->> 'D')::int + (v_comp ->> 'C')::int + (v_comp ->> 'A')::int;
   v_report jsonb;
 begin
+  perform private.require_admin();
   select coalesce(jsonb_agg(jsonb_build_object(
     'team_id', t.id, 'team', t.name, 'credits', t.credits, 'swaps_used', t.swaps_used,
     'count', s.cnt, 'by_role', s.by_role, 'out_of_list', s.ool,
@@ -271,8 +334,13 @@ begin
   if not found then
     raise exception 'TEAM_NOT_FOUND' using errcode = 'P0002';
   end if;
+  perform private.check_market_throttle(p_team_id);
 
-  v_session := public.current_market_session();
+  -- shared lock: a concurrent close_market_session (for update) waits for us,
+  -- and swaps started after the close see the new status
+  select s.* into v_session from public.market_sessions s
+  where s.status = 'open' and now() < s.closes_at
+  limit 1 for share;
   if v_session.id is null then
     raise exception 'SESSION_NOT_OPEN' using errcode = '55000';
   end if;
@@ -284,6 +352,9 @@ begin
     raise exception 'NOT_IN_ROSTER' using errcode = 'P0002';
   end if;
   select * into v_out from public.players where id = p_player_out;
+  if v_out.status <> 'active' then
+    raise exception 'USE_FREE_SWAP' using errcode = '22023';
+  end if;
   select * into v_in from public.players where id = p_player_in;
   if v_in.id is null or v_in.status <> 'active' then
     raise exception 'PLAYER_NOT_AVAILABLE' using errcode = 'P0002';
@@ -365,7 +436,9 @@ begin
   if v_out.status <> 'out_of_list' then
     raise exception 'NOT_OUT_OF_LIST' using errcode = '22023';
   end if;
-  select * into v_in from public.players where id = p_player_in;
+  perform private.check_market_throttle(p_team_id);
+  -- lock the incoming player: "free right now" must be exclusive between concurrent free swaps
+  select * into v_in from public.players where id = p_player_in for update;
   if v_in.id is null or v_in.status <> 'active' then
     raise exception 'PLAYER_NOT_AVAILABLE' using errcode = 'P0002';
   end if;
@@ -425,13 +498,13 @@ begin
   if not found then
     raise exception 'TX_NOT_FOUND' using errcode = 'P0002';
   end if;
+  select * into v_team from public.teams where id = v_tx.team_id for update;
   if v_tx.kind = 'reversal' then
     raise exception 'CANNOT_REVERSE_REVERSAL' using errcode = '55000';
   end if;
   if exists (select 1 from public.transactions where reversal_of = p_tx_id) then
     raise exception 'ALREADY_REVERSED' using errcode = '55000';
   end if;
-  select * into v_team from public.teams where id = v_tx.team_id for update;
 
   if v_team.credits - v_tx.credits_delta < 0 then
     raise exception 'INSUFFICIENT_CREDITS' using errcode = '23514';
@@ -451,7 +524,8 @@ begin
       raise exception 'OUT_PLAYER_ALREADY_IN_ROSTER' using errcode = '55000';
     end if;
     select price_paid into v_paid from public.roster_players
-    where team_id = v_tx.team_id and player_id = v_tx.player_out_id and released_at is not null
+    where team_id = v_tx.team_id and player_id = v_tx.player_out_id
+      and released_at is not null and released_at <= v_tx.created_at
     order by released_at desc limit 1;
     insert into public.roster_players (team_id, player_id, price_paid, acquired_via)
     values (v_tx.team_id, v_tx.player_out_id, coalesce(v_paid, v_tx.player_out_price, 0), 'reversal');

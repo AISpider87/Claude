@@ -76,6 +76,7 @@ run("market concurrency", () => {
       await setup.query("select public.admin_set_team_credits($1, 20, 'cc')", [teamA]);
       await setup.query("select public.admin_set_team_credits($1, 20, 'cc')", [teamB]);
       await setup.query("select public.admin_set_setting('season_swap_limit', '1')");
+      await setup.query("select public.admin_set_setting('market_ops_per_minute', '50')");
       const s = await setup.query(
         "select public.admin_create_session('CC', now(), now() + interval '1 day', 0) as id",
       );
@@ -120,6 +121,33 @@ run("market concurrency", () => {
       [teamA],
     );
     expect(active.rows[0].n).toBe(2);
+  });
+
+  it("parallel free swaps for the same free agent: exactly one passes (exclusive 'free now')", async () => {
+    // Make Att4 (8) out of list in both rosters, then both teams try to free-swap it for Att3 (7).
+    await asUser(setup, admin.id, async () => {
+      await setup.query("select public.admin_set_setting('season_swap_limit', '5')");
+      await setup.query("select public.admin_set_setting('market_ops_per_minute', '50')");
+      await setup.query("select public.admin_assign_player($1, 8, 0)", [teamA]);
+      await setup.query("select public.admin_assign_player($1, 8, 0)", [teamB]);
+      await setup.query("select public.admin_set_team_credits($1, 100, 'cc')", [teamA]);
+      await setup.query("select public.admin_set_team_credits($1, 100, 'cc')", [teamB]);
+    });
+    await setup.query(
+      "update public.players set status = 'out_of_list', out_of_list_at = now() where id = 8",
+    );
+    const [c1, c2] = await Promise.all([connect(), connect()]);
+    const results = await Promise.allSettled([
+      asUser(c1, mario.id, () => c1.query("select public.free_swap_player($1, 8, 7)", [teamA])),
+      asUser(c2, luca.id, () => c2.query("select public.free_swap_player($1, 8, 7)", [teamB])),
+    ]);
+    await Promise.all([c1.end(), c2.end()]);
+    const ok = results.filter((r) => r.status === "fulfilled").length;
+    expect(ok).toBe(1);
+    const owners = await setup.query(
+      "select count(*)::int as n from public.roster_players where player_id = 7 and released_at is null",
+    );
+    expect(owners.rows[0].n).toBe(1);
   });
 
   it("parallel purchases of the same free agent by two teams both succeed", async () => {

@@ -10,6 +10,7 @@ alter table public.transactions add constraint transactions_kind_check
 create or replace function private.require_admin()
 returns void
 language plpgsql stable
+set search_path = public, pg_temp
 as $$
 begin
   if not private.is_admin() then
@@ -23,6 +24,7 @@ revoke all on function private.require_admin() from public;
 create or replace function private.make_short_name(p_name text)
 returns text
 language plpgsql stable
+set search_path = public, pg_temp
 as $$
 declare
   v_base text;
@@ -365,4 +367,5 @@ as $$
   join public.players p on p.id = r.player_id
   where r.team_id = p_team_id and r.released_at is null;
 $$;
+revoke all on function public.team_roster_summary(uuid) from public;
 grant execute on function public.team_roster_summary(uuid) to authenticated;

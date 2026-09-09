@@ -126,6 +126,19 @@ richiedono l'ok dell'admin; le altre si annotano e si va avanti.
   "Esegui ora" nell'admin usa lo stesso orchestratore con la sessione dell'admin.
 - 2026-09-09 · **Grafico dello storico quotazioni in SVG server-side** (nessuna
   libreria): 10–40 punti per stagione non giustificano una dipendenza. · Lighthouse.
+- 2026-09-09 · **Rate limiting senza servizi esterni, a due livelli**: (1) nel DB,
+  `check_market_throttle` rifiuta più di `market_ops_per_minute` (5) cambi
+  committati per squadra al minuto — non aggirabile via API; (2)
+  `consume_rate_limit(bucket, max, finestra)` (tabella `private.rate_limits`,
+  finestra fissa per utente) chiamata dalle server action: 10 tentativi/min per
+  il mercato, 5 import/10 min. Login e registrazione restano sui limiti di
+  Supabase Auth. · Security review M3/M4; vincolo 0 € (niente Upstash/WAF).
+- 2026-09-09 · **Lock di sessione e di giocatore nei cambi**: `swap_player`
+  prende un lock condiviso sulla sessione aperta (la chiusura, che la blocca in
+  scrittura, aspetta i cambi in corso e i cambi successivi vedono lo stato
+  nuovo); `free_swap_player` blocca la riga del giocatore entrante, così due
+  cambi gratuiti paralleli sullo stesso svincolato non passano entrambi
+  (testato). Un fuori lista non si vende con un cambio normale (`USE_FREE_SWAP`).
 - 2026-09-09 · **Seed del listone generato dalla fixture reale**
   (`scripts/generate-players-seed.mjs` → `supabase/seed/players.sql`), solo per
   sviluppo locale. · Dati realistici senza scrivere 600 righe a mano.

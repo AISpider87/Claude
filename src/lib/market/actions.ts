@@ -23,6 +23,8 @@ const MARKET_MESSAGES: Record<string, string> = {
   INSUFFICIENT_CREDITS: "Crediti insufficienti per questo cambio.",
   NOT_OUT_OF_LIST: "Il cambio gratuito vale solo per chi è uscito dalla Serie A.",
   SAME_PLAYER: "Scegli due calciatori diversi.",
+  USE_FREE_SWAP: "Questo calciatore è uscito dalla Serie A: usa il cambio gratuito.",
+  RATE_LIMITED: "Troppe operazioni in poco tempo: aspetta un minuto e riprova.",
   FORBIDDEN: "Non puoi operare su questa squadra.",
   TEAM_NOT_FOUND: "Squadra non trovata.",
   SESSION_NOT_FOUND: "Sessione non trovata.",
@@ -55,9 +57,22 @@ const swapSchema = z.object({
   playerIn: z.coerce.number().int().positive({ error: "Scegli il calciatore che entra." }),
 });
 
+/** Per-user throttle on attempts (the DB also throttles committed operations per team). */
+async function throttle(bucket: string, max: number, windowSeconds: number) {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("consume_rate_limit", {
+    p_bucket: bucket,
+    p_max: max,
+    p_window_seconds: windowSeconds,
+  });
+  return error ? marketMessage(error.message, "Troppe richieste, riprova tra poco.") : null;
+}
+
 /** Manager: swap during an open session. */
 export async function swapPlayer(_prev: FormState, formData: FormData): Promise<FormState> {
   await requireUser();
+  const limited = await throttle("market", 10, 60);
+  if (limited) return { status: "error", message: limited };
   const parsed = swapSchema.safeParse({
     teamId: formData.get("teamId"),
     playerOut: formData.get("playerOut"),
@@ -83,6 +98,8 @@ export async function swapPlayer(_prev: FormState, formData: FormData): Promise<
 /** Manager: free swap for a player who left Serie A. */
 export async function freeSwapPlayer(_prev: FormState, formData: FormData): Promise<FormState> {
   await requireUser();
+  const limited = await throttle("market", 10, 60);
+  if (limited) return { status: "error", message: limited };
   const parsed = swapSchema.safeParse({
     teamId: formData.get("teamId"),
     playerOut: formData.get("playerOut"),
