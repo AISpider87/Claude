@@ -15,7 +15,14 @@ Tutte le chiavi vanno **solo** nelle impostazioni di Vercel/Supabase, mai nel re
 
 1. Crea un account su supabase.com → **New project**: nome `superlega`,
    regione **EU (Frankfurt)**, piano Free. Salva la **password del database**.
-2. Dal repository, collega e applica le migrazioni:
+2. Applica lo schema del database. **Opzione A — senza terminale (consigliata)**:
+   apri su GitHub il file `supabase/deploy/schema.sql` (branch del progetto),
+   premi **Raw**, seleziona tutto (⌘A) e copia (⌘C). Nella dashboard Supabase
+   vai su **SQL Editor → New query**, incolla e premi **Run** (in basso a
+   destra; ci vogliono pochi secondi). Deve finire con "Success. No rows
+   returned". Eseguilo **una sola volta**. Il file è generato dalle migrazioni
+   con `scripts/build-deploy-sql.sh`.
+   **Opzione B — con la Supabase CLI** (per chi ha Node installato):
    ```bash
    supabase login
    supabase link --project-ref <ref-del-progetto>
