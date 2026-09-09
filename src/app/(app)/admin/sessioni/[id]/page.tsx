@@ -79,7 +79,7 @@ export default async function AdminSessionPage({ params }: { params: Promise<{ i
             <CardHeader>
               <CardTitle className="text-base">Dati sessione</CardTitle>
               <CardDescription>
-                Orari in ora italiana. A sessione aperta si possono solo spostare le date.
+                Orari in ora italiana. A sessione aperta si possono cambiare solo nome e date.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -116,7 +116,7 @@ export default async function AdminSessionPage({ params }: { params: Promise<{ i
                 )}
               </CardTitle>
               <CardDescription>
-                Composizione 3/7/7/6, nessun fuori lista, crediti ≥ 0.
+                Rosa completa secondo la composizione della lega e nessun fuori lista.
               </CardDescription>
             </CardHeader>
             <CardContent>

@@ -156,7 +156,7 @@ export default async function MercatoPage({
                 refundRule={settings.freeSwapRule}
                 action={freeSwapPlayer}
                 title="Cambio gratuito"
-                description="Un tuo calciatore è uscito dalla Serie A: puoi sostituirlo in qualsiasi momento, senza consumare cambi. Rientra il prezzo pagato."
+                description={`${outOfList.length === 1 ? "Un tuo calciatore è uscito" : `${outOfList.length} tuoi calciatori sono usciti`} dalla Serie A: puoi sostituirli in qualsiasi momento, senza consumare cambi. Rientra il prezzo pagato.`}
                 submitLabel="Conferma il cambio gratuito"
               />
             </CardContent>

@@ -6,6 +6,7 @@ import { TeamEmblem, TeamStats } from "@/components/roster/team-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { requireAdmin } from "@/lib/auth/dal";
+import { getMarketSettings } from "@/lib/market/queries";
 import { createClient } from "@/lib/supabase/server";
 import {
   getAllPlayers,
@@ -26,9 +27,10 @@ export default async function AdminTeamPage({ params }: { params: Promise<{ id: 
   if (!team) notFound();
 
   const supabase = await createClient();
-  const [roster, composition, players, { data: profiles }] = await Promise.all([
+  const [roster, composition, settings, players, { data: profiles }] = await Promise.all([
     getTeamRoster(team.id),
     getRosterComposition(),
+    getMarketSettings(),
     getAllPlayers(),
     supabase
       .from("profiles")
@@ -52,7 +54,12 @@ export default async function AdminTeamPage({ params }: { params: Promise<{ id: 
       </PageHeader>
 
       <div className="flex flex-col gap-6">
-        <TeamStats team={team} summary={summary} composition={composition} />
+        <TeamStats
+          team={team}
+          summary={summary}
+          composition={composition}
+          swapLimit={settings.swapLimit}
+        />
 
         <div className="grid gap-6 lg:grid-cols-3">
           <Card>

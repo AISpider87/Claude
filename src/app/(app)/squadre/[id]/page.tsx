@@ -6,6 +6,7 @@ import { TeamEmblem, TeamStats } from "@/components/roster/team-header";
 import { PageHeader } from "@/components/ui/page-header";
 import { requireUser } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
+import { getMarketSettings } from "@/lib/market/queries";
 import { getRosterComposition, getTeam, getTeamRoster, summarizeRoster } from "@/lib/teams/queries";
 
 export const metadata = { title: "Squadra" };
@@ -17,9 +18,10 @@ export default async function TeamPage({ params }: { params: Promise<{ id: strin
   if (!team) notFound();
 
   const supabase = await createClient();
-  const [roster, composition, { data: owner }] = await Promise.all([
+  const [roster, composition, settings, { data: owner }] = await Promise.all([
     getTeamRoster(team.id),
     getRosterComposition(),
+    getMarketSettings(),
     team.owner_id
       ? supabase.from("profiles").select("display_name").eq("user_id", team.owner_id).maybeSingle()
       : Promise.resolve({ data: null }),
@@ -37,7 +39,12 @@ export default async function TeamPage({ params }: { params: Promise<{ id: strin
         <TeamEmblem team={team} size="lg" />
       </PageHeader>
       <div className="flex flex-col gap-6">
-        <TeamStats team={team} summary={summary} composition={composition} />
+        <TeamStats
+          team={team}
+          summary={summary}
+          composition={composition}
+          swapLimit={settings.swapLimit}
+        />
         <RosterTable roster={roster} composition={composition} />
         <Link
           href="/squadre"

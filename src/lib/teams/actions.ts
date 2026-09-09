@@ -39,6 +39,8 @@ function dbMessage(message: string | undefined, fallback: string) {
   if (text.includes("NOT_IN_ROSTER")) return "Il calciatore non è in questa rosa.";
   if (text.includes("PLAYER_NOT_FOUND")) return "Calciatore non trovato nel listone.";
   if (text.includes("USER_NOT_FOUND")) return "Utente non trovato o disattivato.";
+  if (text.includes("SESSION_OPEN"))
+    return "C'è una sessione di mercato aperta: chiudila prima di modificare le rose.";
   if (text.includes("FORBIDDEN")) return "Operazione riservata all'admin.";
   return fallback;
 }

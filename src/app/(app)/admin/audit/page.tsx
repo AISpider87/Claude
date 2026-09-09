@@ -9,7 +9,7 @@ export const metadata = { title: "Audit log" };
 
 const ACTION_LABEL: Record<string, string> = {
   "user.role": "Cambio ruolo",
-  "user.active": "Attivazione account",
+  "user.active": "Attivazione/disattivazione account",
   "user.rename": "Cambio nome",
   "setting.update": "Impostazione modificata",
   "import.preview": "Anteprima import",

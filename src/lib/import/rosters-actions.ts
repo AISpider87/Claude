@@ -193,6 +193,8 @@ function rostersErrorMessage(message: string) {
   if (message.includes("PLAYER_NOT_FOUND")) return "Un calciatore non esiste più nel listone.";
   if (message.includes("NEGATIVE_CREDITS")) return "Una squadra avrebbe crediti negativi.";
   if (message.includes("IMPORT_ALREADY_APPLIED")) return "Import già applicato.";
+  if (message.includes("SESSION_OPEN"))
+    return "C'è una sessione di mercato aperta: chiudila prima di importare le rose.";
   return "Import non riuscito. Riprova.";
 }
 

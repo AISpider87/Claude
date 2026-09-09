@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { FormMessage } from "@/components/ui/form-message";
 import { PageHeader } from "@/components/ui/page-header";
 import { requireUser } from "@/lib/auth/dal";
+import { getMarketSettings } from "@/lib/market/queries";
 import {
   getMyTeam,
   getRosterComposition,
@@ -36,7 +37,11 @@ export default async function RosaPage() {
     );
   }
 
-  const [roster, composition] = await Promise.all([getTeamRoster(team.id), getRosterComposition()]);
+  const [roster, composition, settings] = await Promise.all([
+    getTeamRoster(team.id),
+    getRosterComposition(),
+    getMarketSettings(),
+  ]);
   const summary = summarizeRoster(roster);
 
   return (
@@ -45,7 +50,12 @@ export default async function RosaPage() {
         <TeamEmblem team={team} size="lg" />
       </PageHeader>
       <div className="flex flex-col gap-6">
-        <TeamStats team={team} summary={summary} composition={composition} />
+        <TeamStats
+          team={team}
+          summary={summary}
+          composition={composition}
+          swapLimit={settings.swapLimit}
+        />
         {summary.outOfList > 0 && (
           <FormMessage tone="info">
             {summary.outOfList === 1

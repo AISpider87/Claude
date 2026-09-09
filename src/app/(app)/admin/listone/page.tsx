@@ -97,8 +97,9 @@ export default async function AdminListonePage() {
             <CardHeader>
               <CardTitle>Sync automatico</CardTitle>
               <CardDescription>
-                Ogni giorno alle 06:30 circa (ora italiana) l&apos;app scarica e applica il file, se
-                una sorgente è configurata; in ogni caso tiene sveglio il database.
+                Ogni giorno alle 04:30 UTC (06:30 con l&apos;ora legale, 05:30 con l&apos;ora
+                solare) l&apos;app scarica e applica il file, se una sorgente è configurata; in ogni
+                caso tiene sveglio il database.
                 {lastAuto
                   ? ` Ultimo tentativo automatico: ${formatDateTime(lastAuto.created_at)} (${lastAuto.status === "applied" ? "riuscito" : lastAuto.status === "failed" ? "fallito" : "in attesa"}).`
                   : " Nessun tentativo automatico finora."}
@@ -140,7 +141,10 @@ export default async function AdminListonePage() {
                     const out =
                       (stats.out_of_list as number | undefined) ??
                       (preview.outOfListCount as number | undefined);
-                    const status = STATUS_LABEL[imp.status] ?? STATUS_LABEL.previewed;
+                    const status =
+                      imp.status === "failed" && imp.source === "auto"
+                        ? { label: "Fallito", variant: "danger" as const }
+                        : (STATUS_LABEL[imp.status] ?? STATUS_LABEL.previewed);
                     return (
                       <TR key={imp.id}>
                         <TD className="whitespace-nowrap">
