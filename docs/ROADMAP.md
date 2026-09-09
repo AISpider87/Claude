@@ -1,7 +1,8 @@
 # ROADMAP — SuperLega v1
 
-> Stato al 2026-09-09: M1–M7 completate (vedi commit `feat: …(M1)`…`(M7)`),
-> M8 in corso; Fase 3 richiede gli account dell'admin.
+> Stato al 2026-09-09: **M1–M8 completate** (vedi commit `feat: …(M1)`…`(M8)` e le
+> correzioni delle review QA/sicurezza). Resta la **Fase 3** (deploy), che richiede
+> gli account dell'admin: `docs/DEPLOY.md`.
 
 Per ogni milestone: pianifica → implementa → test verdi → revisione QA + security
 → commit (conventional commits) → riepilogo ≤ 8 righe (fatto / test / rischi /
