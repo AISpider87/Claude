@@ -22,7 +22,7 @@ export type AcquiredVia = "initial_import" | "admin" | "swap" | "free_swap" | "r
 export type ReleasedVia = "swap" | "free_swap" | "admin" | "reversal";
 
 export type RateLimitBucket = "market" | "import" | "export" | "email" | "admin";
-export type NotificationStatus = "sent" | "failed" | "skipped";
+export type NotificationStatus = "sent" | "partial" | "failed" | "skipped";
 
 type ProfileRow = {
   user_id: string;

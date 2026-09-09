@@ -175,3 +175,10 @@ listone,operazioni}`) con exceljs, letture paginate (`fetchAll`) sotto la
 - 2026-09-09 · **Anteprima rose: due righe risolte sullo stesso calciatore** →
   stato `duplicate` (bloccante) invece di un errore 23505 alla conferma.
   · Finding QA M3/M4.
+- 2026-09-09 · **Email di sessione inviate con `after()` di Next e timeout di 10 s
+  sulla chiamata a Resend**: l'apertura/chiusura risponde subito e l'invio
+  avviene dopo la risposta, così un provider lento non blocca né fa sembrare
+  fallita un'operazione già committata; esiti parziali registrati come
+  `partial`. Codice lega validato dopo la normalizzazione (solo `A-Z0-9-`);
+  `bootstrap_admin_email` modificabile solo finché non esiste un admin.
+  · Security review M6.

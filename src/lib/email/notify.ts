@@ -61,7 +61,7 @@ async function deliver(kind: string, content: EmailContent) {
       kind,
       content.subject,
       result.sent,
-      result.failed === 0 ? "sent" : result.sent === 0 ? "failed" : "sent",
+      result.failed === 0 ? "sent" : result.sent === 0 ? "failed" : "partial",
       result.error ? `${result.failed} non inviate: ${result.error}` : null,
     );
   } catch (e) {

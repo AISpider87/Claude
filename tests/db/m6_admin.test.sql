@@ -122,6 +122,21 @@ begin
   exception when invalid_parameter_value then null;
   end;
   begin
+    perform public.admin_set_setting('league_code', '"  abc  "'::jsonb);
+    raise exception 'padded short league code accepted';
+  exception when invalid_parameter_value then null;
+  end;
+  begin
+    perform public.admin_set_setting('league_code', '"codice lega"'::jsonb);
+    raise exception 'league code with spaces accepted';
+  exception when invalid_parameter_value then null;
+  end;
+  begin
+    perform public.admin_set_setting('bootstrap_admin_email', '"altro@example.com"'::jsonb);
+    raise exception 'bootstrap admin email changed while an admin exists';
+  exception when invalid_parameter_value then null;
+  end;
+  begin
     perform public.admin_set_setting('made_up_key', '1'::jsonb);
     raise exception 'unknown setting accepted';
   exception when invalid_parameter_value then null;

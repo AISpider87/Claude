@@ -17,6 +17,7 @@ const NOTIFICATION_STATUS: Record<
   { label: string; variant: "primary" | "muted" | "danger" }
 > = {
   sent: { label: "Inviata", variant: "primary" },
+  partial: { label: "Parziale", variant: "danger" },
   skipped: { label: "Saltata", variant: "muted" },
   failed: { label: "Fallita", variant: "danger" },
 };

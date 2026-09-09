@@ -1,3 +1,4 @@
+import "server-only";
 /**
  * Minimal Resend client over fetch (no SDK dependency). Batch endpoint: up to 100
  * messages per call, each with its own recipient so members never see each
@@ -44,6 +45,7 @@ export async function sendEmails(
     try {
       const res = await fetchImpl(ENDPOINT, {
         method: "POST",
+        signal: AbortSignal.timeout(10_000),
         headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify(
           chunk.map((m) => ({ from, to: [m.to], subject: m.subject, html: m.html, text: m.text })),

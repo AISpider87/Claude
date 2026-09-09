@@ -124,7 +124,7 @@ create table public.notifications (
   kind text not null,
   subject text not null,
   recipients integer not null default 0,
-  status text not null check (status in ('sent', 'failed', 'skipped')),
+  status text not null check (status in ('sent', 'partial', 'failed', 'skipped')),
   detail text,
   created_by uuid references auth.users (id) on delete set null,
   created_at timestamptz not null default now()
@@ -469,10 +469,14 @@ begin
       raise exception 'INVALID_SETTING' using errcode = '22023', detail = p_key;
     end loop;
   elsif p_key = 'league_code' then
-    if jsonb_typeof(p_value) <> 'string' or char_length(p_value #>> '{}') not between 4 and 64 then
+    if jsonb_typeof(p_value) <> 'string' then
       raise exception 'INVALID_SETTING' using errcode = '22023', detail = p_key;
     end if;
     p_value := to_jsonb(upper(trim(p_value #>> '{}')));
+    if char_length(p_value #>> '{}') not between 4 and 64
+       or (p_value #>> '{}') !~ '^[A-Z0-9-]+$' then
+      raise exception 'INVALID_SETTING' using errcode = '22023', detail = p_key;
+    end if;
   elsif p_key = 'sale_price_rule' then
     if p_value #>> '{}' not in ('current_quotation', 'price_paid') then
       raise exception 'INVALID_SETTING' using errcode = '22023', detail = p_key;
@@ -490,7 +494,10 @@ begin
       raise exception 'INVALID_SETTING' using errcode = '22023', detail = p_key;
     end if;
   elsif p_key = 'bootstrap_admin_email' then
-    if jsonb_typeof(p_value) <> 'string' then
+    -- Seed-time only: once an admin exists, promotions go through set_user_role
+    -- (audited as user.role), never through a quiet signup rule.
+    if jsonb_typeof(p_value) <> 'string'
+       or exists (select 1 from public.profiles where role = 'admin') then
       raise exception 'INVALID_SETTING' using errcode = '22023', detail = p_key;
     end if;
   else

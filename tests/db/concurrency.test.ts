@@ -126,6 +126,11 @@ run("market concurrency", () => {
   it("parallel free swaps for the same free agent: exactly one passes (exclusive 'free now')", async () => {
     // Make Att4 (8) out of list in both rosters, then both teams try to free-swap it for Att3 (7).
     await asUser(setup, admin.id, async () => {
+      // Admin roster edits are refused while a session is open (M6 guard): close it first.
+      const open = await setup.query("select id from public.market_sessions where status = 'open'");
+      for (const row of open.rows) {
+        await setup.query("select public.close_market_session($1)", [row.id]);
+      }
       await setup.query("select public.admin_set_setting('season_swap_limit', '5')");
       await setup.query("select public.admin_set_setting('market_ops_per_minute', '50')");
       await setup.query("select public.admin_assign_player($1, 8, 0)", [teamA]);
@@ -153,9 +158,14 @@ run("market concurrency", () => {
   it("parallel purchases of the same free agent by two teams both succeed", async () => {
     const [c1, c2] = await Promise.all([connect(), connect()]);
     // Alpha: Por1 -> Por3, Beta: Por2 -> Por3 (Por3 is free in the snapshot; 10 in, 10 out).
-    await asUser(setup, admin.id, () =>
-      setup.query("select public.admin_set_setting('season_swap_limit', '5')"),
-    );
+    await asUser(setup, admin.id, async () => {
+      await setup.query("select public.admin_set_setting('season_swap_limit', '5')");
+      // The previous case closed the first session: open a new one (Por3 is still free).
+      const s = await setup.query(
+        "select public.admin_create_session('CC 2', now(), now() + interval '1 day', 0) as id",
+      );
+      await setup.query("select public.open_market_session($1)", [s.rows[0].id]);
+    });
     const results = await Promise.allSettled([
       asUser(c1, mario.id, () => c1.query("select public.swap_player($1, 1, 3)", [teamA])),
       asUser(c2, luca.id, () => c2.query("select public.swap_player($1, 2, 3)", [teamB])),

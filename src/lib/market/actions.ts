@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { z } from "zod";
 import { requireAdmin, requireUser } from "@/lib/auth/dal";
 import type { FormState } from "@/lib/auth/schemas";
@@ -184,7 +185,7 @@ export async function openSession(_prev: FormState, formData: FormData): Promise
   const { error } = await supabase.rpc("open_market_session", { p_id: parsed.data.id });
   if (error)
     return { status: "error", message: marketMessage(error.message, "Apertura non riuscita.") };
-  await notifySessionOpened(parsed.data.id);
+  after(() => notifySessionOpened(parsed.data.id));
   revalidatePath("/admin/sessioni");
   revalidatePath("/mercato");
   revalidatePath("/rosa");
@@ -202,7 +203,7 @@ export async function closeSession(_prev: FormState, formData: FormData): Promis
   const { error } = await supabase.rpc("close_market_session", { p_id: parsed.data.id });
   if (error)
     return { status: "error", message: marketMessage(error.message, "Chiusura non riuscita.") };
-  await notifySessionClosed(parsed.data.id);
+  after(() => notifySessionClosed(parsed.data.id));
   revalidatePath("/admin/sessioni");
   revalidatePath("/mercato");
   redirect(`/admin/sessioni/${parsed.data.id}`);
