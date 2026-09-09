@@ -5,6 +5,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { publicEnv } from "@/lib/env";
 import { safeNext } from "@/lib/auth/redirect";
+import { throttleAnonymous } from "@/lib/auth/throttle";
 import {
   resetRequestSchema,
   signInSchema,
@@ -27,6 +28,8 @@ export async function signUp(_prev: FormState, formData: FormData): Promise<Form
   if (!parsed.success) {
     return { status: "error", errors: fieldErrors(parsed.error) };
   }
+  const limited = await throttleAnonymous("signup");
+  if (limited) return { status: "error", message: limited };
 
   // The league code is enforced by the database trigger on auth.users, so the
   // gate holds even for direct calls to the Auth API.
@@ -65,6 +68,8 @@ export async function signIn(_prev: FormState, formData: FormData): Promise<Form
   if (!parsed.success) {
     return { status: "error", errors: fieldErrors(parsed.error) };
   }
+  const limited = await throttleAnonymous("login", parsed.data.email);
+  if (limited) return { status: "error", message: limited };
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
@@ -95,6 +100,8 @@ export async function requestPasswordReset(
   if (!parsed.success) {
     return { status: "error", errors: fieldErrors(parsed.error) };
   }
+  const limited = await throttleAnonymous("reset");
+  if (limited) return { status: "error", message: limited };
 
   const supabase = await createClient();
   await supabase.auth.resetPasswordForEmail(parsed.data.email, {

@@ -309,6 +309,10 @@ export type Database = {
       };
       reverse_transaction: { Args: { p_tx_id: string; p_reason: string }; Returns: string };
       consume_rate_limit: { Args: { p_bucket: RateLimitBucket }; Returns: undefined };
+      consume_anonymous_attempt: {
+        Args: { p_bucket: "login" | "signup" | "reset"; p_key: string };
+        Returns: undefined;
+      };
       admin_list_users: { Args: Record<string, never>; Returns: AdminUserRow[] };
       admin_notification_recipients: {
         Args: Record<string, never>;

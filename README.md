@@ -47,6 +47,9 @@ Apertura e chiusura delle sessioni inviano un'email a tutti i membri attivi via
 Resend (`RESEND_API_KEY`, `EMAIL_FROM`). Senza chiave le notifiche vengono
 saltate e registrate in Admin → Impostazioni. Sync quotazioni: `docs/SYNC.md`.
 
-## Deploy
+## Deploy, manuali e sicurezza
 
-Vedi `docs/DEPLOY.md` (in arrivo con la milestone M8).
+- `docs/DEPLOY.md` — messa in produzione passo passo (Supabase, Vercel, Resend), smoke test, backup.
+- `docs/MANUALE_ADMIN.md` e `docs/MANUALE_MANAGER.md` — guide d'uso.
+- `docs/SECURITY.md` — checklist OWASP e controlli in essere.
+- `scripts/backup.sh` — dump completo del database; `scripts/lighthouse.sh` — misure mobile.

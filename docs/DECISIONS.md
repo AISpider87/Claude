@@ -194,3 +194,11 @@ listone,operazioni}`) con exceljs, letture paginate (`fetchAll`) sotto la
   · Nota QA M6, scelta consapevole.
 - 2026-09-09 · **Pulsanti `sm` alti 44 px**: la variante piccola riduce solo
   padding e testo, non l'area di tocco. · Regola design system, nota QA M6.
+- 2026-09-09 · **Rate limiting anonimo su login/registrazione/recupero** nel DB
+  (`consume_anonymous_attempt`, chiave = hash di indirizzo+email, 10/15 min per
+  il login, 5/ora per registrazione e recupero) in aggiunta ai limiti di
+  Supabase Auth; se il limitatore fallisce l'accesso non viene bloccato. · M8,
+  brief §4 (rate limiting su login), 0 €.
+- 2026-09-09 · **Backup = `pg_dump` via `scripts/backup.sh` + export Excel**:
+  Supabase Free non ha backup automatici; procedura settimanale documentata in
+  docs/DEPLOY.md. · M8.
