@@ -22,11 +22,13 @@ for m in "$ROOT"/supabase/migrations/*.sql; do
   psql_db -f "$m"
 done
 psql_db -f "$ROOT/supabase/seed.sql"
+for s in "$ROOT"/supabase/seed/*.sql; do [ -e "$s" ] && psql_db -f "$s"; done
 
 status=0
 for t in "$ROOT"/tests/db/*.test.sql; do
   [ -e "$t" ] || continue
-  if psql_db --single-transaction -f "$t" >/dev/null; then
+  # Each test runs inside a transaction that is always rolled back.
+  if { echo 'begin;'; cat "$t"; echo 'rollback;'; } | $RUN "psql -v ON_ERROR_STOP=1 -q -d $DB" >/dev/null; then
     echo "PASS $(basename "$t")"
   else
     echo "FAIL $(basename "$t")"

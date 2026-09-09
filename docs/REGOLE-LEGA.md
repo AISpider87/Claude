@@ -64,7 +64,7 @@
 - Quotazioni: `Quotazioni_Fantacalcio_Stagione_YYYY_YY.xlsx` — fogli `Tutti`, `Portieri`,
   `Difensori`, `Centrocampisti`, `Attaccanti`, `Ceduti`; riga 1 titolo, riga 2 intestazioni
   `Id, R, RM, Nome, Squadra, Qt.A, Qt.I, Diff., Qt.A M, Qt.I M, Diff.M, FVM, FVM M`.
-  Fixture: `fixtures/Quotazioni_Fantacalcio_Stagione_2026_27.xlsx` (533 calciatori nel foglio Tutti).
+  Fixture: `fixtures/Quotazioni_Fantacalcio_Stagione_2026_27.xlsx` (532 calciatori nel foglio Tutti, 62 nel foglio Ceduti).
   Il foglio **Ceduti** permette di marcare automaticamente i "fuori lista".
 - Export rose di Leghe Fantacalcio: foglio `ROSE`, squadre affiancate a blocchi di 3 colonne
   (`nome squadra | costo | vuota`), 12 squadre nel primo blocco (righe 1–25) e 8 nel secondo

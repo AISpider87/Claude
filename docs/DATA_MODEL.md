@@ -27,8 +27,11 @@ qt_i_m, diff_m, fvm, fvm_m int`, `status check (active|out_of_list)`,
 ### imports
 
 `id`, `kind check (quotations|rosters)`, `source check (manual|auto)`,
-`file_path` (Storage), `status check (pending|previewed|applied|failed)`,
-`stats jsonb` (nuovi/aggiornati/usciti/anomalie), `created_by`, `created_at`.
+`file_name`, `file_path` (Storage, bucket `imports`), `status check
+(previewed|applied|failed)`, `payload jsonb` (righe parsate, azzerato dopo
+l'apply), `stats jsonb` (anteprima + esito: nuovi/aggiornati/invariati/rientrati/
+usciti/variazioni rilevanti/anomalie), `error`, `created_by`, `created_at`,
+`applied_at`.
 
 ### player_quotations (storico, uno snapshot per import applicato)
 
@@ -59,11 +62,17 @@ Rosa corrente = righe con `released_at is null`; lo storico non si cancella mai.
 ### transactions (registro immutabile)
 
 `id`, `team_id`, `session_id null` (null per cambio gratuito fuori sessione),
-`kind check (buy|sell|free_swap|admin_adjust|reversal)`,
+`kind check (swap|free_swap|admin_assign|admin_remove|reversal)`,
 `player_out_id null`, `player_out_price null` (rientro),
-`player_in_id null`, `player_in_price null`,
+`player_in_id null`, `player_in_price null`, `credits_delta int`,
 `counts_toward_limit bool`, `note`, `reversal_of null → transactions unique`,
-`created_by`, `created_at`. Niente UPDATE/DELETE (revoke + nessuna policy).
+`created_by`, `created_at`. Niente UPDATE/DELETE: nessun grant, nessuna policy e
+un trigger `forbid_change` che blocca anche le funzioni security definer.
+
+### free_agents (vista, `security_invoker`)
+
+`players` attivi senza righe vive in `roster_players`. È la definizione di
+"svincolato adesso"; la foto per sessione sta in `session_free_agents`.
 
 ### league_settings
 
@@ -97,7 +106,16 @@ Rosa corrente = righe con `released_at is null`; lo storico non si cancella mai.
   `swaps_used` se contava), collega `reversal_of`.
 - `admin_assign_player(team_id, player_id, price)` / `admin_remove_player(...)` —
   per la rosa iniziale e le correzioni; audit sempre.
-- `apply_quotations_import(import_id)` — upsert players + snapshot + fuori lista.
+- `create_quotations_import(source, file_name, file_path, payload, stats)` —
+  salva l'anteprima (righe parsate in `payload`); `apply_quotations_import(id)` —
+  upsert per Id, snapshot in `player_quotations`, fuori lista per assenti e
+  ceduti, rientro di chi ricompare, statistiche, guardia `import_min_rows_ratio`;
+  `fail_import(id, error)` — annulla un'anteprima.
+- `admin_set_setting(key, value)` — scrittura di `league_settings` (audit; il
+  valore del codice lega non finisce nel log).
+- `private.audit(action, entity, entity_id, payload)` — usata da tutte le
+  funzioni; `private.setting_int/setting_json` — lettura tipizzata delle
+  impostazioni.
 
 Nota v1: niente acquisto/vendita "secchi" — l'operazione di mercato del
 regolamento è sempre un cambio (out+in); l'admin può comunque correggere con le

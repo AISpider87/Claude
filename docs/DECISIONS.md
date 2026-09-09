@@ -50,3 +50,24 @@ richiedono l'ok dell'admin; le altre si annotano e si va avanti.
 - 2026-09-09 · **Test DB su Postgres locale** (apt) con uno stub dello schema
   `auth` di Supabase, perché Docker non è disponibile nell'ambiente di sviluppo;
   la verifica finale su Supabase reale avviene in Fase 3.
+- 2026-09-09 · **exceljs al posto di SheetJS (`xlsx`)** per il parsing. · Su npm
+  SheetJS è fermo alla 0.18.5 con CVE note (prototype pollution, ReDoS); le
+  versioni corrette stanno solo sul CDN di SheetJS, bloccato dall'ambiente.
+  exceljs è mantenuto su npm e legge gli stessi file.
+- 2026-09-09 · **`database.types.ts` scritto a mano** (righe come `type`, non
+  `interface`, altrimenti supabase-js le scarta). · `supabase gen types` richiede
+  Docker anche con `--db-url`; da rigenerare e confrontare in Fase 3 col progetto
+  collegato.
+- 2026-09-09 · **Import quotazioni in due passi con payload in DB**: l'anteprima
+  salva le righe già parsate in `imports.payload` (jsonb) e la conferma le applica
+  in una sola transazione (`apply_quotations_import`), poi il payload viene
+  azzerato. · Niente doppio parsing, nessuna dipendenza da Storage per
+  applicare; il file resta comunque archiviato nel bucket `imports` quando
+  disponibile.
+- 2026-09-09 · **Guardia anti-svuotamento**: un file con meno del 50 % dei
+  calciatori attivi (`import_min_rows_ratio`) viene rifiutato dal DB, e
+  l'anteprima avvisa se più del 10 % uscirebbe dal listone. · Un upload parziale
+  per errore non deve mettere fuori lista mezza Serie A.
+- 2026-09-09 · **Seed del listone generato dalla fixture reale**
+  (`scripts/generate-players-seed.mjs` → `supabase/seed/players.sql`), solo per
+  sviluppo locale. · Dati realistici senza scrivere 600 righe a mano.

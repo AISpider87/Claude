@@ -13,7 +13,7 @@ major_version = 17
 
 [db.seed]
 enabled = true
-sql_paths = ["./seed.sql"]
+sql_paths = ["./seed.sql", "./seed/*.sql"]
 
 [studio]
 enabled = true
@@ -39,6 +39,6 @@ email_sent = 4
 sign_in_sign_ups = 30
 token_verifications = 30
 
-[inbucket]
+[local_smtp]
 enabled = true
 port = 54324
