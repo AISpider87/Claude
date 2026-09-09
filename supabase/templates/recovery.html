@@ -1,4 +1,9 @@
 <h2>Reimposta la password di SuperLega</h2>
 <p>Tocca il pulsante per scegliere una nuova password. Il link scade tra un'ora.</p>
-<p><a href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=recovery&next=/reimposta-password">Scegli una nuova password</a></p>
+<p>
+  <a
+    href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=recovery&next=/reimposta-password"
+    >Scegli una nuova password</a
+  >
+</p>
 <p>Se non hai chiesto tu il recupero, ignora questo messaggio: la password non cambia.</p>

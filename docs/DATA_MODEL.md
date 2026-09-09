@@ -104,8 +104,14 @@ un trigger `forbid_change` che blocca anche le funzioni security definer.
 - `reverse_transaction(tx_id, reason)` — solo admin: crea la transazione inversa
   (rimette/rimuove le righe rosa, restituisce/detrae crediti, decrementa
   `swaps_used` se contava), collega `reversal_of`.
-- `admin_assign_player(team_id, player_id, price)` / `admin_remove_player(...)` —
-  per la rosa iniziale e le correzioni; audit sempre.
+- `admin_upsert_team(id?, name, short_name?, colors?)`, `admin_set_team_owner(team,
+user?)` (un solo team per utente), `admin_set_team_credits(team, credits, note)`
+  (riga `admin_credits` nel registro) — gestione squadre.
+- `admin_assign_player(team_id, player_id, price)` / `admin_remove_player(team_id,
+player_id, refund)` — per la rosa iniziale e le correzioni; scalano/rimborsano
+  crediti, righe `admin_assign`/`admin_remove` nel registro, audit sempre.
+- `create_rosters_import(...)` / `apply_rosters_import(id)` — sostituzione delle
+  rose dal file (vedi DECISIONS); `team_roster_summary(team)` — conteggi per la UI.
 - `create_quotations_import(source, file_name, file_path, payload, stats)` —
   salva l'anteprima (righe parsate in `payload`); `apply_quotations_import(id)` —
   upsert per Id, snapshot in `player_quotations`, fuori lista per assenti e

@@ -19,7 +19,7 @@ const SECTIONS = [
     icon: Users,
     title: "Squadre e rose",
     description: "Import delle rose, crediti e collegamento dei manager.",
-    ready: false,
+    ready: true,
   },
   {
     href: "/admin/sessioni",

@@ -68,6 +68,27 @@ richiedono l'ok dell'admin; le altre si annotano e si va avanti.
   calciatori attivi (`import_min_rows_ratio`) viene rifiutato dal DB, e
   l'anteprima avvisa se più del 10 % uscirebbe dal listone. · Un upload parziale
   per errore non deve mettere fuori lista mezza Serie A.
+- 2026-09-09 · **Codice lega applicato nel trigger di signup** (non più in una
+  RPC anonima): viaggia nei metadati della registrazione e senza codice valido
+  l'utente non viene creato nemmeno chiamando l'API Auth a mano. · Finding
+  "alto" della security review M1/M2.
+- 2026-09-09 · **Email di conferma e recupero con link `token_hash`** (template
+  in `supabase/templates/`, da incollare nella dashboard in produzione) al posto
+  del flusso PKCE `?code=`. · Il PKCE funziona solo nello stesso browser che ha
+  avviato la registrazione: su iPhone (link aperto da Gmail o dalla PWA) fallisce.
+- 2026-09-09 · **Import rose in due tempi con "congelamento"**: l'anteprima
+  salva il file parsato; alla conferma le risoluzioni manuali dell'admin (omonimi,
+  nomi non trovati → Id) producono un nuovo record import con il payload
+  definitivo, che viene applicato atomicamente; l'anteprima viene chiusa. ·
+  Tracciabilità completa di cosa è stato applicato e con quali scelte.
+- 2026-09-09 · **Import rose = sostituzione**: per ogni squadra nel file la rosa
+  corrente viene chiusa (storico conservato) e ricreata, crediti = 250 − speso,
+  `swaps_used` azzerato, manager collegato conservato. Squadre assenti dal file
+  non vengono toccate. · È l'operazione di inizio stagione; le correzioni
+  puntuali passano dalle funzioni `admin_*`.
+- 2026-09-09 · **Letture complete paginate** (`fetchAll`, pagine da 1000) per
+  listone e rose: PostgREST tronca a 1000 righe e i calciatori non si cancellano
+  mai. · Finding QA.
 - 2026-09-09 · **Seed del listone generato dalla fixture reale**
   (`scripts/generate-players-seed.mjs` → `supabase/seed/players.sql`), solo per
   sviluppo locale. · Dati realistici senza scrivere 600 righe a mano.
