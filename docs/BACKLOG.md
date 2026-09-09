@@ -25,3 +25,8 @@ Fuori scope v1, registrati per il futuro. Niente qui è promesso.
 ## Esclusi per sempre (regolamento)
 
 - Scambi di calciatori tra squadre: **vietati**.
+
+## Sicurezza (post v1)
+
+- Content-Security-Policy con nonce per richiesta (script inline di Next e
+  script del tema), da configurare nel proxy.

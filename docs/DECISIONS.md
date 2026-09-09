@@ -208,3 +208,17 @@ listone,operazioni}`) con exceljs, letture paginate (`fetchAll`) sotto la
   `globals.css`. Skip link con destinazione su tutte le pagine; id univoci
   (`useId`) nei pannelli cambio; barra di conferma sopra la bottom-nav anche con
   safe-area iOS. · Review QA M7 (block → risolto).
+- 2026-09-09 · **Revoca a `anon` dell'EXECUTE su tutte le funzioni pubbliche**
+  (migrazione `20260909180000`), tranne `consume_anonymous_attempt`, anche per
+  le funzioni future (default privileges). Su Supabase `anon` riceve EXECUTE
+  direttamente e `revoke … from public` non lo toglie: le funzioni di import
+  (che ammettono `auth.uid()` nullo per il cron) erano chiamabili senza login.
+  Lo stub di test locale ora emula i default privileges di Supabase così il
+  test SQL fallisce se la revoca sparisce. · Security review finale (critico).
+- 2026-09-09 · **Limitatore anonimo con pulizia deterministica** delle finestre
+  scadute a ogni chiamata e tetto di 5.000 chiavi vive per bucket; download
+  quotazioni letto a flusso con stop oltre 5 MB; indirizzo client da header
+  Vercel; `backups/` e `*.sql.gz` ignorati da git. · Security review finale.
+- 2026-09-09 · **CSP rinviata al backlog**: Next inietta script inline di
+  idratazione che richiedono un nonce per richiesta (proxy + `headers()`);
+  gli altri header di sicurezza sono attivi in `next.config.ts`.

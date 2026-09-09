@@ -29,6 +29,8 @@ do $$ begin
 end $$;
 
 grant usage on schema public to anon, authenticated, service_role;
+-- Supabase grants EXECUTE on new public functions directly to these roles.
+alter default privileges in schema public grant execute on functions to anon, authenticated, service_role;
 grant usage on schema auth to anon, authenticated, service_role;
 grant execute on function auth.uid() to anon, authenticated, service_role;
 

@@ -45,8 +45,7 @@ export class HttpQuotationSource implements QuotationSource {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const length = Number(res.headers.get("content-length") ?? 0);
         if (length > MAX_BYTES) throw new Error("file too large");
-        const bytes = new Uint8Array(await res.arrayBuffer());
-        if (bytes.byteLength > MAX_BYTES) throw new Error("file too large");
+        const bytes = await readCapped(res, MAX_BYTES);
         if (bytes.byteLength < 1000 || bytes[0] !== 0x50 || bytes[1] !== 0x4b) {
           throw new Error("not an xlsx file (login page?)");
         }
@@ -60,6 +59,31 @@ export class HttpQuotationSource implements QuotationSource {
     }
     throw lastError instanceof Error ? lastError : new Error("download failed");
   }
+}
+
+/** Reads the body up to `max` bytes and aborts past it, so a rogue source cannot exhaust memory. */
+async function readCapped(res: Response, max: number): Promise<Uint8Array> {
+  if (!res.body) return new Uint8Array(await res.arrayBuffer());
+  const reader = res.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > max) {
+      await reader.cancel();
+      throw new Error("file too large");
+    }
+    chunks.push(value);
+  }
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const c of chunks) {
+    out.set(c, offset);
+    offset += c.byteLength;
+  }
+  return out;
 }
 
 /** No automatic source configured: the admin uploads the file by hand. */

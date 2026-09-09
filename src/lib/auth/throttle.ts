@@ -7,8 +7,15 @@ type AnonymousBucket = "login" | "signup" | "reset";
 /** Best-effort client address behind Vercel's proxy; "unknown" keeps the limiter working. */
 async function clientAddress() {
   const h = await headers();
-  const forwarded = h.get("x-forwarded-for");
-  return forwarded?.split(",")[0]?.trim() || h.get("x-real-ip") || "unknown";
+  // Vercel sets these from the actual connection; x-forwarded-for can be
+  // prefixed by the client, so it is only the last resort.
+  const trusted = h.get("x-vercel-forwarded-for") || h.get("x-real-ip");
+  if (trusted) return trusted.split(",")[0]!.trim();
+  const forwarded = h
+    .get("x-forwarded-for")
+    ?.split(",")
+    .map((s) => s.trim());
+  return forwarded?.at(-1) || "unknown";
 }
 
 /**
