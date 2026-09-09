@@ -1,7 +1,8 @@
 -- M2 QA: rejection paths and RLS not covered by m2_quotations_import.test.sql.
--- NOTE: the first block (payload without "rows") FAILS on purpose: it reproduces the
--- bug in apply/create_quotations_import (jsonb_typeof(NULL) <> 'array' is NULL, so
--- a payload with no "rows" key is accepted and gets applied as a 0-row import).
+-- The first block reproduces a bug present in commit f76472c (M2): in
+-- create_quotations_import, `jsonb_typeof(NULL) <> 'array'` is NULL, so a payload
+-- without a "rows" key was accepted and, on an empty listone, applied as a 0-row import.
+-- Fixed in the working tree with `is distinct from`; this test keeps it from regressing.
 do $$
 declare
   v_admin uuid;

@@ -29,6 +29,7 @@ export type AnomalyCode =
   | "invalid_role"
   | "missing_name"
   | "invalid_number"
+  | "invalid_optional_number"
   | "too_many_rows";
 
 export interface Anomaly {
@@ -65,16 +66,8 @@ const COLUMN_MAP: Record<string, keyof QuotationRow> = {
 };
 
 const REQUIRED: (keyof QuotationRow)[] = ["id", "name", "team", "role_classic", "qt_a"];
-const NUMERIC: (keyof QuotationRow)[] = [
-  "qt_a",
-  "qt_i",
-  "diff",
-  "qt_a_m",
-  "qt_i_m",
-  "diff_m",
-  "fvm",
-  "fvm_m",
-];
+const REQUIRED_NUMERIC: (keyof QuotationRow)[] = ["qt_a", "qt_i", "diff"];
+const OPTIONAL_NUMERIC: (keyof QuotationRow)[] = ["qt_a_m", "qt_i_m", "diff_m", "fvm", "fvm_m"];
 const ROLE_SHEETS = ["Portieri", "Difensori", "Centrocampisti", "Attaccanti"];
 const MAX_HEADER_SCAN = 15;
 /** Hard cap on data rows per sheet: the real listone has ~550, so this only stops garbage files. */
@@ -105,12 +98,13 @@ export function cellText(value: unknown): string {
   return String(value).trim();
 }
 
+/** Integer or null for blanks; undefined for anything that is not a whole number. */
 function toInt(value: unknown): number | null | undefined {
   const text = cellText(value);
   if (text === "") return null;
   const n = Number(text.replace(",", "."));
-  if (!Number.isFinite(n)) return undefined;
-  return Math.round(n);
+  if (!Number.isInteger(n)) return undefined;
+  return n;
 }
 
 interface SheetResult {
@@ -219,14 +213,14 @@ function parseSheet(sheet: ExcelJS.Worksheet, seen: Set<number>): SheetResult {
 
     const numbers: Partial<Record<keyof QuotationRow, number | null>> = {};
     let bad = false;
-    for (const key of NUMERIC) {
+    for (const key of REQUIRED_NUMERIC) {
       const n = toInt(raw[key]);
       if (n === undefined) {
         anomalies.push({
           code: "invalid_number",
           sheet: name,
           row: r,
-          detail: `${key}=${cellText(raw[key])}`,
+          detail: `${id} ${playerName}: ${key}=${cellText(raw[key])}`,
         });
         bad = true;
         break;
@@ -234,6 +228,21 @@ function parseSheet(sheet: ExcelJS.Worksheet, seen: Set<number>): SheetResult {
       numbers[key] = n;
     }
     if (bad) continue;
+    // Mantra/FVM columns are informational: a bad value is logged, never drops the player.
+    for (const key of OPTIONAL_NUMERIC) {
+      const n = toInt(raw[key]);
+      if (n === undefined) {
+        anomalies.push({
+          code: "invalid_optional_number",
+          sheet: name,
+          row: r,
+          detail: `${id} ${playerName}: ${key}=${cellText(raw[key])}`,
+        });
+        numbers[key] = null;
+      } else {
+        numbers[key] = n;
+      }
+    }
 
     seen.add(id);
     rows.push({

@@ -34,6 +34,21 @@ double_confirm_changes = true
 secure_password_change = true
 max_frequency = "1m"
 
+# token_hash links work from any browser/app (unlike the PKCE ?code= flow, which
+# needs the same browser that started the signup: a problem on iPhone/PWA).
+# On hosted Supabase paste the same templates in Auth > Email Templates (docs/DEPLOY.md).
+[auth.email.template.confirmation]
+subject = "Conferma il tuo account SuperLega"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "Reimposta la password di SuperLega"
+content_path = "./supabase/templates/recovery.html"
+
+[auth.email.template.email_change]
+subject = "Conferma il cambio email di SuperLega"
+content_path = "./supabase/templates/email_change.html"
+
 [auth.rate_limit]
 email_sent = 4
 sign_in_sign_ups = 30

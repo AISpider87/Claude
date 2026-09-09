@@ -200,6 +200,43 @@ export type Database = {
       };
       apply_quotations_import: { Args: { p_import_id: string }; Returns: Json };
       fail_import: { Args: { p_import_id: string; p_error: string }; Returns: undefined };
+      admin_upsert_team: {
+        Args: {
+          p_id: string | null;
+          p_name: string;
+          p_short_name?: string | null;
+          p_color_primary?: string | null;
+          p_color_secondary?: string | null;
+        };
+        Returns: string;
+      };
+      admin_set_team_owner: {
+        Args: { p_team_id: string; p_user_id: string | null };
+        Returns: undefined;
+      };
+      admin_set_team_credits: {
+        Args: { p_team_id: string; p_credits: number; p_note?: string | null };
+        Returns: undefined;
+      };
+      admin_assign_player: {
+        Args: { p_team_id: string; p_player_id: number; p_price: number; p_note?: string | null };
+        Returns: string;
+      };
+      admin_remove_player: {
+        Args: { p_team_id: string; p_player_id: number; p_refund?: number; p_note?: string | null };
+        Returns: string;
+      };
+      create_rosters_import: {
+        Args: {
+          p_file_name: string | null;
+          p_file_path: string | null;
+          p_payload: Json;
+          p_stats: Json;
+        };
+        Returns: string;
+      };
+      apply_rosters_import: { Args: { p_import_id: string }; Returns: Json };
+      team_roster_summary: { Args: { p_team_id: string }; Returns: Json };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

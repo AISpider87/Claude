@@ -23,11 +23,29 @@ function parsed(rows: QuotationRow[], outOfListIds: number[] = []): ParsedQuotat
   return { rows, outOfListIds, outOfListRows: [], anomalies: [], sheets: ["Tutti"], title: null };
 }
 
+function cur(
+  partial: Partial<CurrentPlayer> & Pick<CurrentPlayer, "id" | "name" | "role_classic" | "qt_a">,
+): CurrentPlayer {
+  return {
+    team: "Roma",
+    role_mantra: null,
+    qt_i: 10,
+    diff: 0,
+    qt_a_m: null,
+    qt_i_m: null,
+    diff_m: null,
+    fvm: null,
+    fvm_m: null,
+    status: "active",
+    ...partial,
+  };
+}
+
 const current: CurrentPlayer[] = [
-  { id: 1, name: "Uno", team: "Roma", role_classic: "P", qt_a: 18, status: "active" },
-  { id: 2, name: "Due", team: "Inter", role_classic: "D", qt_a: 31, status: "active" },
-  { id: 3, name: "Tre", team: "Como", role_classic: "C", qt_a: 30, status: "active" },
-  { id: 4, name: "Quattro", team: "Roma", role_classic: "A", qt_a: 37, status: "out_of_list" },
+  cur({ id: 1, name: "Uno", role_classic: "P", qt_a: 18 }),
+  cur({ id: 2, name: "Due", team: "Inter", role_classic: "D", qt_a: 31 }),
+  cur({ id: 3, name: "Tre", team: "Como", role_classic: "C", qt_a: 30 }),
+  cur({ id: 4, name: "Quattro", role_classic: "A", qt_a: 37, status: "out_of_list" }),
 ];
 
 describe("buildQuotationsPreview", () => {

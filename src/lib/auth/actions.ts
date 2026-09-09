@@ -120,6 +120,15 @@ export async function updatePassword(_prev: FormState, formData: FormData): Prom
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
   if (error) {
+    if (error.code === "same_password") {
+      return {
+        status: "error",
+        errors: { password: ["La nuova password è uguale a quella attuale."] },
+      };
+    }
+    if (error.code === "weak_password") {
+      return { status: "error", errors: { password: ["Scegli una password più robusta."] } };
+    }
     return {
       status: "error",
       message: "Link scaduto o non valido. Richiedi di nuovo il recupero password.",

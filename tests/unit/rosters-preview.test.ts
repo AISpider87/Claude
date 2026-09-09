@@ -41,7 +41,7 @@ describe("buildRostersPreview — real export against real listone", () => {
     expect(first.credits).toBe(0);
 
     const payload = toRostersPayload(preview);
-    expect(payload.teams[0]?.players[0]).toEqual({ player_id: 4225, price_paid: 11 });
+    expect(payload.teams[0]?.players[0]).toEqual({ player_id: 572, price_paid: 11 });
     expect(payload.teams.every((t) => t.players.length === 23)).toBe(true);
   });
 });

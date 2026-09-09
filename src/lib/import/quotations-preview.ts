@@ -1,12 +1,21 @@
 import type { ParsedQuotations, QuotationRow, RoleClassic } from "@/lib/import/quotations-parser";
 import { countByRole } from "@/lib/import/quotations-parser";
 
+/** Every column the database compares in apply_quotations_import(), plus status. */
 export interface CurrentPlayer {
   id: number;
   name: string;
   team: string;
   role_classic: RoleClassic;
+  role_mantra: string | null;
   qt_a: number;
+  qt_i: number;
+  diff: number;
+  qt_a_m: number | null;
+  qt_i_m: number | null;
+  diff_m: number | null;
+  fvm: number | null;
+  fvm_m: number | null;
   status: "active" | "out_of_list";
 }
 
@@ -36,20 +45,41 @@ export interface QuotationsPreview {
   revivedPlayers: PreviewPlayer[];
   outOfList: PreviewPlayer[];
   notableChanges: NotableChange[];
+  /** Threshold (in credits) used for notableChanges. */
+  threshold: number;
   /** True when the file would remove an unusually large share of the current list. */
   suspicious: boolean;
   isFirstImport: boolean;
 }
 
 const LIST_LIMIT = 60;
+const COMPARED: (keyof QuotationRow)[] = [
+  "name",
+  "team",
+  "role_classic",
+  "role_mantra",
+  "qt_a",
+  "qt_i",
+  "diff",
+  "qt_a_m",
+  "qt_i_m",
+  "diff_m",
+  "fvm",
+  "fvm_m",
+];
 
 function toPreview(r: QuotationRow | CurrentPlayer): PreviewPlayer {
   return { id: r.id, name: r.name, team: r.team, role_classic: r.role_classic, qt_a: r.qt_a };
 }
 
+function sameRow(a: CurrentPlayer, b: QuotationRow) {
+  return COMPARED.every((k) => (a[k] ?? null) === (b[k] ?? null));
+}
+
 /**
  * Pure diff between a parsed workbook and the current listone. Mirrors the
- * counting rules of apply_quotations_import() so the preview matches the outcome.
+ * counting rules of apply_quotations_import() column for column, so the preview
+ * matches the outcome.
  */
 export function buildQuotationsPreview(
   parsed: ParsedQuotations,
@@ -74,16 +104,10 @@ export function buildQuotationsPreview(
     }
     if (existing.status === "out_of_list") {
       revivedPlayers.push(toPreview(row));
-    } else if (
-      existing.name !== row.name ||
-      existing.team !== row.team ||
-      existing.role_classic !== row.role_classic ||
-      existing.qt_a !== row.qt_a
-    ) {
-      // Only the user-visible fields are compared here; the DB compares all columns.
-      updatedCount++;
-    } else {
+    } else if (sameRow(existing, row)) {
       unchangedCount++;
+    } else {
+      updatedCount++;
     }
     const delta = row.qt_a - existing.qt_a;
     if (Math.abs(delta) >= threshold) {
@@ -110,6 +134,7 @@ export function buildQuotationsPreview(
     revivedPlayers: revivedPlayers.slice(0, LIST_LIMIT),
     outOfList: outOfList.slice(0, LIST_LIMIT),
     notableChanges: notableChanges.slice(0, LIST_LIMIT),
+    threshold,
     suspicious: activeCount > 0 && outOfList.length > activeCount * 0.1,
     isFirstImport: activeCount === 0,
   };

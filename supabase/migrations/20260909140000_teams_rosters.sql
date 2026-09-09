@@ -281,6 +281,9 @@ begin
   if not found or v_import.kind <> 'rosters' then
     raise exception 'IMPORT_NOT_FOUND' using errcode = 'P0002';
   end if;
+  if v_import.status = 'failed' then
+    raise exception 'IMPORT_DISCARDED' using errcode = '55000';
+  end if;
   if v_import.status <> 'previewed' then
     raise exception 'IMPORT_ALREADY_APPLIED' using errcode = '55000';
   end if;

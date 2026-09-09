@@ -381,6 +381,9 @@ begin
   if not found or v_import.kind <> 'quotations' then
     raise exception 'IMPORT_NOT_FOUND' using errcode = 'P0002';
   end if;
+  if v_import.status = 'failed' then
+    raise exception 'IMPORT_DISCARDED' using errcode = '55000';
+  end if;
   if v_import.status <> 'previewed' then
     raise exception 'IMPORT_ALREADY_APPLIED' using errcode = '55000';
   end if;
@@ -388,7 +391,7 @@ begin
   -- Several imports may run in one transaction (tests), so never assume a clean session.
   drop table if exists pg_temp.tmp_rows;
   create temp table tmp_rows on commit drop as
-  select
+  select distinct on ((r ->> 'id')::integer)
     (r ->> 'id')::integer as id,
     r ->> 'name' as name,
     r ->> 'team' as team,
@@ -438,7 +441,12 @@ begin
     name = excluded.name, team = excluded.team, role_classic = excluded.role_classic,
     role_mantra = excluded.role_mantra, qt_a = excluded.qt_a, qt_i = excluded.qt_i, diff = excluded.diff,
     qt_a_m = excluded.qt_a_m, qt_i_m = excluded.qt_i_m, diff_m = excluded.diff_m,
-    fvm = excluded.fvm, fvm_m = excluded.fvm_m, status = 'active', out_of_list_at = null;
+    fvm = excluded.fvm, fvm_m = excluded.fvm_m, status = 'active', out_of_list_at = null
+  where (players.name, players.team, players.role_classic, players.role_mantra, players.qt_a, players.qt_i, players.diff,
+         players.qt_a_m, players.qt_i_m, players.diff_m, players.fvm, players.fvm_m, players.status)
+    is distinct from
+        (excluded.name, excluded.team, excluded.role_classic, excluded.role_mantra, excluded.qt_a, excluded.qt_i, excluded.diff,
+         excluded.qt_a_m, excluded.qt_i_m, excluded.diff_m, excluded.fvm, excluded.fvm_m, 'active');
 
   -- players missing from the file, or listed as ceded, leave the list (never deleted)
   with gone as (

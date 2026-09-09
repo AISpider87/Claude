@@ -7,6 +7,7 @@ import type { FormState } from "@/lib/auth/schemas";
 import { parseQuotationsWorkbook } from "@/lib/import/quotations-parser";
 import { buildQuotationsPreview } from "@/lib/import/quotations-preview";
 import type { Json } from "@/lib/supabase/database.types";
+import { fetchAll } from "@/lib/supabase/fetch-all";
 import { createClient } from "@/lib/supabase/server";
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
@@ -50,14 +51,29 @@ export async function previewQuotationsImport(
   }
 
   const supabase = await createClient();
-  const { data: current, error: currentError } = await supabase
-    .from("players")
-    .select("id, name, team, role_classic, qt_a, status");
-  if (currentError) {
+  let current;
+  try {
+    current = await fetchAll(() =>
+      supabase
+        .from("players")
+        .select(
+          "id, name, team, role_classic, role_mantra, qt_a, qt_i, diff, qt_a_m, qt_i_m, diff_m, fvm, fvm_m, status, updated_at",
+        )
+        .order("id"),
+    );
+  } catch {
     return { status: "error", message: "Impossibile leggere il listone attuale. Riprova." };
   }
+  const { data: thresholdRow } = await supabase
+    .from("league_settings")
+    .select("value")
+    .eq("key", "quotation_change_alert_threshold")
+    .maybeSingle();
+  const threshold = Number(thresholdRow?.value ?? 5) || 5;
 
-  const preview = buildQuotationsPreview(parsed, current ?? []);
+  const preview = buildQuotationsPreview(parsed, current, threshold);
+  // Fingerprint of the listone the admin is looking at; apply refuses if it changed meanwhile.
+  const listoneStamp = `${current.length}:${current.reduce((m, p) => (p.updated_at > m ? p.updated_at : m), "")}`;
 
   const filePath = `quotations/${new Date().toISOString().replace(/[:.]/g, "-")}-${safeFileName(file.name)}`;
   const { error: storageError } = await supabase.storage
@@ -76,6 +92,7 @@ export async function previewQuotationsImport(
       sheets: parsed.sheets,
       title: parsed.title,
       storage_error: storageError?.message ?? null,
+      listone_stamp: listoneStamp,
     } as unknown as Json,
   });
   if (error || !importId) {
@@ -91,6 +108,8 @@ function importErrorMessage(code: string | undefined, message: string | undefine
     return "Il file contiene troppi pochi calciatori rispetto al listone attuale: import bloccato per sicurezza.";
   }
   if (text.includes("IMPORT_ALREADY_APPLIED")) return "Questo import è già stato applicato.";
+  if (text.includes("IMPORT_DISCARDED"))
+    return "Questo import è stato annullato: carica di nuovo il file.";
   if (text.includes("IMPORT_NOT_FOUND")) return "Import non trovato.";
   if (text.includes("FORBIDDEN")) return "Operazione riservata all'admin.";
   return "Import non riuscito. Riprova o contatta chi gestisce l'app.";
@@ -108,6 +127,25 @@ export async function applyQuotationsImport(
   }
 
   const supabase = await createClient();
+  const { data: imp } = await supabase
+    .from("imports")
+    .select("stats")
+    .eq("id", importId)
+    .maybeSingle();
+  const stamp = (imp?.stats as { listone_stamp?: string } | null)?.listone_stamp;
+  if (stamp) {
+    const current = await fetchAll(() =>
+      supabase.from("players").select("id, updated_at").order("id"),
+    );
+    const now = `${current.length}:${current.reduce((m, p) => (p.updated_at > m ? p.updated_at : m), "")}`;
+    if (now !== stamp) {
+      return {
+        status: "error",
+        message: "Il listone è cambiato dopo l'anteprima: annulla e carica di nuovo il file.",
+      };
+    }
+  }
+
   const { error } = await supabase.rpc("apply_quotations_import", { p_import_id: importId });
   if (error) {
     return { status: "error", message: importErrorMessage(error.code, error.message) };

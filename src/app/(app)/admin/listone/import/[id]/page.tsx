@@ -69,14 +69,14 @@ function PlayerList({ title, players }: { title: string; players: PreviewPlayer[
   );
 }
 
-function ChangesList({ changes }: { changes: NotableChange[] }) {
+function ChangesList({ changes, threshold }: { changes: NotableChange[]; threshold: number }) {
   if (!changes.length) return null;
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-base">Variazioni di quotazione rilevanti</CardTitle>
         <CardDescription>
-          Differenze di almeno 5 crediti rispetto al listone attuale.
+          Differenze di almeno {threshold} crediti rispetto al listone attuale.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -172,7 +172,9 @@ export default async function ImportPreviewPage({ params }: { params: Promise<{ 
               tone={stats.out_of_list ? "danger" : "neutral"}
             />
           </div>
-          {preview && <ChangesList changes={preview.notableChanges} />}
+          {preview && (
+            <ChangesList changes={preview.notableChanges} threshold={preview.threshold ?? 5} />
+          )}
           {preview && <PlayerList title="Usciti dal listone" players={preview.outOfList} />}
         </div>
       )}
@@ -226,7 +228,7 @@ export default async function ImportPreviewPage({ params }: { params: Promise<{ 
 
           <ApplyControls importId={imp.id} />
 
-          <ChangesList changes={preview.notableChanges} />
+          <ChangesList changes={preview.notableChanges} threshold={preview.threshold ?? 5} />
           <PlayerList title="Nuovi calciatori" players={preview.newPlayers} />
           <PlayerList title="Rientrano nel listone" players={preview.revivedPlayers} />
           <PlayerList title="Escono dal listone (fuori lista)" players={preview.outOfList} />

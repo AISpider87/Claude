@@ -35,16 +35,12 @@ async function wb(body: unknown[][]) {
 }
 
 const asCurrent = (r: QuotationRow, status: CurrentPlayer["status"] = "active"): CurrentPlayer => ({
-  id: r.id,
-  name: r.name,
-  team: r.team,
-  role_classic: r.role_classic,
-  qt_a: r.qt_a,
+  ...r,
   status,
 });
 
-describe("QA probe: real fixture", () => {
-  it("parsing is deterministic and re-importing the same file is a no-op in the preview", async () => {
+describe("preview mirrors the database comparison", () => {
+  it("re-importing the same file is a no-op", async () => {
     const buf = await readFile(FIXTURE);
     const a = await parseQuotationsWorkbook(buf);
     const b = await parseQuotationsWorkbook(buf);
@@ -63,28 +59,36 @@ describe("QA probe: real fixture", () => {
     expect(preview.suspicious).toBe(false);
   });
 
-  it("DIVERGENCE: only FVM/Qt.I/Mantra changed -> preview says 532 unchanged, DB will say 532 updated", async () => {
+  it("counts FVM / Qt.I / Mantra changes as updates, like apply_quotations_import()", async () => {
     const parsed = await parseQuotationsWorkbook(await readFile(FIXTURE));
-    // Simulate a weekly Fantacalcio.it refresh where every FVM moves but no Qt.A does.
     const current = parsed.rows.map((r) => asCurrent(r));
     const bumped = {
       ...parsed,
       rows: parsed.rows.map((r) => ({ ...r, fvm: (r.fvm ?? 0) + 1, qt_i: r.qt_i + 1 })),
     };
     const preview = buildQuotationsPreview(bumped, current);
-    expect(preview.updatedCount).toBe(0); // <- what the admin sees before confirming
-    expect(preview.unchangedCount).toBe(532);
+    expect(preview.updatedCount).toBe(532);
+    expect(preview.unchangedCount).toBe(0);
+    expect(preview.notableChanges).toEqual([]);
   });
 
-  it("no Ceduti id is also in Tutti in the real file (edge case only synthetic)", async () => {
+  it("uses the configured threshold for notable changes", async () => {
     const parsed = await parseQuotationsWorkbook(await readFile(FIXTURE));
-    const active = new Set(parsed.rows.map((r) => r.id));
-    expect(parsed.outOfListRows.filter((r) => active.has(r.id))).toEqual([]);
+    const current = parsed.rows.map((r) => asCurrent(r));
+    const svilar = parsed.rows.find((r) => r.id === 5841)!;
+    const bumped = {
+      ...parsed,
+      rows: parsed.rows.map((r) => (r.id === 5841 ? { ...r, qt_a: svilar.qt_a + 3 } : r)),
+    };
+    expect(buildQuotationsPreview(bumped, current, 5).notableChanges).toEqual([]);
+    expect(buildQuotationsPreview(bumped, current, 2).notableChanges.map((c) => c.id)).toEqual([
+      5841,
+    ]);
   });
 });
 
-describe("QA probe: parser edge cases", () => {
-  it("numeric ids/values as strings are accepted", async () => {
+describe("parser edge cases", () => {
+  it("accepts numeric ids/values written as strings", async () => {
     const parsed = await parseQuotationsWorkbook(
       await wb([
         ["5841", "P", "Por", "Svilar", "Roma", "18", "18", "0", "18", "18", "0", "83", "83"],
@@ -94,48 +98,56 @@ describe("QA probe: parser edge cases", () => {
     expect(parsed.rows[0]?.fvm_m).toBe(83);
   });
 
-  it("empty trailing rows and rows with only blanks are skipped silently", async () => {
+  it("skips empty trailing rows silently", async () => {
     const parsed = await parseQuotationsWorkbook(
-      await wb([
-        [1, "P", "Por", "Uno", "Roma", 1, 1, 0, 1, 1, 0, 1, 1],
-        [],
-        ["", "", "", "", ""],
-        [null],
-      ]),
+      await wb([[1, "P", "Por", "Uno", "Roma", 1, 1, 0, 1, 1, 0, 1, 1], [], ["", "", ""], [null]]),
     );
     expect(parsed.rows.length).toBe(1);
     expect(parsed.anomalies).toEqual([]);
   });
 
-  it("fractional id is silently rounded (12.6 -> 13) instead of being an anomaly", async () => {
+  it("rejects fractional ids as anomalies instead of rounding", async () => {
     const parsed = await parseQuotationsWorkbook(
       await wb([[12.6, "P", "Por", "Uno", "Roma", 1, 1, 0, 1, 1, 0, 1, 1]]),
     );
-    expect(parsed.rows[0]?.id).toBe(13);
-    expect(parsed.anomalies).toEqual([]);
+    expect(parsed.rows).toEqual([]);
+    expect(parsed.anomalies.map((a) => a.code)).toEqual(["invalid_id"]);
   });
 
-  it("a non-numeric OPTIONAL Mantra column ('-') drops the whole row -> player would go out_of_list", async () => {
+  it("keeps the player when an optional Mantra/FVM column is not numeric", async () => {
     const parsed = await parseQuotationsWorkbook(
-      await wb([[5841, "P", "Por", "Svilar", "Roma", 18, 18, 0, "-", "-", "-", 83, "-"]]),
+      await wb([[5841, "P", "Por", "Svilar", "Roma", 18, 18, 0, "-", "-", "-", 83, "1.250"]]),
+    );
+    expect(parsed.rows.length).toBe(1);
+    expect(parsed.rows[0]).toMatchObject({
+      id: 5841,
+      qt_a: 18,
+      qt_a_m: null,
+      fvm: 83,
+      fvm_m: null,
+    });
+    expect(parsed.anomalies.map((a) => a.code)).toEqual([
+      "invalid_optional_number",
+      "invalid_optional_number",
+      "invalid_optional_number",
+      "invalid_optional_number",
+    ]);
+    const preview = buildQuotationsPreview(parsed, [
+      asCurrent({ ...parsed.rows[0]!, qt_a_m: 18, qt_i_m: 18, diff_m: 0, fvm_m: 83 }),
+    ]);
+    expect(preview.outOfList).toEqual([]);
+    expect(preview.updatedCount).toBe(1);
+  });
+
+  it("drops the row when a required quotation is not a whole number", async () => {
+    const parsed = await parseQuotationsWorkbook(
+      await wb([[1, "A", "Pc", "Uno", "Roma", "abc", 40, 0, 40, 40, 0, 500, 500]]),
     );
     expect(parsed.rows).toEqual([]);
     expect(parsed.anomalies.map((a) => a.code)).toEqual(["invalid_number"]);
-    const preview = buildQuotationsPreview(parsed, [
-      { id: 5841, name: "Svilar", team: "Roma", role_classic: "P", qt_a: 18, status: "active" },
-    ]);
-    expect(preview.outOfList.map((p) => p.id)).toEqual([5841]);
   });
 
-  it("thousands separator '1.250' is read as 1 (no anomaly)", async () => {
-    const parsed = await parseQuotationsWorkbook(
-      await wb([[1, "A", "Pc", "Uno", "Roma", 40, 40, 0, 40, 40, 0, "1.250", 500]]),
-    );
-    expect(parsed.rows[0]?.fvm).toBe(1);
-    expect(parsed.anomalies).toEqual([]);
-  });
-
-  it("Ceduti player still present in Tutti stays active (ids filtered) — preview and payload agree", async () => {
+  it("a Ceduti player still present in Tutti stays active", async () => {
     const w = new ExcelJS.Workbook();
     const t = w.addWorksheet("Tutti");
     t.addRow(HEADER);
@@ -148,9 +160,7 @@ describe("QA probe: parser edge cases", () => {
     );
     expect(parsed.outOfListRows.length).toBe(1);
     expect(parsed.outOfListIds).toEqual([]);
-    const preview = buildQuotationsPreview(parsed, [
-      { id: 1, name: "Uno", team: "Roma", role_classic: "P", qt_a: 1, status: "active" },
-    ]);
+    const preview = buildQuotationsPreview(parsed, [asCurrent(parsed.rows[0]!)]);
     expect(preview.outOfListCount).toBe(0);
   });
 });
