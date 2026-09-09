@@ -83,7 +83,27 @@ before update on public.league_settings
 for each row execute function private.touch_updated_at();
 
 -- ---------------------------------------------------------------------------
--- signup: create profile; the bootstrap admin email becomes admin automatically
+-- league code check (internal: enforced by the signup trigger, never exposed
+-- through the API so it cannot be brute-forced outside Auth's rate limits)
+-- ---------------------------------------------------------------------------
+create or replace function private.league_code_matches(p_code text)
+returns boolean
+language sql stable security definer
+set search_path = public, pg_temp
+as $$
+  select exists (
+    select 1 from public.league_settings
+    where key = 'league_code'
+      and char_length(trim(coalesce(p_code, ''))) >= 4
+      and upper(trim(value #>> '{}')) = upper(trim(p_code))
+  );
+$$;
+revoke all on function private.league_code_matches(text) from public;
+
+-- ---------------------------------------------------------------------------
+-- signup: the league code travels in the signup metadata and is validated
+-- here, so the gate holds even for direct calls to the Auth API. Profile is
+-- created; the bootstrap admin email becomes admin automatically.
 -- ---------------------------------------------------------------------------
 create or replace function private.handle_new_user()
 returns trigger
@@ -95,6 +115,10 @@ declare
   v_role text := 'manager';
   v_bootstrap text;
 begin
+  if not private.league_code_matches(new.raw_user_meta_data ->> 'league_code') then
+    raise exception 'INVALID_LEAGUE_CODE' using errcode = '42501';
+  end if;
+
   v_name := nullif(trim(new.raw_user_meta_data ->> 'display_name'), '');
   if v_name is null then
     v_name := split_part(new.email, '@', 1);
@@ -120,25 +144,6 @@ $$;
 create trigger trg_on_auth_user_created
 after insert on auth.users
 for each row execute function private.handle_new_user();
-
--- ---------------------------------------------------------------------------
--- league code check (callable by anon during signup; reveals only a boolean)
--- ---------------------------------------------------------------------------
-create or replace function public.validate_league_code(code text)
-returns boolean
-language sql stable security definer
-set search_path = public, pg_temp
-as $$
-  select exists (
-    select 1 from public.league_settings
-    where key = 'league_code'
-      and upper(trim(value #>> '{}')) = upper(trim(coalesce(code, '')))
-      and char_length(trim(coalesce(code, ''))) >= 4
-  );
-$$;
-
-revoke all on function public.validate_league_code(text) from public;
-grant execute on function public.validate_league_code(text) to anon, authenticated;
 
 -- ---------------------------------------------------------------------------
 -- admin-only mutations

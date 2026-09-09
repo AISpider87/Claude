@@ -16,9 +16,9 @@ begin
   delete from public.players;
 
   insert into auth.users (email, raw_user_meta_data)
-  values ('admin@superlega.local', '{"display_name": "Daniele"}') returning id into v_admin;
+  values ('admin@superlega.local', '{"display_name": "Daniele", "league_code": "superlega-dev"}') returning id into v_admin;
   insert into auth.users (email, raw_user_meta_data)
-  values ('mario@example.com', '{"display_name": "Mario"}') returning id into v_manager;
+  values ('mario@example.com', '{"display_name": "Mario", "league_code": "SUPERLEGA-DEV"}') returning id into v_manager;
 
   v_payload := jsonb_build_object(
     'rows', jsonb_build_array(

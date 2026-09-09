@@ -13,8 +13,6 @@ import {
   type FormState,
 } from "@/lib/auth/schemas";
 
-const GENERIC_ERROR = "Qualcosa è andato storto. Riprova tra poco.";
-
 function fieldErrors(error: z.ZodError) {
   return z.flattenError(error).fieldErrors as Record<string, string[]>;
 }
@@ -30,25 +28,30 @@ export async function signUp(_prev: FormState, formData: FormData): Promise<Form
     return { status: "error", errors: fieldErrors(parsed.error) };
   }
 
+  // The league code is enforced by the database trigger on auth.users, so the
+  // gate holds even for direct calls to the Auth API.
   const supabase = await createClient();
-  const { data: codeOk, error: codeError } = await supabase.rpc("validate_league_code", {
-    code: parsed.data.leagueCode,
-  });
-  if (codeError) return { status: "error", message: GENERIC_ERROR };
-  if (!codeOk) {
-    return { status: "error", errors: { leagueCode: ["Codice lega non valido."] } };
-  }
-
   const { error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
     options: {
-      data: { display_name: parsed.data.displayName },
+      data: { display_name: parsed.data.displayName, league_code: parsed.data.leagueCode },
       emailRedirectTo: `${publicEnv.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/rosa`,
     },
   });
   if (error) {
-    return { status: "error", message: "Registrazione non riuscita. Controlla i dati e riprova." };
+    if (error.code === "weak_password") {
+      return { status: "error", errors: { password: ["Scegli una password più robusta."] } };
+    }
+    if (error.code === "over_email_send_rate_limit" || error.status === 429) {
+      return { status: "error", message: "Troppi tentativi. Riprova tra qualche minuto." };
+    }
+    // A rejected signup is almost always the league code (trigger INVALID_LEAGUE_CODE).
+    return {
+      status: "error",
+      errors: { leagueCode: ["Codice lega non valido."] },
+      message: "Registrazione non riuscita: controlla il codice lega e riprova.",
+    };
   }
 
   redirect("/verifica-email");

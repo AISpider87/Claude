@@ -74,6 +74,8 @@ set search_path = public, pg_temp
 as $$
   select value from public.league_settings where key = p_key;
 $$;
+revoke all on function private.setting_int(text, integer) from public;
+revoke all on function private.setting_json(text) from public;
 
 create or replace function public.admin_set_setting(p_key text, p_value jsonb)
 returns void
@@ -313,6 +315,7 @@ as
       select 1 from public.roster_players r
       where r.player_id = p.id and r.released_at is null
     );
+revoke all on public.free_agents from anon, authenticated;
 grant select on public.free_agents to authenticated;
 
 -- ---------------------------------------------------------------------------
@@ -335,8 +338,11 @@ begin
   if p_source = 'auto' and auth.uid() is not null and not private.is_admin() then
     raise exception 'FORBIDDEN' using errcode = '42501';
   end if;
-  if jsonb_typeof(p_payload -> 'rows') <> 'array' then
+  if p_payload is null or jsonb_typeof(p_payload -> 'rows') is distinct from 'array' then
     raise exception 'INVALID_PAYLOAD' using errcode = '22023';
+  end if;
+  if jsonb_array_length(p_payload -> 'rows') > 5000 then
+    raise exception 'PAYLOAD_TOO_LARGE' using errcode = '22023';
   end if;
   insert into public.imports (kind, source, file_name, file_path, payload, stats, created_by)
   values ('quotations', p_source, p_file_name, p_file_path, p_payload, coalesce(p_stats, '{}'::jsonb), auth.uid())
@@ -380,7 +386,7 @@ begin
   end if;
 
   -- Several imports may run in one transaction (tests), so never assume a clean session.
-  drop table if exists tmp_rows;
+  drop table if exists pg_temp.tmp_rows;
   create temp table tmp_rows on commit drop as
   select
     (r ->> 'id')::integer as id,
@@ -398,7 +404,7 @@ begin
     (r ->> 'fvm_m')::integer as fvm_m
   from jsonb_array_elements(v_import.payload -> 'rows') as r;
 
-  select count(*) into v_rows from tmp_rows;
+  select count(*) into v_rows from pg_temp.tmp_rows;
   select count(*) into v_active_before from public.players where status = 'active';
   if v_active_before > 0 and v_rows < v_active_before * v_min_ratio then
     raise exception 'IMPORT_TOO_SMALL' using errcode = '22023',
@@ -409,13 +415,13 @@ begin
   select coalesce(jsonb_agg(jsonb_build_object(
            'id', p.id, 'name', p.name, 'from', p.qt_a, 'to', t.qt_a) order by abs(t.qt_a - p.qt_a) desc), '[]'::jsonb)
   into v_notable
-  from tmp_rows t join public.players p on p.id = t.id
+  from pg_temp.tmp_rows t join public.players p on p.id = t.id
   where abs(t.qt_a - p.qt_a) >= v_threshold;
 
-  select count(*) into v_new from tmp_rows t where not exists (select 1 from public.players p where p.id = t.id);
-  select count(*) into v_revived from tmp_rows t join public.players p on p.id = t.id where p.status = 'out_of_list';
+  select count(*) into v_new from pg_temp.tmp_rows t where not exists (select 1 from public.players p where p.id = t.id);
+  select count(*) into v_revived from pg_temp.tmp_rows t join public.players p on p.id = t.id where p.status = 'out_of_list';
   select count(*) into v_updated
-  from tmp_rows t join public.players p on p.id = t.id
+  from pg_temp.tmp_rows t join public.players p on p.id = t.id
   where p.status = 'active' and (
     p.name, p.team, p.role_classic, coalesce(p.role_mantra, ''), p.qt_a, p.qt_i, p.diff,
     coalesce(p.qt_a_m, -1), coalesce(p.qt_i_m, -1), coalesce(p.diff_m, -1), coalesce(p.fvm, -1), coalesce(p.fvm_m, -1)
@@ -427,7 +433,7 @@ begin
 
   insert into public.players (id, name, team, role_classic, role_mantra, qt_a, qt_i, diff, qt_a_m, qt_i_m, diff_m, fvm, fvm_m, status, out_of_list_at)
   select id, name, team, role_classic, role_mantra, qt_a, qt_i, diff, qt_a_m, qt_i_m, diff_m, fvm, fvm_m, 'active', null
-  from tmp_rows
+  from pg_temp.tmp_rows
   on conflict (id) do update set
     name = excluded.name, team = excluded.team, role_classic = excluded.role_classic,
     role_mantra = excluded.role_mantra, qt_a = excluded.qt_a, qt_i = excluded.qt_i, diff = excluded.diff,
@@ -440,7 +446,7 @@ begin
     set status = 'out_of_list', out_of_list_at = coalesce(p.out_of_list_at, now())
     where p.status = 'active'
       and (
-        not exists (select 1 from tmp_rows t where t.id = p.id)
+        not exists (select 1 from pg_temp.tmp_rows t where t.id = p.id)
         or p.id in (select (x #>> '{}')::integer from jsonb_array_elements(coalesce(v_import.payload -> 'out_of_list_ids', '[]'::jsonb)) x)
       )
     returning p.id
@@ -448,7 +454,7 @@ begin
   select count(*) into v_out from gone;
 
   insert into public.player_quotations (import_id, player_id, qt_a, qt_i, diff, qt_a_m, qt_i_m, diff_m, fvm, fvm_m)
-  select p_import_id, id, qt_a, qt_i, diff, qt_a_m, qt_i_m, diff_m, fvm, fvm_m from tmp_rows;
+  select p_import_id, id, qt_a, qt_i, diff, qt_a_m, qt_i_m, diff_m, fvm, fvm_m from pg_temp.tmp_rows;
 
   v_stats := coalesce(v_import.stats, '{}'::jsonb) || jsonb_build_object(
     'rows', v_rows, 'new', v_new, 'updated', v_updated, 'unchanged', v_unchanged,
@@ -477,6 +483,9 @@ begin
   end if;
   update public.imports set status = 'failed', error = left(p_error, 2000), payload = null
   where id = p_import_id and status = 'previewed';
+  if found then
+    perform private.audit('import.fail', 'imports', p_import_id::text, jsonb_build_object('error', left(p_error, 200)));
+  end if;
 end;
 $$;
 revoke all on function public.fail_import(uuid, text) from public;

@@ -28,7 +28,8 @@ export type AnomalyCode =
   | "duplicate_id"
   | "invalid_role"
   | "missing_name"
-  | "invalid_number";
+  | "invalid_number"
+  | "too_many_rows";
 
 export interface Anomaly {
   code: AnomalyCode;
@@ -76,6 +77,8 @@ const NUMERIC: (keyof QuotationRow)[] = [
 ];
 const ROLE_SHEETS = ["Portieri", "Difensori", "Centrocampisti", "Attaccanti"];
 const MAX_HEADER_SCAN = 15;
+/** Hard cap on data rows per sheet: the real listone has ~550, so this only stops garbage files. */
+const MAX_ROWS = 5000;
 
 export function normalizeHeader(value: unknown): string {
   return cellText(value)
@@ -159,7 +162,15 @@ function parseSheet(sheet: ExcelJS.Worksheet, seen: Set<number>): SheetResult {
   }
   if (anomalies.some((a) => a.code === "missing_column")) return { rows, anomalies };
 
-  for (let r = headerRow + 1; r <= sheet.rowCount; r++) {
+  const lastRow = Math.min(sheet.rowCount, headerRow + MAX_ROWS);
+  if (sheet.rowCount > lastRow) {
+    anomalies.push({
+      code: "too_many_rows",
+      sheet: name,
+      detail: `oltre ${MAX_ROWS} righe ignorate`,
+    });
+  }
+  for (let r = headerRow + 1; r <= lastRow; r++) {
     const values = sheet.getRow(r).values as unknown[];
     const raw: Partial<Record<keyof QuotationRow, unknown>> = {};
     columns.forEach((key, idx) => {

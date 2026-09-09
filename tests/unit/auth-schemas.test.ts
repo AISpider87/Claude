@@ -62,6 +62,9 @@ describe("safeNext", () => {
   it("falls back on external or protocol-relative urls", () => {
     expect(safeNext("https://evil.example")).toBe("/rosa");
     expect(safeNext("//evil.example")).toBe("/rosa");
+    expect(safeNext("/\\evil.example")).toBe("/rosa");
+    expect(safeNext("/rosa\\@evil.example")).toBe("/rosa");
+    expect(safeNext("/rosa x")).toBe("/rosa");
     expect(safeNext(null)).toBe("/rosa");
   });
 });

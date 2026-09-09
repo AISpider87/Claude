@@ -184,7 +184,6 @@ export type Database = {
       free_agents: { Row: PlayerRow; Relationships: [] };
     };
     Functions: {
-      validate_league_code: { Args: { code: string }; Returns: boolean };
       set_user_role: { Args: { target_user: string; new_role: ProfileRole }; Returns: undefined };
       set_user_active: { Args: { target_user: string; active: boolean }; Returns: undefined };
       update_my_display_name: { Args: { new_name: string }; Returns: undefined };

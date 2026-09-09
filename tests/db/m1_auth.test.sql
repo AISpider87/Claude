@@ -8,10 +8,10 @@ declare
 begin
   -- signup creates a profile; the bootstrap email becomes admin
   insert into auth.users (email, raw_user_meta_data)
-  values ('admin@superlega.local', '{"display_name": "Daniele"}')
+  values ('admin@superlega.local', '{"display_name": "Daniele", "league_code": "superlega-dev"}')
   returning id into v_admin;
   insert into auth.users (email, raw_user_meta_data)
-  values ('mario@example.com', '{"display_name": "Mario"}')
+  values ('mario@example.com', '{"display_name": "Mario", "league_code": "SUPERLEGA-DEV"}')
   returning id into v_manager;
 
   perform 1 from public.profiles where user_id = v_admin and role = 'admin' and display_name = 'Daniele';
@@ -20,17 +20,32 @@ begin
   if not found then raise exception 'manager profile missing'; end if;
 
   -- display_name falls back to the email local part
-  insert into auth.users (email) values ('luca.rossi@example.com');
+  insert into auth.users (email, raw_user_meta_data) values ('luca.rossi@example.com', '{"league_code": "SUPERLEGA-DEV"}');
   perform 1 from public.profiles p join auth.users u on u.id = p.user_id
     where u.email = 'luca.rossi@example.com' and p.display_name = 'luca.rossi';
   if not found then raise exception 'display_name fallback failed'; end if;
 
-  -- league code: anon can validate, case/space-insensitive, never leaks the value
+  -- league code gate lives in the signup trigger: no code / wrong code = no account
+  begin
+    insert into auth.users (email, raw_user_meta_data) values ('nocode@example.com', '{"display_name": "X"}');
+    raise exception 'signup without league code accepted';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    insert into auth.users (email, raw_user_meta_data) values ('wrong@example.com', '{"league_code": "WRONG"}');
+    raise exception 'signup with wrong league code accepted';
+  exception when insufficient_privilege then null;
+  end;
+  select count(*) into v_count from auth.users where email in ('nocode@example.com', 'wrong@example.com');
+  if v_count <> 0 then raise exception 'rejected signups left users behind'; end if;
+
+  -- anon cannot reach the league code check nor the settings
   perform auth.test_login(null, 'anon');
-  select public.validate_league_code('  superlega-dev ') into v_ok;
-  if not v_ok then raise exception 'valid league code rejected'; end if;
-  select public.validate_league_code('WRONG') into v_ok;
-  if v_ok then raise exception 'invalid league code accepted'; end if;
+  begin
+    select private.league_code_matches('SUPERLEGA-DEV') into v_ok;
+    raise exception 'anon could call league_code_matches';
+  exception when insufficient_privilege then null;
+  end;
   begin
     perform * from public.league_settings;
     raise exception 'anon could read league_settings';
