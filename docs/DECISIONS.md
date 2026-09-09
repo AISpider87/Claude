@@ -202,3 +202,9 @@ listone,operazioni}`) con exceljs, letture paginate (`fetchAll`) sotto la
 - 2026-09-09 · **Backup = `pg_dump` via `scripts/backup.sh` + export Excel**:
   Supabase Free non ha backup automatici; procedura settimanale documentata in
   docs/DEPLOY.md. · M8.
+- 2026-09-09 · **Tema chiaro con palette scurita** (primary `#0369A1`, danger
+  `#B91C1C`, colori ruolo dedicati al chiaro) per garantire AA anche sui badge
+  a 12 px; test automatico `tests/unit/theme-contrast.test.ts` legge i token da
+  `globals.css`. Skip link con destinazione su tutte le pagine; id univoci
+  (`useId`) nei pannelli cambio; barra di conferma sopra la bottom-nav anche con
+  safe-area iOS. · Review QA M7 (block → risolto).

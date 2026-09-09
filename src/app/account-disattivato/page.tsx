@@ -6,7 +6,10 @@ export const metadata = { title: "Account disattivato" };
 
 export default function DeactivatedPage() {
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center">
+    <main
+      id="main"
+      className="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center"
+    >
       <Ban className="text-danger size-12" aria-hidden />
       <h1 className="font-display text-2xl font-semibold">Account disattivato</h1>
       <p className="text-muted max-w-sm">

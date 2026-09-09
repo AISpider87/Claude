@@ -26,12 +26,16 @@
   --surface: #ffffff;
   --surface-2: #e9eff7;
   --line: #d3dce9;
-  --primary: #0284c7;
-  --primary-strong: #0369a1;
+  --primary: #0369a1;
+  --primary-strong: #075985;
   --on-primary: #ffffff;
   --text: #0b1220;
   --text-muted: #4b5a73;
-  --danger: #dc2626;
+  --danger: #b91c1c;
+  --role-p: #854d0e;
+  --role-d: #065f46;
+  --role-c: #0369a1;
+  --role-a: #b91c1c;
   color-scheme: light;
 }
 
@@ -96,6 +100,8 @@ body {
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

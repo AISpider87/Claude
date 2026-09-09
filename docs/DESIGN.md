@@ -22,7 +22,7 @@ iniziali/avatar generato.
 | `--success`        | derivato dal primary (niente verde dedicato: un solo accento) |
 
 Tema chiaro: `--bg #F4F7FB`, `--surface #FFFFFF`, testo `#0B1220`, stesso primary
-(`#0284C7` per contrasto AA su chiaro).
+(`#0369A1` per contrasto AA su chiaro; danger `#B91C1C`; colori ruolo scuriti nel tema chiaro: P `#854D0E`, D `#065F46`, C `#0369A1`, A `#B91C1C`).
 
 ## Colori ruolo (coerenti in tutta l'app, dark e light)
 

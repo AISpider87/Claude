@@ -19,7 +19,10 @@ const ROLE_STROKE: Record<RoleClassic, string> = {
 };
 
 function initials(name: string) {
-  const parts = name.replace(/\./g, "").split(/\s+/).filter(Boolean);
+  const parts = name
+    .replace(/[^\p{L}\s-]/gu, "")
+    .split(/[\s-]+/)
+    .filter(Boolean);
   const first = parts[0]?.[0] ?? "";
   const second = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? "") : (parts[0]?.[1] ?? "");
   return (first + second).toUpperCase();

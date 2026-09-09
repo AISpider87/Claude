@@ -3,7 +3,10 @@ import { Logo } from "@/components/brand/logo";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <main className="safe-top safe-bottom flex flex-1 flex-col items-center justify-center px-4 py-8">
+    <main
+      id="main"
+      className="safe-top safe-bottom flex flex-1 flex-col items-center justify-center px-4 py-8"
+    >
       <Link href="/login" className="mb-8" aria-label="SuperLega">
         <Logo />
       </Link>

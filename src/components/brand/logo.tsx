@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -6,18 +7,19 @@ import { cn } from "@/lib/utils";
  * federation marks); the same shapes feed public/icons via scripts/make-icons.mjs.
  */
 export function Emblem({ className }: { className?: string }) {
+  const gradientId = `${useId()}-shield`;
   return (
     <svg viewBox="0 0 64 64" className={cn("size-8 shrink-0", className)} aria-hidden>
-      <defs>
-        <linearGradient id="sl-shield" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="currentColor" stopOpacity="0.22" />
-          <stop offset="1" stopColor="currentColor" stopOpacity="0.04" />
-        </linearGradient>
-      </defs>
       <g className="text-primary">
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="currentColor" stopOpacity="0.22" />
+            <stop offset="1" stopColor="currentColor" stopOpacity="0.04" />
+          </linearGradient>
+        </defs>
         <polygon
           points="32,4 56,18 56,46 32,60 8,46 8,18"
-          fill="url(#sl-shield)"
+          fill={`url(#${gradientId})`}
           stroke="currentColor"
           strokeWidth="3.5"
           strokeLinejoin="round"

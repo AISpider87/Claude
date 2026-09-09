@@ -29,8 +29,9 @@ export function AnimatedNumber({ value, className }: { value: number; className?
   }, [value, reduced]);
 
   return (
-    <span className={className} aria-label={formatInt(value)}>
-      {formatInt(shown)}
+    <span className={className}>
+      <span aria-hidden>{formatInt(shown)}</span>
+      <span className="sr-only">{formatInt(value)}</span>
     </span>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useId, useState } from "react";
 import { ArrowRight, Check, Pencil, Search } from "lucide-react";
 import { Reveal } from "@/components/motion/reveal";
 import { RoleBadge } from "@/components/ui/badge";
@@ -61,6 +61,13 @@ export function SwapPanel({
   const [inId, setInId] = useState<number | null>(null);
   const [query, setQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<RoleClassic | null>(null);
+  const uid = useId();
+  const ids = {
+    out: `${uid}-out`,
+    in: `${uid}-in`,
+    confirm: `${uid}-confirm`,
+    why: (id: number) => `${uid}-why-${id}`,
+  };
 
   const out = roster.find((r) => r.id === outId) ?? null;
   const inPlayer = candidates.find((c) => c.id === inId) ?? null;
@@ -96,8 +103,8 @@ export function SwapPanel({
         <p className="text-muted text-sm">{description}</p>
       </div>
 
-      <section aria-labelledby="swap-out">
-        <h4 id="swap-out" className="text-muted mb-2 text-xs font-semibold uppercase">
+      <section aria-labelledby={ids.out}>
+        <h4 id={ids.out} className="text-muted mb-2 text-xs font-semibold uppercase">
           1. Chi esce
         </h4>
         {out ? (
@@ -168,8 +175,8 @@ export function SwapPanel({
 
       {out && (
         <Reveal>
-          <section aria-labelledby="swap-in">
-            <h4 id="swap-in" className="text-muted mb-2 text-xs font-semibold uppercase">
+          <section aria-labelledby={ids.in}>
+            <h4 id={ids.in} className="text-muted mb-2 text-xs font-semibold uppercase">
               2. Chi entra ({ROLE_LABEL[out.role].toLowerCase()}, hai {formatInt(credits + refund)}{" "}
               crediti)
             </h4>
@@ -202,7 +209,7 @@ export function SwapPanel({
                         onClick={() => setInId(c.id)}
                         disabled={!affordable}
                         aria-pressed={inId === c.id}
-                        aria-describedby={affordable ? undefined : `swap-in-${c.id}-why`}
+                        aria-describedby={affordable ? undefined : ids.why(c.id)}
                         className={cn(
                           tileClass,
                           "disabled:opacity-50",
@@ -216,7 +223,7 @@ export function SwapPanel({
                           <span className="text-muted block text-xs">
                             {c.team}
                             {!affordable && (
-                              <span id={`swap-in-${c.id}-why`} className="text-danger">
+                              <span id={ids.why(c.id)} className="text-danger">
                                 {" "}
                                 · crediti insufficienti
                               </span>
@@ -241,12 +248,12 @@ export function SwapPanel({
       )}
 
       {out && inPlayer && (
-        <Reveal className="sticky bottom-20 z-10 lg:static">
+        <Reveal className="sticky bottom-[calc(3.5rem+1px+env(safe-area-inset-bottom)+0.5rem)] z-10 lg:static">
           <section
-            aria-labelledby="swap-confirm"
+            aria-labelledby={ids.confirm}
             className="border-primary/40 bg-surface rounded-[var(--radius-card)] border p-4 shadow-lg"
           >
-            <h4 id="swap-confirm" className="text-muted mb-2 text-xs font-semibold uppercase">
+            <h4 id={ids.confirm} className="text-muted mb-2 text-xs font-semibold uppercase">
               3. Conferma
             </h4>
             <p className="flex flex-wrap items-center gap-2 text-sm">
