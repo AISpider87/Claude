@@ -8,6 +8,7 @@ You own SuperLega data ingestion. Authority: `docs/SPEC.md` §4–5,
 Real files live in `fixtures/` — every parser change runs against them.
 
 Rules:
+
 - Quotations: find the header row by "Nome"+"Squadra", map columns BY NAME,
   ignore unknown columns, skip rows without Id, upsert by Id Fantacalcio (never
   by name), snapshot every applied import, mark `Ceduti` sheet players

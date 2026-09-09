@@ -28,7 +28,7 @@
 - Nelle sessioni di mercato (riparazione) si possono acquistare **solo svincolati**.
 - La lista svincolati è **fotografata all'apertura della sessione**: durante la stessa
   sessione più squadre possono acquistare lo stesso svincolato; dalla sessione successiva,
-  chi è stato preso non è più disponibile. *(Interpretazione da confermare con l'admin.)*
+  chi è stato preso non è più disponibile. _(Confermato dall'admin il 2026-09-09.)_
 - Non esiste quindi il problema "due squadre si contendono lo stesso giocatore":
   niente aste né code, nessuna esclusività da garantire a livello di transazione.
 
@@ -49,12 +49,13 @@
 - Si può fare **in qualsiasi momento** (non solo in sessione), entro le 19:00 del giovedì
   (turno infrasettimanale: entro le 14:00 del martedì che anticipa la giornata, oppure
   entro le 22:00 del venerdì che la posticipa).
-- Economia del cambio gratuito (rimborso e prezzo del sostituto): **da definire con l'admin**.
+- Economia del cambio gratuito (confermata dall'admin): rimborso = **prezzo pagato**,
+  sostituto pagato a **Qt.A attuale**.
 
-## Prezzi (da confermare — il regolamento non li esplicita)
+## Prezzi (confermati dall'admin — il regolamento non li esplicita)
 
-- Acquisto: default proposto **Qt.A corrente** al momento dell'operazione.
-- Vendita (dentro un cambio): default proposto rientro = **Qt.A corrente**.
+- Acquisto: **Qt.A corrente** dell'ultimo listone importato, al momento dell'operazione.
+- Vendita (dentro un cambio): rientro = **Qt.A corrente**.
 - Dall'export risulta che il prezzo pagato al precampionato = quotazione al momento
   dell'acquisto (es. Dimarco 32 = Qt.I).
 

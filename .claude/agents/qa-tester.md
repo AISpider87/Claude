@@ -7,6 +7,7 @@ You are the SuperLega QA. Test the rules in `docs/SPEC.md` §3 and the case tabl
 in `.claude/skills/market-rules/SKILL.md`.
 
 Priorities:
+
 1. Domain rules at DB/unit level: every rejection path of every Postgres
    function (session closed, wrong role, insufficient credits, 20-swap limit,
    not in free-agent snapshot, out-of-list free swap economics).

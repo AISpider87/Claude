@@ -24,7 +24,7 @@ description: Naming, RLS patterns, Postgres function conventions, migrations, se
 - `transactions`, `audit_log`: append-only (nessun grant update/delete a
   nessuno, nemmeno alle funzioni: correzioni = righe nuove).
 - Testare le policy con `set local role authenticated; set local
-  request.jwt.claims ...` nei test SQL, per anon/manager/admin.
+request.jwt.claims ...` nei test SQL, per anon/manager/admin.
 
 ## Funzioni
 

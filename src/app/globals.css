@@ -1,0 +1,101 @@
+@import "tailwindcss";
+
+@custom-variant light (&:where(.light, .light *));
+
+/* Design tokens — see docs/DESIGN.md. Dark is the default theme. */
+:root {
+  --bg: #05080f;
+  --surface: #0b1220;
+  --surface-2: #111b2e;
+  --line: #1e2a44;
+  --primary: #38bdf8;
+  --primary-strong: #0ea5e9;
+  --on-primary: #05080f;
+  --text: #e6edf7;
+  --text-muted: #8ca0bf;
+  --danger: #f87171;
+  --role-p: #facc15;
+  --role-d: #34d399;
+  --role-c: #38bdf8;
+  --role-a: #f87171;
+  color-scheme: dark;
+}
+
+:root.light {
+  --bg: #f4f7fb;
+  --surface: #ffffff;
+  --surface-2: #e9eff7;
+  --line: #d3dce9;
+  --primary: #0284c7;
+  --primary-strong: #0369a1;
+  --on-primary: #ffffff;
+  --text: #0b1220;
+  --text-muted: #4b5a73;
+  --danger: #dc2626;
+  color-scheme: light;
+}
+
+@theme inline {
+  --color-background: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-primary: var(--primary);
+  --color-primary-strong: var(--primary-strong);
+  --color-on-primary: var(--on-primary);
+  --color-foreground: var(--text);
+  --color-muted: var(--text-muted);
+  --color-danger: var(--danger);
+  --color-role-p: var(--role-p);
+  --color-role-d: var(--role-d);
+  --color-role-c: var(--role-c);
+  --color-role-a: var(--role-a);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display:
+    var(--font-space-grotesk), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --radius-card: 12px;
+  --radius-control: 8px;
+}
+
+html {
+  height: 100%;
+}
+
+body {
+  min-height: 100dvh;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  /* Subtle tactical grid, kept faint so text contrast is unaffected. */
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--primary) 5%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--primary) 5%, transparent) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

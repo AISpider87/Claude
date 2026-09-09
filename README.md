@@ -1,52 +1,45 @@
-# Battitore d'Asta
+# SuperLega
 
-Applicazione per l'aggiudicazione all'asta: si preme il martelletto, scorrono
-5 secondi in silenzio, poi partono i 3 colpi che scandiscono gli ultimi
-3 secondi — con l'ultimo colpo ritardato di 2 secondi in più.
+App web (PWA) per la gestione delle rose e del mercato della lega fantacalcio
+**SuperLega 2026/27**: 20 squadre, modalità Classic, quotazioni da Fantacalcio.it.
 
-## Come si avvia (MacBook Pro M5)
+- Documentazione di progetto: `docs/` (`SPEC.md`, `ARCHITECTURE.md`, `DATA_MODEL.md`,
+  `ROADMAP.md`, `DESIGN.md`, `REGOLE-LEGA.md`, `DECISIONS.md`, `BACKLOG.md`).
+- Convenzioni per chi sviluppa: `CLAUDE.md`.
+- Il vecchio tool per l'asta live è in `legacy/` (non fa parte dell'app).
 
-Doppio clic su **`avvia.command`**, oppure doppio clic direttamente su
-`index.html`. Non serve installare nulla: è un unico file autosufficiente,
-funziona offline in Safari o Chrome.
+## Stack
 
-> Alla prima apertura di `avvia.command` macOS può chiedere conferma:
-> tasto destro → *Apri* → *Apri*.
+Next.js (App Router, TypeScript) · Tailwind CSS · Supabase (Postgres, Auth, RLS) ·
+Vitest · Playwright · Vercel + Supabase sui piani gratuiti.
 
-Per la modalità a schermo intero: `Ctrl + Cmd + F` in Safari.
+## Sviluppo locale
 
-## Sequenza
+```bash
+npm install
+cp .env.example .env.local      # inserisci URL e chiave anon del progetto Supabase
+supabase start                  # richiede Docker; applica migrazioni + seed
+npm run dev                     # http://localhost:3000
+```
 
-| Istante | Cosa succede |
-|---------|--------------|
-| 0 s | Pressione del martelletto, parte il cronometro |
-| 0 → 5 s | Attesa silenziosa: i secondi trascorsi scorrono a schermo (0 → 4) |
-| 5 s | **1º colpo** — conteggio "3" |
-| 6 s | **2º colpo** — conteggio "2" |
-| 8 s | **3º colpo** — conteggio "1", ritardato di 2 secondi in più |
-| 9,2 s | Schermata *AGGIUDICATO* — clic o barra spaziatrice per ribattere |
+Seed locale: codice lega `SUPERLEGA-DEV`, primo admin = chi si registra con
+`admin@superlega.local` (vedi `supabase/seed.sql`). Le email locali si leggono su
+http://localhost:54324 (Inbucket).
 
 ## Comandi
 
-- **Batti** (o barra spaziatrice) — avvia la sequenza. Il pulsante resta sempre
-  a schermo: premendolo a conteggio avviato la sequenza riparte da zero e i
-  colpi gia' programmati vengono zittiti
-- **Azzera** (o `Esc`) — ferma e riporta tutto a zero
+| Comando             | Cosa fa                                      |
+| ------------------- | -------------------------------------------- |
+| `npm run dev`       | server di sviluppo                           |
+| `npm run build`     | build di produzione                          |
+| `npm run lint`      | ESLint                                       |
+| `npm run typecheck` | TypeScript strict                            |
+| `npm run test`      | test unitari (Vitest)                        |
+| `npm run test:e2e`  | test end-to-end (Playwright, desktop+mobile) |
+| `npm run format`    | Prettier                                     |
 
-## Pacchetto per macOS
+CI (GitHub Actions) esegue lint, typecheck, format check, unit test, build ed e2e.
 
-La cartella `mac/` contiene i pezzi del bundle `Battitore d'Asta.app`:
-`Info.plist`, lo script di avvio `BattitoreAsta`, l'icona `icona.icns` e
-l'installatore `INSTALLA.command`.
+## Deploy
 
-## Note tecniche
-
-- I tre colpi sono programmati sul clock dell'`AudioContext`, quindi la
-  cadenza resta precisa anche se la grafica perde qualche fotogramma.
-- Il suono è sintetizzato in tempo reale (impatto di rumore filtrato +
-  componenti tonali): nessun file audio esterno. Il terzo colpo è più grave,
-  più pieno e con coda risonante, come la battuta finale del martelletto.
-- L'uscita passa da un compressore, così il colpo finale resta forte senza
-  saturare (picco verificato a 0,88 su fondo scala).
-- Per modificare i tempi basta cambiare le costanti `ATTESA` e `COLPI`
-  in cima allo script dentro `index.html`.
+Vedi `docs/DEPLOY.md` (in arrivo con la milestone M8).

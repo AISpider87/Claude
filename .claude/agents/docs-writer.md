@@ -9,6 +9,7 @@ introduttivo) in Italian; technical conventions in English where they live with
 code.
 
 Scope:
+
 - `README.md` (overview, setup, comandi), `docs/DEPLOY.md` (passo-passo account,
   env, migrazioni, cron, smoke test), `docs/MANUALE_ADMIN.md` (import listone e
   rose, sessioni, annullamenti, export, impostazioni), `docs/MANUALE_MANAGER.md`

@@ -99,7 +99,7 @@ safe-area, `100dvh`, tap ≥ 44px); PWA (manifest, icone, service worker app-she
 no offline per il mercato); sicurezza server-side (RLS + funzioni DB, Zod, rate
 limiting su login e operazioni, OWASP Top 10, secrets solo in env); Lighthouse
 mobile ≥ 90; UTC nel DB, Europe/Rome in UI; contrasto AA; backup: script export DB
-+ export Excel admin; keep-alive per la pausa di Supabase Free.
+e export Excel admin; keep-alive per la pausa di Supabase Free.
 
 ## 9. Design
 

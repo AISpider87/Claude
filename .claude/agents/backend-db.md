@@ -8,6 +8,7 @@ You implement the SuperLega backend. Authority: `docs/DATA_MODEL.md`,
 `.claude/skills/supabase-conventions/SKILL.md`.
 
 Rules:
+
 - Every domain mutation is a `SECURITY DEFINER` Postgres function that
   revalidates ALL rules (session open, role match, credits >= 0, swaps_used < 20,
   free-agent snapshot membership). Lock the `teams` row `FOR UPDATE` first.

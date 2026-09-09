@@ -6,41 +6,49 @@ ogni tabella; scritture di dominio solo via funzioni `SECURITY DEFINER`.
 ## Tabelle
 
 ### profiles
+
 `user_id uuid PK → auth.users`, `display_name`, `role text check (admin|manager)`,
 `is_active bool`, timestamps. Creato da trigger su signup.
 
 ### teams
+
 `id`, `name unique`, `short_name (3 lettere)`, `color_primary`, `color_secondary`,
 `owner_id uuid null unique → profiles` (assegnato dall'admin quando il manager si
 registra), `credits int check (credits >= 0)`, `swaps_used int default 0`,
 timestamps. 20 righe.
 
-### players  (listone)
+### players (listone)
+
 `id int PK` (Id Fantacalcio), `name`, `team text` (squadra Serie A),
 `role_classic check (P|D|C|A)`, `role_mantra text`, `qt_a, qt_i, diff, qt_a_m,
 qt_i_m, diff_m, fvm, fvm_m int`, `status check (active|out_of_list)`,
 `out_of_list_at`, `updated_at`.
 
 ### imports
+
 `id`, `kind check (quotations|rosters)`, `source check (manual|auto)`,
 `file_path` (Storage), `status check (pending|previewed|applied|failed)`,
 `stats jsonb` (nuovi/aggiornati/usciti/anomalie), `created_by`, `created_at`.
 
-### player_quotations  (storico, uno snapshot per import applicato)
+### player_quotations (storico, uno snapshot per import applicato)
+
 `import_id → imports`, `player_id → players`, `qt_a, qt_i, fvm ...`, `recorded_at`.
 PK (import_id, player_id).
 
 ### market_sessions
+
 `id`, `name`, `opens_at`, `closes_at`, `status check (scheduled|open|closed)`,
 `extra_budget int default 5`, `opened_at`, `closed_at`, `validation_report jsonb`.
 
-### session_free_agents  (foto degli svincolati all'apertura)
+### session_free_agents (foto degli svincolati all'apertura)
+
 `session_id → market_sessions`, `player_id → players`. PK (session_id, player_id).
 Popolata da `open_market_session()`: players attivi con nessuna riga viva in
 `roster_players`. Un acquisto NON rimuove la riga (acquisti multipli leciti nella
 stessa sessione).
 
 ### roster_players
+
 `id`, `team_id → teams`, `player_id → players`, `price_paid int`, `acquired_at`,
 `acquired_via check (initial_import|admin|buy|free_swap)`, `released_at null`,
 `released_via null check (sell|free_swap|admin|reversal)`.
@@ -48,7 +56,8 @@ Vincolo: unique (team_id, player_id) dove `released_at is null`.
 **Nessun vincolo di unicità globale sul player** (proprietà non esclusiva).
 Rosa corrente = righe con `released_at is null`; lo storico non si cancella mai.
 
-### transactions  (registro immutabile)
+### transactions (registro immutabile)
+
 `id`, `team_id`, `session_id null` (null per cambio gratuito fuori sessione),
 `kind check (buy|sell|free_swap|admin_adjust|reversal)`,
 `player_out_id null`, `player_out_price null` (rientro),
@@ -57,12 +66,14 @@ Rosa corrente = righe con `released_at is null`; lo storico non si cancella mai.
 `created_by`, `created_at`. Niente UPDATE/DELETE (revoke + nessuna policy).
 
 ### league_settings
+
 `key text PK`, `value jsonb`, `updated_by`, `updated_at`. Chiavi: `league_code`,
 `initial_budget` (250), `roster_composition` ({P:3,D:7,C:7,A:6}), `season_swap_limit`
 (20), `session_extra_budget` (5), `sale_price_rule` ("current_quotation"),
 `free_swap_refund_rule` ("price_paid"), `sync_enabled`, `sync_hour`.
 
 ### audit_log
+
 `id`, `user_id null`, `action`, `entity`, `entity_id`, `payload jsonb`,
 `created_at`. Solo INSERT (da funzioni e server actions); lettura solo admin.
 
@@ -94,10 +105,10 @@ funzioni `admin_*`.
 
 ## RLS (sintesi)
 
-| Tabella | SELECT | Scritture |
-|---|---|---|
-| profiles | proprio profilo; admin tutti; nome/ruolo visibili alla lega | solo funzioni/trigger |
-| teams, roster_players, transactions, market_sessions, session_free_agents, players, player_quotations | tutti gli utenti autenticati e attivi | solo funzioni |
-| imports, league_settings, audit_log | solo admin (league_code mai esposto ai manager) | solo admin via funzioni |
+| Tabella                                                                                               | SELECT                                                      | Scritture               |
+| ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ----------------------- |
+| profiles                                                                                              | proprio profilo; admin tutti; nome/ruolo visibili alla lega | solo funzioni/trigger   |
+| teams, roster_players, transactions, market_sessions, session_free_agents, players, player_quotations | tutti gli utenti autenticati e attivi                       | solo funzioni           |
+| imports, league_settings, audit_log                                                                   | solo admin (league_code mai esposto ai manager)             | solo admin via funzioni |
 
 `is_admin()` e `is_league_member()` come funzioni helper `security definer stable`.

@@ -8,6 +8,7 @@ You are the SuperLega security reviewer. You review and block; you do not ship
 features. A critical finding blocks the milestone until fixed.
 
 Checklist:
+
 1. RLS enabled on EVERY table; policies tested for anon, manager, admin;
    direct INSERT/UPDATE/DELETE on domain tables revoked (functions only).
 2. Every mutation revalidates authorization inside the Postgres function

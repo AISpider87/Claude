@@ -12,7 +12,7 @@ server con SheetJS; mai fidarsi del layout: individuare, mappare, validare.
 ## Quotazioni (`Quotazioni_Fantacalcio_Stagione_YYYY_YY.xlsx`)
 
 - Fogli: `Tutti` (fonte primaria, ~533 righe), `Portieri/Difensori/
-  Centrocampisti/Attaccanti` (ridondanti, ignorare), `Ceduti` (→ out_of_list).
+Centrocampisti/Attaccanti` (ridondanti, ignorare), `Ceduti` (→ out_of_list).
 - Riga 1 titolo; intestazioni alla riga trovata cercando una riga che contiene
   sia "Nome" sia "Squadra" (non assumere riga 2).
 - Colonne mappate PER NOME (case/punteggiatura-insensitive):

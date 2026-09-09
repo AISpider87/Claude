@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Rebuilds a throwaway database on a local PostgreSQL and runs the SQL tests.
+#
+#   scripts/db-test.sh            # uses PG_SUPERUSER_CMD (default: "su postgres -c")
+#   PGDATABASE=x scripts/db-test.sh
+#
+# Each tests/db/*.test.sql file runs inside a transaction that is rolled back.
+# Tests fail the run by raising an exception (see tests/db/README.md).
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+DB="${PGDATABASE:-superlega_test}"
+RUN="${PG_SUPERUSER_CMD:-su postgres -c}"
+
+psql_db() { $RUN "psql -v ON_ERROR_STOP=1 -q -d $DB $*"; }
+
+$RUN "psql -v ON_ERROR_STOP=1 -q -c 'drop database if exists $DB;' -c 'create database $DB;'"
+psql_db -f "$ROOT/tests/db/auth-stub.sql"
+
+for m in "$ROOT"/supabase/migrations/*.sql; do
+  echo "migration: $(basename "$m")"
+  psql_db -f "$m"
+done
+psql_db -f "$ROOT/supabase/seed.sql"
+
+status=0
+for t in "$ROOT"/tests/db/*.test.sql; do
+  [ -e "$t" ] || continue
+  if psql_db --single-transaction -f "$t" >/dev/null; then
+    echo "PASS $(basename "$t")"
+  else
+    echo "FAIL $(basename "$t")"
+    status=1
+  fi
+done
+exit $status

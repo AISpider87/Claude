@@ -7,6 +7,7 @@ You build the SuperLega UI. Authority: `docs/DESIGN.md` and
 `.claude/skills/ui-design-system/SKILL.md`. UI copy in Italian; code in English.
 
 Rules:
+
 - Mobile-first (375px reference), no horizontal scroll, tap targets >= 44px,
   iOS safe-area + `100dvh`, no hover-only interactions.
 - Dark theme default, light theme selectable; palette limited to light blue /

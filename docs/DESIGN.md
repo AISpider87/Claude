@@ -8,18 +8,18 @@ iniziali/avatar generato.
 
 ## Token colore (dark, default)
 
-| Token | Valore | Uso |
-|---|---|---|
-| `--bg` | `#05080F` (nero-blu) | sfondo pagina, trama tattica sottile a bassa opacità |
-| `--surface` | `#0B1220` (blu notte) | card, pannelli |
-| `--surface-2` | `#111B2E` | card elevate, header |
-| `--border` | `#1E2A44` | bordi, divisori |
-| `--primary` | `#38BDF8` (blu chiaro/ciano) | azioni, link, focus ring, grafici |
-| `--primary-strong` | `#0EA5E9` | pulsanti primari |
-| `--text` | `#E6EDF7` | testo primario (AA su bg/surface) |
-| `--text-muted` | `#8CA0BF` | testo secondario |
-| `--danger` | `#F87171` | unico colore di avviso (errori, crediti insufficienti) |
-| `--success` | derivato dal primary (niente verde dedicato: un solo accento) |
+| Token              | Valore                                                        | Uso                                                    |
+| ------------------ | ------------------------------------------------------------- | ------------------------------------------------------ |
+| `--bg`             | `#05080F` (nero-blu)                                          | sfondo pagina, trama tattica sottile a bassa opacità   |
+| `--surface`        | `#0B1220` (blu notte)                                         | card, pannelli                                         |
+| `--surface-2`      | `#111B2E`                                                     | card elevate, header                                   |
+| `--border`         | `#1E2A44`                                                     | bordi, divisori                                        |
+| `--primary`        | `#38BDF8` (blu chiaro/ciano)                                  | azioni, link, focus ring, grafici                      |
+| `--primary-strong` | `#0EA5E9`                                                     | pulsanti primari                                       |
+| `--text`           | `#E6EDF7`                                                     | testo primario (AA su bg/surface)                      |
+| `--text-muted`     | `#8CA0BF`                                                     | testo secondario                                       |
+| `--danger`         | `#F87171`                                                     | unico colore di avviso (errori, crediti insufficienti) |
+| `--success`        | derivato dal primary (niente verde dedicato: un solo accento) |
 
 Tema chiaro: `--bg #F4F7FB`, `--surface #FFFFFF`, testo `#0B1220`, stesso primary
 (`#0284C7` per contrasto AA su chiaro).
@@ -32,7 +32,7 @@ sempre accompagnati dalla lettera del ruolo (mai solo colore).
 ## Tipografia
 
 - Display/numeri: **Space Grotesk** (titoli, crediti, quotazioni — `font-variant-
-  numeric: tabular-nums` per tutte le cifre).
+numeric: tabular-nums` per tutte le cifre).
 - Testo: **Inter**. Scala: 12/14/16/20/24/32. Line-height 1.5 nel testo, 1.2 nei
   display.
 

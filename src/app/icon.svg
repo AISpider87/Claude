@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#05080f"/>
+  <polygon points="32,8 52,20 52,44 32,56 12,44 12,20" fill="none" stroke="#38bdf8" stroke-width="3"/>
+  <line x1="16" y1="46" x2="48" y2="18" stroke="#38bdf8" stroke-width="3" stroke-linecap="round" opacity="0.6"/>
+  <text x="32" y="39" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-weight="700" font-size="20" fill="#e6edf7">SL</text>
+</svg>

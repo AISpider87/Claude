@@ -46,19 +46,19 @@ Never deletes anything. A reversal cannot itself be reversed twice.
 
 ## Tabella dei casi di test (minimo)
 
-| # | Caso | Esito atteso |
-|---|------|--------------|
-| 1 | Cambio valido in sessione aperta | ok; crediti e swaps_used aggiornati |
-| 2 | Sessione chiusa/programmata | errore "sessione non aperta" |
-| 3 | player_in non nella foto svincolati | errore |
-| 4 | player_in preso da altri NELLA STESSA sessione | **ok** (non esclusivo) |
-| 5 | Ruoli diversi out/in | errore |
-| 6 | Crediti insufficienti (refund−cost porta sotto 0) | errore, nulla scritto |
-| 7 | 20° cambio | ok; 21° | errore limite |
-| 8 | Due cambi simultanei stessa squadra (concorrenza) | mai crediti<0 né >20 |
-| 9 | Free swap con out non fuori-lista | errore |
-| 10 | Free swap a sessione chiusa | ok, non conta nei 20, rimborso=prezzo pagato |
-| 11 | Free swap: in posseduto da qualcuno ora | errore |
-| 12 | Reversal di un cambio | rosa e crediti ripristinati, swaps_used-- |
-| 13 | Chiamata diretta API fuori sessione (no UI) | errore server-side |
-| 14 | open_session ritentata | +5 accreditato una sola volta |
+| #   | Caso                                              | Esito atteso                                 |
+| --- | ------------------------------------------------- | -------------------------------------------- |
+| 1   | Cambio valido in sessione aperta                  | ok; crediti e swaps_used aggiornati          |
+| 2   | Sessione chiusa/programmata                       | errore "sessione non aperta"                 |
+| 3   | player_in non nella foto svincolati               | errore                                       |
+| 4   | player_in preso da altri NELLA STESSA sessione    | **ok** (non esclusivo)                       |
+| 5   | Ruoli diversi out/in                              | errore                                       |
+| 6   | Crediti insufficienti (refund−cost porta sotto 0) | errore, nulla scritto                        |
+| 7   | 20° cambio                                        | ok; 21°                                      | errore limite |
+| 8   | Due cambi simultanei stessa squadra (concorrenza) | mai crediti<0 né >20                         |
+| 9   | Free swap con out non fuori-lista                 | errore                                       |
+| 10  | Free swap a sessione chiusa                       | ok, non conta nei 20, rimborso=prezzo pagato |
+| 11  | Free swap: in posseduto da qualcuno ora           | errore                                       |
+| 12  | Reversal di un cambio                             | rosa e crediti ripristinati, swaps_used--    |
+| 13  | Chiamata diretta API fuori sessione (no UI)       | errore server-side                           |
+| 14  | open_session ritentata                            | +5 accreditato una sola volta                |

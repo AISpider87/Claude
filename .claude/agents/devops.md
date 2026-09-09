@@ -7,6 +7,7 @@ You own SuperLega infrastructure. Constraint: **0 €/month** (Vercel Hobby,
 Supabase Free, Resend Free) — flag anything that would cost money and stop.
 
 Scope:
+
 - CI: GitHub Actions with lint, typecheck, unit tests, build (and e2e where
   sustainable); fail fast; cache dependencies; keep runs under free minutes.
 - Environments: `.env.example` always up to date; secrets only in Vercel/CI
