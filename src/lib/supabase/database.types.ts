@@ -16,7 +16,8 @@ export type ImportKind = "quotations" | "rosters";
 export type ImportSource = "manual" | "auto";
 export type ImportStatus = "previewed" | "applied" | "failed";
 export type SessionStatus = "scheduled" | "open" | "closed";
-export type TransactionKind = "swap" | "free_swap" | "admin_assign" | "admin_remove" | "reversal";
+export type TransactionKind =
+  "swap" | "free_swap" | "admin_assign" | "admin_remove" | "admin_credits" | "reversal";
 export type AcquiredVia = "initial_import" | "admin" | "swap" | "free_swap" | "reversal";
 export type ReleasedVia = "swap" | "free_swap" | "admin" | "reversal";
 
@@ -237,6 +238,39 @@ export type Database = {
       };
       apply_rosters_import: { Args: { p_import_id: string }; Returns: Json };
       team_roster_summary: { Args: { p_team_id: string }; Returns: Json };
+      current_market_session: { Args: Record<string, never>; Returns: MarketSessionRow | null };
+      admin_create_session: {
+        Args: {
+          p_name: string;
+          p_opens_at: string;
+          p_closes_at: string;
+          p_extra_budget?: number | null;
+        };
+        Returns: string;
+      };
+      admin_update_session: {
+        Args: {
+          p_id: string;
+          p_name: string;
+          p_opens_at: string;
+          p_closes_at: string;
+          p_extra_budget: number;
+        };
+        Returns: undefined;
+      };
+      admin_delete_session: { Args: { p_id: string }; Returns: undefined };
+      open_market_session: { Args: { p_id: string }; Returns: undefined };
+      close_market_session: { Args: { p_id: string }; Returns: Json };
+      validate_rosters: { Args: Record<string, never>; Returns: Json };
+      swap_player: {
+        Args: { p_team_id: string; p_player_out: number; p_player_in: number };
+        Returns: string;
+      };
+      free_swap_player: {
+        Args: { p_team_id: string; p_player_out: number; p_player_in: number };
+        Returns: string;
+      };
+      reverse_transaction: { Args: { p_tx_id: string; p_reason: string }; Returns: string };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

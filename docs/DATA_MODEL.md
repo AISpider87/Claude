@@ -88,15 +88,19 @@ un trigger `forbid_change` che blocca anche le funzioni security definer.
 
 ## Funzioni Postgres (SECURITY DEFINER, tutte con lock `teams FOR UPDATE`)
 
+- `admin_create_session / admin_update_session / admin_delete_session` — solo
+  admin; `current_market_session()` — la sessione in cui si può operare adesso
+  (`open` e `now() < closes_at`); `validate_rosters()` — report per squadra.
 - `open_market_session(session_id)` — solo admin: stato→open, fotografa
-  `session_free_agents`, accredita `extra_budget` a tutte le squadre, audit.
+  `session_free_agents`, accredita `extra_budget` a tutte le squadre (una volta,
+  righe `admin_credits`), audit.
 - `close_market_session(session_id)` — solo admin: stato→closed, valida ogni rosa
-  (23, 3/7/7/6, crediti ≥ 0), salva `validation_report`.
-- `swap_player(team_id, player_out, player_in)` — manager proprietario, sessione
-  aperta: `player_in` nella foto svincolati e `active`; stesso ruolo classic;
-  rientro = Qt.A attuale di out, costo = Qt.A attuale di in; crediti ≥ 0 dopo;
-  `swaps_used < 20`; chiude la riga rosa di out, apre quella di in, transazione
-  unica `kind=buy/sell` (o riga doppia), `swaps_used += 1`.
+  (23, 3/7/7/6, niente fuori lista, crediti ≥ 0), salva `validation_report`.
+- `swap_player(team_id, player_out, player_in)` — manager proprietario (o admin),
+  sessione aperta: `player_in` nella foto svincolati e `active`; stesso ruolo
+  classic; rientro = Qt.A attuale di out (`sale_price_rule`), costo = Qt.A attuale
+  di in; crediti ≥ 0 dopo; `swaps_used < season_swap_limit`; chiude la riga rosa
+  di out, apre quella di in, una riga `swap` nel registro, `swaps_used += 1`.
 - `free_swap_player(team_id, player_out, player_in)` — anche fuori sessione:
   `player_out.status = out_of_list`; `player_in` svincolato **al momento attuale**
   e attivo, stesso ruolo; rimborso = `price_paid` di out, costo = Qt.A di in;

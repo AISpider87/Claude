@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, List, Repeat, Settings, Users } from "lucide-react";
+import { ArrowRight, List, Repeat, ScrollText, Settings, Users } from "lucide-react";
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { requireAdmin } from "@/lib/auth/dal";
@@ -25,8 +25,15 @@ const SECTIONS = [
     href: "/admin/sessioni",
     icon: Repeat,
     title: "Sessioni di mercato",
-    description: "Programma, apri e chiudi le sessioni; annulla operazioni.",
-    ready: false,
+    description: "Programma, apri e chiudi le sessioni con il report di validazione.",
+    ready: true,
+  },
+  {
+    href: "/admin/operazioni",
+    icon: ScrollText,
+    title: "Registro operazioni",
+    description: "Tutte le operazioni della lega; annullamento con motivazione.",
+    ready: true,
   },
   {
     href: "/admin/impostazioni",

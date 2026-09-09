@@ -60,6 +60,12 @@ jobs:
       PGUSER: postgres
       PGPASSWORD: postgres
       PG_SUPERUSER_CMD: bash -c
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/superlega_test
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
       - run: scripts/db-test.sh

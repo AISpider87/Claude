@@ -89,6 +89,27 @@ richiedono l'ok dell'admin; le altre si annotano e si va avanti.
 - 2026-09-09 · **Letture complete paginate** (`fetchAll`, pagine da 1000) per
   listone e rose: PostgREST tronca a 1000 righe e i calciatori non si cancellano
   mai. · Finding QA.
+- 2026-09-09 · **Sessione "aperta" = stato `open` E `now() < closes_at`**: allo
+  scadere dell'orario i cambi si bloccano da soli anche se l'admin non ha ancora
+  premuto "chiudi" (non c'è un cron che chiuda: Vercel Hobby ne consente uno al
+  giorno); la chiusura manuale produce il report e fissa `closes_at`. Una sola
+  sessione aperta alla volta (indice unico). · Regolamento: scadenza giovedì 20:00.
+- 2026-09-09 · **Apertura sessione = foto svincolati + budget extra in un'unica
+  transazione con lock su tutte le squadre**; `extra_budget_applied` impedisce il
+  doppio accredito; l'accredito è una riga `admin_credits` per squadra nel
+  registro. · Tracciabilità e idempotenza (caso #14 della tabella test).
+- 2026-09-09 · **Annullamento = operazione inversa** che ripristina il giocatore
+  uscito all'ultimo prezzo pagato, toglie quello entrato, inverte i crediti e
+  decrementa `swaps_used` se il cambio contava; motivazione obbligatoria; un
+  annullamento non si annulla e ogni operazione si annulla al massimo una volta.
+  Se nel frattempo il giocatore entrato è stato rivenduto, l'annullamento è
+  rifiutato finché non si annullano le operazioni successive. · SPEC §3.
+- 2026-09-09 · **Test di concorrenza con connessioni Postgres reali** (`pg`,
+  Vitest, `DATABASE_URL`): 3 cambi paralleli sulla stessa squadra → uno solo passa;
+  2 squadre che prendono lo stesso svincolato in parallelo → entrambe passano.
+  · Definition of done (proprietà non esclusiva, integrità crediti/limiti).
+- 2026-09-09 · **Orari delle sessioni inseriti in ora italiana** (`datetime-local`)
+  e convertiti in UTC lato server con `Intl` (gestione DST senza librerie).
 - 2026-09-09 · **Seed del listone generato dalla fixture reale**
   (`scripts/generate-players-seed.mjs` → `supabase/seed/players.sql`), solo per
   sviluppo locale. · Dati realistici senza scrivere 600 righe a mano.

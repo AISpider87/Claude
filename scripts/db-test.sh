@@ -35,4 +35,13 @@ for t in "$ROOT"/tests/db/*.test.sql; do
     status=1
   fi
 done
+# Node-driven tests (real parallel connections) when a connection URL is available.
+if [ -n "${DATABASE_URL:-}" ] && command -v npx >/dev/null 2>&1; then
+  if (cd "$ROOT" && npx vitest run tests/db --reporter=dot); then
+    echo "PASS concurrency.test.ts"
+  else
+    echo "FAIL concurrency.test.ts"
+    status=1
+  fi
+fi
 exit $status
