@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CalendarClock, Repeat } from "lucide-react";
 import { Countdown } from "@/components/market/countdown";
 import { LedgerTable } from "@/components/market/ledger-table";
+import { SwapDone } from "@/components/market/swap-done";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FormMessage } from "@/components/ui/form-message";
@@ -58,10 +59,8 @@ export default async function MercatoPage({
     <>
       <PageHeader title="Mercato" description="Sessioni, cambi e bacheca della lega." />
       <div className="flex flex-col gap-6">
-        {done === "swap" && <FormMessage tone="success">Cambio registrato.</FormMessage>}
-        {done === "free_swap" && (
-          <FormMessage tone="success">Cambio gratuito registrato.</FormMessage>
-        )}
+        {done === "swap" && <SwapDone message="Cambio registrato: la tua rosa è aggiornata." />}
+        {done === "free_swap" && <SwapDone message="Cambio gratuito registrato." />}
 
         {session ? (
           <Card className="border-primary/50">

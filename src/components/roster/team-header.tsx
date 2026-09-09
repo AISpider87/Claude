@@ -1,3 +1,4 @@
+import { AnimatedNumber } from "@/components/motion/animated-number";
 import { Stat } from "@/components/ui/stat";
 import { formatInt } from "@/lib/format";
 import type { RoleClassic } from "@/lib/import/quotations-parser";
@@ -37,7 +38,7 @@ export function TeamStats({
   const complete = summary.count === target;
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <Stat label="Crediti" value={formatInt(team.credits)} tone="primary" />
+      <Stat label="Crediti" value={<AnimatedNumber value={team.credits} />} tone="primary" />
       <Stat label="Valore rosa" value={formatInt(summary.value)} />
       <Stat
         label="Giocatori"

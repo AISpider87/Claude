@@ -143,6 +143,9 @@ set search_path = public, pg_temp
 as $$
 begin
   perform private.require_admin();
+  if p_recipients < 0 or p_status not in ('sent', 'partial', 'failed', 'skipped') then
+    raise exception 'INVALID_NOTIFICATION' using errcode = '22023';
+  end if;
   insert into public.notifications (kind, subject, recipients, status, detail, created_by)
   values (p_kind, p_subject, p_recipients, p_status, left(p_detail, 500), auth.uid());
 end;
@@ -468,6 +471,10 @@ begin
     loop
       raise exception 'INVALID_SETTING' using errcode = '22023', detail = p_key;
     end loop;
+    if (p_value ->> 'P')::integer + (p_value ->> 'D')::integer
+       + (p_value ->> 'C')::integer + (p_value ->> 'A')::integer = 0 then
+      raise exception 'INVALID_SETTING' using errcode = '22023', detail = p_key;
+    end if;
   elsif p_key = 'league_code' then
     if jsonb_typeof(p_value) <> 'string' then
       raise exception 'INVALID_SETTING' using errcode = '22023', detail = p_key;
@@ -477,12 +484,9 @@ begin
        or (p_value #>> '{}') !~ '^[A-Z0-9-]+$' then
       raise exception 'INVALID_SETTING' using errcode = '22023', detail = p_key;
     end if;
-  elsif p_key = 'sale_price_rule' then
-    if p_value #>> '{}' not in ('current_quotation', 'price_paid') then
-      raise exception 'INVALID_SETTING' using errcode = '22023', detail = p_key;
-    end if;
-  elsif p_key = 'free_swap_refund_rule' then
-    if p_value #>> '{}' not in ('price_paid', 'current_quotation') then
+  elsif p_key in ('sale_price_rule', 'free_swap_refund_rule') then
+    if jsonb_typeof(p_value) <> 'string'
+       or (p_value #>> '{}') not in ('current_quotation', 'price_paid') then
       raise exception 'INVALID_SETTING' using errcode = '22023', detail = p_key;
     end if;
   elsif p_key in ('sync_enabled', 'notifications_enabled') then

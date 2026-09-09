@@ -52,7 +52,8 @@ run("market concurrency", () => {
         (1, 'Por1', 'Roma', 'P', 10, 10, 0), (2, 'Por2', 'Inter', 'P', 10, 10, 0),
         (3, 'Por3', 'Como', 'P', 10, 10, 0), (4, 'Por4', 'Lecce', 'P', 10, 10, 0),
         (5, 'Att1', 'Roma', 'A', 10, 10, 0), (6, 'Att2', 'Inter', 'A', 25, 25, 0),
-        (7, 'Att3', 'Como', 'A', 25, 25, 0), (8, 'Att4', 'Lecce', 'A', 25, 25, 0);
+        (7, 'Att3', 'Como', 'A', 25, 25, 0), (8, 'Att4', 'Lecce', 'A', 25, 25, 0),
+        (9, 'Att5', 'Genoa', 'A', 25, 25, 0), (10, 'Att6', 'Pisa', 'A', 25, 25, 0);
     `);
     for (const u of [admin, mario, luca]) {
       const r = await setup.query(
@@ -124,7 +125,8 @@ run("market concurrency", () => {
   });
 
   it("parallel free swaps for the same free agent: exactly one passes (exclusive 'free now')", async () => {
-    // Make Att4 (8) out of list in both rosters, then both teams try to free-swap it for Att3 (7).
+    // Make Att5 (9) out of list in both rosters, then both teams try to free-swap it for Att6 (10).
+    // Players 9/10 are untouched by the first case (whose winner among 6/7/8 is random).
     await asUser(setup, admin.id, async () => {
       // Admin roster edits are refused while a session is open (M6 guard): close it first.
       const open = await setup.query("select id from public.market_sessions where status = 'open'");
@@ -133,24 +135,24 @@ run("market concurrency", () => {
       }
       await setup.query("select public.admin_set_setting('season_swap_limit', '5')");
       await setup.query("select public.admin_set_setting('market_ops_per_minute', '50')");
-      await setup.query("select public.admin_assign_player($1, 8, 0)", [teamA]);
-      await setup.query("select public.admin_assign_player($1, 8, 0)", [teamB]);
+      await setup.query("select public.admin_assign_player($1, 9, 0)", [teamA]);
+      await setup.query("select public.admin_assign_player($1, 9, 0)", [teamB]);
       await setup.query("select public.admin_set_team_credits($1, 100, 'cc')", [teamA]);
       await setup.query("select public.admin_set_team_credits($1, 100, 'cc')", [teamB]);
     });
     await setup.query(
-      "update public.players set status = 'out_of_list', out_of_list_at = now() where id = 8",
+      "update public.players set status = 'out_of_list', out_of_list_at = now() where id = 9",
     );
     const [c1, c2] = await Promise.all([connect(), connect()]);
     const results = await Promise.allSettled([
-      asUser(c1, mario.id, () => c1.query("select public.free_swap_player($1, 8, 7)", [teamA])),
-      asUser(c2, luca.id, () => c2.query("select public.free_swap_player($1, 8, 7)", [teamB])),
+      asUser(c1, mario.id, () => c1.query("select public.free_swap_player($1, 9, 10)", [teamA])),
+      asUser(c2, luca.id, () => c2.query("select public.free_swap_player($1, 9, 10)", [teamB])),
     ]);
     await Promise.all([c1.end(), c2.end()]);
     const ok = results.filter((r) => r.status === "fulfilled").length;
     expect(ok).toBe(1);
     const owners = await setup.query(
-      "select count(*)::int as n from public.roster_players where player_id = 7 and released_at is null",
+      "select count(*)::int as n from public.roster_players where player_id = 10 and released_at is null",
     );
     expect(owners.rows[0].n).toBe(1);
   });

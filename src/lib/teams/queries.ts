@@ -19,13 +19,9 @@ export interface RosterSummary {
   outOfList: number;
 }
 
-export const ROLE_ORDER: RoleClassic[] = ["P", "D", "C", "A"];
-export const ROLE_LABEL: Record<RoleClassic, string> = {
-  P: "Portieri",
-  D: "Difensori",
-  C: "Centrocampisti",
-  A: "Attaccanti",
-};
+import { ROLE_ORDER } from "@/lib/roles";
+
+export { ROLE_LABEL, ROLE_ORDER } from "@/lib/roles";
 
 export async function getRosterComposition(): Promise<Record<RoleClassic, number>> {
   const supabase = await createClient();

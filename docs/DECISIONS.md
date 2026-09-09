@@ -182,3 +182,15 @@ listone,operazioni}`) con exceljs, letture paginate (`fetchAll`) sotto la
   `partial`. Codice lega validato dopo la normalizzazione (solo `A-Z0-9-`);
   `bootstrap_admin_email` modificabile solo finché non esiste un admin.
   · Security review M6.
+- 2026-09-09 · **Tema per dispositivo in `localStorage` con script inline**
+  (niente cookie): il root layout resta statico e non c'è flash; il meta
+  `theme-color` è creato e aggiornato solo dallo script, perché quello generato
+  da Next veniva inserito dopo e restava scuro. · M7.
+- 2026-09-09 · **Icone PWA generate con Chromium** (`scripts/make-icons.mjs`)
+  dallo stesso SVG del logo: nessuna dipendenza grafica aggiuntiva, riproducibile.
+- 2026-09-09 · **Modifiche admin ammesse a sessione aperta**: crediti squadra,
+  creazione squadra e annullamento di operazioni admin restano possibili
+  (coerenti col registro); bloccati solo assegnazioni/rimozioni/import rose.
+  · Nota QA M6, scelta consapevole.
+- 2026-09-09 · **Pulsanti `sm` alti 44 px**: la variante piccola riduce solo
+  padding e testo, non l'area di tocco. · Regola design system, nota QA M6.

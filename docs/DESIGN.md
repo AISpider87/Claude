@@ -66,3 +66,27 @@ SVG originale (anche favicon/PWA icons 192/512 + maskable).
 Contrasto AA in entrambi i temi (verificato in M7), focus visibile, `prefers-
 reduced-motion` rispettato (animazioni disattivabili), etichette ARIA su filtri e
 conferme.
+
+## Stato dopo M7 (implementato)
+
+- **Tema**: scuro di default, chiaro con il toggle in sidebar/header/profilo;
+  scelta salvata per dispositivo (`localStorage`) e applicata da uno script
+  inline prima del primo paint (nessun flash). `theme-color` segue il tema.
+- **Logo**: emblema esagonale con corsa tattica diagonale e monogramma "SL"
+  (`src/components/brand/logo.tsx`, `src/app/icon.svg`); icone PWA 192/512 +
+  maskable + Apple touch generate da `scripts/make-icons.mjs` con Chromium.
+- **Card giocatore** (`PlayerCard`): gradiente per ruolo, iniziali in esagono,
+  Qt.A grande tabulare, badge svincolato/in rosa/fuori lista.
+- **Flusso cambio**: filtro ruolo, lista che si richiude sulla scelta, motivo
+  "crediti insufficienti" sui candidati non acquistabili, barra di conferma
+  `sticky` sopra la bottom-nav su mobile, banner di successo animato.
+- **Animazioni** (Framer Motion, disattivate con `prefers-reduced-motion`):
+  contatore crediti, comparsa dei passi 2 e 3, check di conferma.
+- **Skeleton** (`loading.tsx` per Rosa, Mercato, Listone, Squadre, Profilo,
+  Admin) e **stati vuoti** con linee tattiche.
+- **Accessibilità**: skip link "Vai al contenuto", `main#main`, tap target
+  ≥ 44 px anche per i pulsanti `sm`, focus ring, `aria-pressed` sui filtri.
+- **Lighthouse mobile** (pagine pubbliche, build di produzione, 2026-09-09):
+  Performance 96–97 · Accessibility 100 · Best Practices 100 · SEO 91.
+  Le pagine autenticate si misurano in produzione (Fase 3) con
+  `scripts/lighthouse.sh`.

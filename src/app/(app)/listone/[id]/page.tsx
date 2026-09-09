@@ -1,13 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import { PlayerCard } from "@/components/players/player-card";
 import { QuotationChart } from "@/components/players/quotation-chart";
-import { Badge, RoleBadge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
-import { Stat } from "@/components/ui/stat";
 import { requireUser } from "@/lib/auth/dal";
-import { formatDate, formatDelta, formatInt } from "@/lib/format";
+import { formatInt } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Calciatore" };
@@ -49,36 +48,24 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
 
   return (
     <>
-      <PageHeader
-        title={player.name}
-        description={`${player.team}${player.role_mantra ? ` · Mantra ${player.role_mantra}` : ""}`}
-      >
-        <span className="inline-flex items-center gap-2">
-          <RoleBadge role={player.role_classic} className="size-9 text-base" />
-          {player.status === "out_of_list" ? (
-            <Badge variant="danger">fuori lista dal {formatDate(player.out_of_list_at)}</Badge>
-          ) : owners.length === 0 ? (
-            <Badge variant="primary">svincolato</Badge>
-          ) : (
-            <Badge variant="muted">
-              in {owners.length} {owners.length === 1 ? "rosa" : "rose"}
-            </Badge>
-          )}
-        </span>
-      </PageHeader>
+      <PageHeader title="Scheda calciatore" />
+      <PlayerCard
+        name={player.name}
+        team={player.team}
+        role={player.role_classic}
+        roleMantra={player.role_mantra}
+        qtA={player.qt_a}
+        qtI={player.qt_i}
+        diff={player.diff}
+        fvm={player.fvm}
+        availability={
+          player.status === "out_of_list" ? "out_of_list" : owners.length === 0 ? "free" : "owned"
+        }
+        ownersCount={owners.length}
+        className="mb-6"
+      />
 
       <div className="flex flex-col gap-6">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label="Qt.A" value={formatInt(player.qt_a)} tone="primary" />
-          <Stat label="Qt.I" value={formatInt(player.qt_i)} />
-          <Stat
-            label="Diff."
-            value={formatDelta(player.diff)}
-            tone={player.diff < 0 ? "danger" : "neutral"}
-          />
-          <Stat label="FVM" value={formatInt(player.fvm)} />
-        </div>
-
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Andamento quotazione</CardTitle>

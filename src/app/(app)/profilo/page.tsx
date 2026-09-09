@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { requireUser } from "@/lib/auth/dal";
 import { SignOutButton } from "./sign-out-button";
 import { InstallHint } from "./install-hint";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 export const metadata = { title: "Profilo" };
 
@@ -24,8 +25,9 @@ export default async function ProfiloPage() {
                 {user.role === "admin" ? "Admin" : "Manager"}
               </span>
             </p>
-            <div className="pt-2">
+            <div className="flex flex-wrap items-center gap-3 pt-2">
               <SignOutButton />
+              <ThemeToggle showLabel className="border-line border" />
             </div>
           </CardContent>
         </Card>

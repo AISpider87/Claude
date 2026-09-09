@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
 import { MainNav, type NavItem } from "@/components/layout/main-nav";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 import type { CurrentUser } from "@/lib/auth/dal";
 
 const MANAGER_NAV: NavItem[] = [
@@ -23,9 +24,12 @@ export function AppShell({ user, children }: { user: CurrentUser; children: Reac
           <Logo />
         </Link>
         <MainNav items={items} orientation="vertical" />
-        <p className="text-muted mt-auto truncate px-2 text-xs" title={user.email}>
-          {user.displayName}
-        </p>
+        <div className="mt-auto flex items-center justify-between gap-2 px-2">
+          <p className="text-muted truncate text-xs" title={user.email}>
+            {user.displayName}
+          </p>
+          <ThemeToggle />
+        </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -34,10 +38,15 @@ export function AppShell({ user, children }: { user: CurrentUser; children: Reac
           <Link href="/rosa" aria-label="SuperLega">
             <Logo />
           </Link>
-          <span className="text-muted truncate text-sm">{user.displayName}</span>
+          <span className="flex min-w-0 items-center gap-1">
+            <span className="text-muted truncate text-sm">{user.displayName}</span>
+            <ThemeToggle />
+          </span>
         </header>
 
-        <main className="flex-1 px-4 pt-4 pb-24 lg:px-8 lg:py-8">{children}</main>
+        <main id="main" className="flex-1 px-4 pt-4 pb-24 lg:px-8 lg:py-8">
+          {children}
+        </main>
 
         {/* Mobile bottom nav */}
         <nav

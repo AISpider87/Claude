@@ -137,6 +137,21 @@ begin
   exception when invalid_parameter_value then null;
   end;
   begin
+    perform public.admin_set_setting('sale_price_rule', 'null'::jsonb);
+    raise exception 'null sale rule accepted';
+  exception when invalid_parameter_value then null;
+  end;
+  begin
+    perform public.admin_set_setting('roster_composition', '{"P": 0, "D": 0, "C": 0, "A": 0}'::jsonb);
+    raise exception 'empty composition accepted';
+  exception when invalid_parameter_value then null;
+  end;
+  begin
+    perform public.log_notification('test', 'x', -1, 'sent', null);
+    raise exception 'negative recipients accepted';
+  exception when invalid_parameter_value then null;
+  end;
+  begin
     perform public.admin_set_setting('made_up_key', '1'::jsonb);
     raise exception 'unknown setting accepted';
   exception when invalid_parameter_value then null;
