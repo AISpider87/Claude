@@ -1,7 +1,7 @@
 # Fase 0 — Domande e decisioni
 
-> Stato: **quasi chiusa** — regolamento, quotazioni ed export rose ricevuti e studiati
-> (sintesi in `docs/REGOLE-LEGA.md`). Restano i 4 punti aperti in fondo.
+> Stato: **CHIUSA il 2026-09-09** — tutti i punti confermati dall'admin.
+> Requisiti congelati in `docs/SPEC.md`; regole in `docs/REGOLE-LEGA.md`.
 
 ## Decisioni confermate
 
@@ -24,14 +24,12 @@
 | Sessione di prova | Sì, prima del go-live |
 | Fuori scope v1 | Punteggi, formazioni, competizioni (Campionato/Champions/Europa/Conference/Coppa del Riscatto), scambi (vietati da regolamento) → `docs/BACKLOG.md` |
 
-## Punti ancora aperti (default proposti)
+## Ultimi punti — risposte dell'admin (2026-09-09)
 
-1. **Modello svincolati**: confermi l'interpretazione "lista svincolati fotografata
-   all'apertura della sessione, acquisti multipli dello stesso svincolato permessi nella
-   stessa sessione"?
-2. **Prezzi dei cambi**: acquisto a **Qt.A corrente** e vendita con rientro a **Qt.A
-   corrente** (default)? O rientro al prezzo pagato?
-3. **Cambio gratuito (fuori lista)**: rimborso del giocatore uscito = **prezzo pagato**
-   e sostituto pagato a Qt.A corrente (default)? O altro?
-4. **Audit log** (registro di chi fa cosa: login, acquisti, azioni admin, con data/ora,
-   utile per contestazioni): default **sì**, costo ~mezza giornata.
+1. **Modello svincolati**: confermato — foto all'apertura della sessione,
+   acquisti multipli dello stesso svincolato permessi nella stessa sessione.
+2. **Prezzi dei cambi**: sempre quotazione attuale (Qt.A dell'ultimo listone
+   importato), sia acquisto sia rientro vendita.
+3. **Cambio gratuito (fuori lista)**: rimborso = prezzo pagato, sostituto a
+   Qt.A corrente. Confermato.
+4. **Audit log**: sì. **Scambi tra squadre**: mai (vietati da regolamento).
