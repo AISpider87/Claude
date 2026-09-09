@@ -1,6 +1,7 @@
 "use client";
 
 import { useDeferredValue, useMemo, useState } from "react";
+import Link from "next/link";
 import { Search } from "lucide-react";
 import { Badge, RoleBadge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -197,7 +198,11 @@ export function ListoneBrowser({ rows }: { rows: ListoneRow[] }) {
               <TD>
                 <RoleBadge role={r.role} />
               </TD>
-              <TD className="font-medium">{r.name}</TD>
+              <TD className="font-medium">
+                <Link href={`/listone/${r.id}`} className="hover:text-primary">
+                  {r.name}
+                </Link>
+              </TD>
               <TD className="text-muted">{r.team}</TD>
               <TD className="tabular text-right font-semibold">{formatInt(r.qtA)}</TD>
               <TD className="tabular text-muted text-right">{formatInt(r.qtI)}</TD>

@@ -110,6 +110,22 @@ richiedono l'ok dell'admin; le altre si annotano e si va avanti.
   · Definition of done (proprietà non esclusiva, integrità crediti/limiti).
 - 2026-09-09 · **Orari delle sessioni inseriti in ora italiana** (`datetime-local`)
   e convertiti in UTC lato server con `Intl` (gestione DST senza librerie).
+- 2026-09-09 · **Sync quotazioni: cron Vercel alle 04:30 UTC** (06:30 CEST /
+  05:30 CET) — con una sola esecuzione al giorno (Hobby) l'orario non può
+  seguire il DST; `sync_hour` resta in `league_settings` come documentazione.
+  La stessa chiamata fa da keep-alive per Supabase Free. · docs/SYNC.md.
+- 2026-09-09 · **Sorgente quotazioni pluggable, di default "nessuna"**: la
+  sorgente HTTP si attiva solo con `QUOTATIONS_SOURCE_URL` dopo la verifica di
+  URL, robots.txt e termini d'uso di Fantacalcio.it (impossibile da questo
+  ambiente: dominio bloccato). Regole di cortesia fisse nel codice: 1 richiesta
+  al giorno, user-agent identificato, un solo ritentativo, 5 MB max, rifiuto
+  delle risposte non-xlsx. L'upload manuale resta il percorso garantito. · Brief §3.6.
+- 2026-09-09 · **Il sync usa lo stesso parser e le stesse funzioni DB
+  dell'upload manuale** (`create_quotations_import` con `source='auto'` +
+  `apply_quotations_import`), quindi anteprima, guardie e storico sono identici;
+  "Esegui ora" nell'admin usa lo stesso orchestratore con la sessione dell'admin.
+- 2026-09-09 · **Grafico dello storico quotazioni in SVG server-side** (nessuna
+  libreria): 10–40 punti per stagione non giustificano una dipendenza. · Lighthouse.
 - 2026-09-09 · **Seed del listone generato dalla fixture reale**
   (`scripts/generate-players-seed.mjs` → `supabase/seed/players.sql`), solo per
   sviluppo locale. · Dati realistici senza scrivere 600 righe a mano.
