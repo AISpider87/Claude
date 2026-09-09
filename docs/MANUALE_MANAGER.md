@@ -1,0 +1,204 @@
+# SuperLega — Manuale del manager
+
+Guida rapida per i 20 manager della SuperLega 2026/27. L'app serve a una cosa
+sola: gestire la tua rosa e fare i cambi nelle sessioni di mercato. Punteggi,
+formazioni e classifiche restano dove sono oggi.
+
+L'indirizzo dell'app e il **codice lega** te li dà l'admin.
+
+## 1. Registrati
+
+1. Apri l'indirizzo dell'app e tocca **Registrati**.
+2. Compila **Il tuo nome** (è il nome che vedranno gli altri), **Email**,
+   **Password** (almeno 8 caratteri) e **Codice lega**.
+3. Tocca **Registrati**. Se vedi "Codice lega non valido", chiedi all'admin il
+   codice aggiornato: senza codice l'account non viene creato.
+4. Arrivi alla pagina "Controlla la tua email": apri il link di conferma dal
+   telefono o dal computer. Se non lo trovi, guarda nello spam.
+5. Dopo la conferma, tocca **Accedi**.
+
+Finché l'admin non collega il tuo account alla tua squadra, nella pagina Rosa
+vedi "Nessuna squadra collegata": è normale, avvisa l'admin e intanto puoi
+guardare il listone e le rose degli altri.
+
+## 2. Accedi e recupera la password
+
+1. Nella pagina **Accedi** inserisci email e password, poi **Accedi**.
+2. "Devi prima confermare l'email": apri il link ricevuto alla registrazione.
+3. "Email o password non corretti": riprova o usa **Password dimenticata?**.
+
+Recupero password:
+
+1. Tocca **Password dimenticata?**, inserisci l'email e tocca **Invia il link**.
+   Il messaggio è lo stesso in ogni caso ("Se l'indirizzo è registrato…").
+2. Apri il link dall'email: si apre "Scegli una nuova password".
+3. Compila **Nuova password** e **Ripeti la password**, poi **Salva la password**.
+4. Se leggi "Link scaduto o non valido", richiedi un nuovo link dal punto 1.
+
+Per uscire: **Profilo → Esci**.
+
+## 3. Installa SuperLega come app
+
+Non c'è nulla da scaricare dagli store: si aggiunge alla schermata Home.
+
+**iPhone / iPad (Safari)**
+
+1. Apri l'app in Safari (non da dentro Gmail o WhatsApp).
+2. Tocca **Condividi** (il quadrato con la freccia in basso).
+3. Scegli **Aggiungi alla schermata Home**, poi **Aggiungi**.
+
+**Android (Chrome)**
+
+1. Apri l'app in Chrome.
+2. Menu ⋮ → **Installa app** (oppure **Aggiungi a schermata Home**).
+
+Su computer: icona "Installa" nella barra dell'indirizzo del browser.
+La pagina **Profilo** mostra il promemoria "Installa SuperLega" finché non lo
+hai fatto. L'app ha bisogno di connessione: offline vedi "Sei offline".
+
+## 4. Come ci si muove
+
+La barra in basso (a sinistra su schermo grande) ha quattro voci:
+**Rosa · Mercato · Listone · Profilo**. Gli admin vedono anche **Admin**.
+Le rose delle altre squadre si aprono da Rosa → "Guarda le rose delle altre
+squadre" oppure dal nome della squadra nella scheda di un calciatore.
+
+## 5. La tua rosa
+
+Pagina **Rosa** (il titolo è il nome della tua squadra):
+
+- **Crediti**: i fanta-milioni che hai a disposizione. Non vanno mai sotto zero.
+- **Valore rosa**: somma delle quotazioni attuali (Qt.A) dei tuoi calciatori.
+- **Giocatori**: quanti ne hai su 23. Diventa rosso se non sei a 23.
+- **Cambi usati**: quanti cambi hai fatto in stagione sul limite di 20.
+
+Sotto, la rosa divisa per ruolo con il contatore (es. Difensori 7/7). La
+composizione obbligatoria è **3 portieri, 7 difensori, 7 centrocampisti,
+6 attaccanti**. Per ogni calciatore vedi **Pagato** (quanto l'hai pagato) e
+**Qt.A** (quotazione attuale).
+
+Un calciatore con l'etichetta **fuori lista** ha lasciato la Serie A. Un
+avviso in alto te lo ricorda: puoi sostituirlo con un cambio gratuito (vedi §8).
+
+## 6. Listone e svincolati
+
+Pagina **Listone**: tutti i calciatori quotati da Fantacalcio.it, con Qt.A,
+Qt.I, FVM e lo stato (**svincolato**, **in rosa** o **fuori lista**).
+
+- Cerca per nome con **Cerca un calciatore…** (accenti e maiuscole non contano).
+- Filtra per ruolo (P, D, C, A), per squadra di Serie A, per quotazione
+  massima (Qt.A ≤ 5/10/15/20/30) e con **Solo svincolati**.
+- Ordina per Quotazione, Valore di mercato (FVM) o Nome.
+- **Mostra fuori lista** fa comparire anche chi è uscito dalla Serie A.
+- Tocca il nome per aprire la **Scheda calciatore**: quotazioni (Qt.A, Qt.I,
+  differenza, FVM), il grafico **Andamento quotazione** (un punto per ogni
+  aggiornamento del listone) e **Chi lo ha in rosa** con il prezzo pagato.
+
+Ricorda: nella SuperLega **lo stesso calciatore può stare in più rose**.
+"Svincolato" vuol dire che oggi non ce l'ha nessuno.
+
+## 7. Fare un cambio in sessione
+
+Si compra solo durante una **sessione di mercato aperta** (l'admin ne apre 4
+a stagione). La pagina **Mercato** dice se una sessione è aperta, quando
+chiude e quanto manca; altrimenti mostra la prossima programmata.
+
+Un cambio = esce un tuo calciatore, entra uno **svincolato dello stesso ruolo**.
+La rosa resta sempre 3/7/7/6.
+
+1. **1. Chi esce** — tocca il calciatore che vuoi cedere (puoi filtrare per
+   ruolo). Vedi "pagato" e "rientro": il rientro è la **quotazione attuale**,
+   non quello che avevi pagato.
+2. **2. Chi entra** — cerca tra gli svincolati di quel ruolo con **Cerca tra
+   gli svincolati…**. Il prezzo è la **Qt.A attuale**. Chi costa più di quanto
+   hai (crediti + rientro) è grigio con "crediti insufficienti".
+3. **3. Conferma** — controlla il riepilogo "Crediti: X +rientro −costo = Y"
+   e tocca **Conferma il cambio**. Compare "Cambio registrato: la tua rosa è
+   aggiornata."
+
+Regole che l'app fa rispettare:
+
+- Massimo **20 cambi a stagione** (nessun limite per sessione). Quando li hai
+  finiti la pagina dice "Hai usato tutti i 20 cambi della stagione."
+- All'apertura di ogni sessione ricevi **+5 crediti** (lo vedi nella Bacheca
+  come "Crediti admin · Budget extra apertura sessione").
+- Gli svincolati sono **fotografati all'apertura**: nella stessa sessione più
+  squadre possono prendere lo stesso svincolato; chi era già in una rosa
+  all'apertura non è acquistabile fino alla sessione successiva.
+- Troppi tentativi in un minuto → "Troppe operazioni in poco tempo: aspetta un
+  minuto e riprova."
+- Un cambio confermato è definitivo: non puoi annullarlo da solo (vedi §11).
+
+Allo scadere dell'orario di chiusura i cambi si bloccano da soli, anche se
+l'admin non ha ancora chiuso la sessione.
+
+## 8. Cambio gratuito (chi è uscito dalla Serie A)
+
+Se un tuo calciatore compare nel foglio "Ceduti" di Fantacalcio.it, dopo
+l'aggiornamento del listone diventa **fuori lista**. In **Mercato** compare il
+riquadro **Cambio gratuito**:
+
+1. **1. Chi esce**: il fuori lista (rientra il **prezzo pagato**, non la Qt.A).
+2. **2. Chi entra**: uno svincolato dello stesso ruolo, pagato a **Qt.A attuale**.
+3. **Conferma il cambio gratuito**.
+
+Il cambio gratuito **non conta** nei 20 e si può fare **anche a mercato
+chiuso**, in qualsiasi momento. Un fuori lista non si può cedere con un cambio
+normale: l'app risponde "usa il cambio gratuito". Gli svincolati del cambio
+gratuito sono quelli liberi **adesso**, non la foto della sessione.
+
+## 9. Bacheca mercato e rose degli altri
+
+- In **Mercato → Bacheca mercato** vedi le ultime operazioni di tutta la lega:
+  Cambio, Cambio gratuito, Assegnazione/Rimozione/Crediti admin, Annullamento
+  (con il motivo). Le operazioni annullate restano visibili in grigio.
+- Da **Rosa → Guarda le rose delle altre squadre** apri l'elenco delle 20
+  squadre con crediti e numero di giocatori; tocca una squadra per la rosa
+  completa. Tutto in sola lettura.
+
+## 10. Tema chiaro o scuro
+
+Il tema scuro è quello di default. Il pulsante con il sole/la luna in alto a
+destra (o in **Profilo**, "Tema chiaro" / "Tema scuro") lo cambia. La scelta
+resta salvata su quel dispositivo.
+
+## 11. Se qualcosa non torna
+
+- Sbagliato un cambio? **Scrivi subito all'admin** con squadra, calciatori e
+  orario. Solo l'admin può annullare: l'annullamento crea un'operazione inversa
+  (rientra chi era uscito al prezzo che avevi pagato, esce chi era entrato, i
+  crediti tornano com'erano e il cambio non conta più nei 20).
+- Crediti o rosa che non corrispondono? Controlla prima la Bacheca: ogni
+  variazione è registrata lì.
+- "Il tuo account è stato disattivato dall'admin della lega": contatta l'admin.
+
+## FAQ
+
+**Perché non vedo un giocatore tra gli svincolati?**
+Tre motivi possibili: era già in una rosa quando la sessione è stata aperta
+(la lista svincolati è fotografata in quel momento, anche se poi si è liberato);
+è fuori lista (uscito dalla Serie A); non è del ruolo di chi stai cedendo (il
+passo 2 mostra solo lo stesso ruolo). Nel Listone l'etichetta "svincolato"
+riflette la situazione di adesso, non la foto della sessione.
+
+**Perché lo stesso giocatore è in più rose?**
+È la regola della SuperLega: la proprietà **non è esclusiva**. Nella stessa
+sessione più squadre possono comprare lo stesso svincolato; ognuna lo paga alla
+sua Qt.A. Non esistono aste né scambi tra squadre.
+
+**Cosa succede se non completo la rosa entro la chiusura?**
+Con i cambi la rosa resta sempre 23 e 3/7/7/6, quindi in pratica succede solo
+se hai un fuori lista non ancora sostituito. Alla chiusura l'admin riceve il
+report delle rose "da sistemare" e ti contatta; il cambio gratuito resta
+disponibile anche a mercato chiuso, fallo appena puoi.
+
+**Il rientro della vendita è più basso di quanto avevo pagato.**
+Sì: il rientro è sempre la **quotazione attuale** (per i fuori lista, invece,
+rientra il prezzo pagato).
+
+**Ho finito i 20 cambi: posso fare ancora un cambio gratuito?**
+Sì, i cambi gratuiti non contano nel limite.
+
+**Quando arrivano le email?**
+All'apertura ("mercato aperto") e alla chiusura ("mercato chiuso") di ogni
+sessione, se l'admin ha attivato le notifiche. Non c'è altro tipo di email.
