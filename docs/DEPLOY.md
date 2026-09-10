@@ -44,11 +44,22 @@ Tutte le chiavi vanno **solo** nelle impostazioni di Vercel/Supabase, mai nel re
    `supabase/templates/confirmation.html`, `recovery.html`, `email_change.html`
    nei rispettivi template (usano il link `token_hash`, che funziona anche da
    iPhone e dall'app installata). Oggetti: vedi `supabase/config.toml`.
-6. **Auth → Providers → Email**: conferma email attiva (default). Le email di
-   Auth sul piano Free hanno un limite basso (circa 2–4 all'ora): per una lega
-   di 20 persone va bene se le registrazioni non avvengono tutte nello stesso
-   minuto; in alternativa configura un SMTP personalizzato con Resend
-   (Auth → SMTP Settings).
+6. **Auth → Providers → Email**: conferma email attiva (default). L'SMTP
+   integrato di Supabase manda email **solo ai membri del progetto**: per la
+   lega serve un **SMTP personalizzato** (_Auth → Emails → SMTP Settings_).
+   Con **Brevo** (piano gratuito, 300 email/giorno):
+   - _Senders_: verifica l'indirizzo che farà da mittente (basta l'email
+     personale; gli avvisi DKIM/DMARC non bloccano l'invio).
+   - _SMTP e API → scheda SMTP_: copia il **Login** (es. `xxxx@smtp-brevo.com`)
+     e genera una **chiave SMTP** (non l'API key).
+   - _Sicurezza → IP autorizzati_: **Disattiva per le chiavi SMTP**, altrimenti
+     Supabase riceve `525 Unauthorized IP address`.
+   - In Supabase: Sender email = indirizzo verificato, Host
+     `smtp-relay.brevo.com`, porta `587`, Username = Login, Password = chiave
+     SMTP. Errore `535 Authentication failed` = login/chiave sbagliati.
+   - Il motivo esatto di un invio fallito è in _Logs & Analytics → Auth_.
+     L'app limita le registrazioni a 5 tentativi/ora per indirizzo: durante le
+     prove si azzera con `delete from private.rate_limits;` nello SQL Editor.
 7. **Storage**: il bucket `imports` è creato dalla migrazione; verifica che
    esista in _Storage_.
 8. **Settings → API**: copia `Project URL`, `anon public key` e
