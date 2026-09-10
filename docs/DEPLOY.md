@@ -85,6 +85,11 @@ Tutte le chiavi vanno **solo** nelle impostazioni di Vercel/Supabase, mai nel re
    diverso da `main`, in Vercel vai su _Settings → Environments → Production →
    Branch Tracking_ e scrivi `main`; il primo deploy parte al primo push su
    `main` (o da _Deployments → Create Deployment_).
+   **Attenzione**: i deploy fatti da altri branch sono _Preview_ e non toccano
+   l'URL pubblico. Se cambi una variabile `NEXT_PUBLIC_*` fai il _Redeploy_
+   di un deploy con etichetta **Production** (filtro _Environment → Production_
+   nella pagina Deployments), oppure fai un push su `main`: solo così il nuovo
+   valore entra nella build che serve il sito.
 4. **Deploy**. Il cron in `vercel.json` (`30 4 * * *`, una volta al giorno come
    consente Hobby) chiama `/api/cron/sync-quotations` con `CRON_SECRET`:
    fa da keep-alive per Supabase Free (che altrimenti si pausa dopo 7 giorni
