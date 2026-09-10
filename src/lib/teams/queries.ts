@@ -89,37 +89,68 @@ export async function getTeam(teamId: string): Promise<Team | null> {
   return data ?? null;
 }
 
-export interface TeamListItem extends Team {
+/** A team as the league sees it: budget and roster size only when visible to the caller. */
+export interface TeamListItem {
+  id: string;
+  name: string;
+  short_name: string;
+  color_primary: string;
+  color_secondary: string;
+  owner_id: string | null;
   ownerName: string | null;
-  rosterCount: number;
+  /** null when the caller is not allowed to see it (another manager's team). */
+  credits: number | null;
+  swaps_used: number | null;
+  rosterCount: number | null;
 }
 
+/**
+ * Every team of the league (names, colours, managers) plus credits and roster
+ * size for the teams the caller can read: all of them for the admin, only
+ * their own for a manager (rosters are private).
+ */
 export async function listTeams(): Promise<TeamListItem[]> {
   const supabase = await createClient();
-  const [{ data: teams }, { data: profiles }, rosterRows] = await Promise.all([
-    supabase.from("teams").select("*").order("name"),
-    supabase.from("profiles").select("user_id, display_name"),
+  const [{ data: league }, { data: visible }, rosterRows] = await Promise.all([
+    supabase.rpc("league_teams"),
+    supabase.from("teams").select("id, credits, swaps_used"),
     fetchAll(() =>
       supabase.from("roster_players").select("team_id").is("released_at", null).order("id"),
     ),
   ]);
-  const names = new Map((profiles ?? []).map((p) => [p.user_id, p.display_name]));
+  const budgets = new Map((visible ?? []).map((t) => [t.id, t]));
   const counts = new Map<string, number>();
   for (const r of rosterRows) counts.set(r.team_id, (counts.get(r.team_id) ?? 0) + 1);
-  return (teams ?? []).map((t) => ({
-    ...t,
-    ownerName: t.owner_id ? (names.get(t.owner_id) ?? null) : null,
-    rosterCount: counts.get(t.id) ?? 0,
-  }));
+  return (league ?? []).map((t) => {
+    const budget = budgets.get(t.id);
+    return {
+      id: t.id,
+      name: t.name,
+      short_name: t.short_name,
+      color_primary: t.color_primary,
+      color_secondary: t.color_secondary,
+      owner_id: t.owner_id,
+      ownerName: t.owner_name,
+      credits: budget?.credits ?? null,
+      swaps_used: budget?.swaps_used ?? null,
+      rosterCount: budget ? (counts.get(t.id) ?? 0) : null,
+    };
+  });
 }
 
-/** Ids of players owned by at least one team (for the "svincolati" filter). */
+/**
+ * Ids of players owned by at least one team (for the "svincolati" filter).
+ * Derived from the free-agent view, which sees every roster even though the
+ * roster rows themselves are private.
+ */
 export async function getOwnedPlayerIds(): Promise<Set<number>> {
   const supabase = await createClient();
-  const rows = await fetchAll(() =>
-    supabase.from("roster_players").select("player_id").is("released_at", null).order("id"),
-  );
-  return new Set(rows.map((r) => r.player_id));
+  const [free, active] = await Promise.all([
+    fetchAll(() => supabase.from("free_agents").select("id").order("id")),
+    fetchAll(() => supabase.from("players").select("id").eq("status", "active").order("id")),
+  ]);
+  const freeIds = new Set(free.map((p) => p.id));
+  return new Set(active.map((p) => p.id).filter((id) => !freeIds.has(id)));
 }
 
 export async function getAllPlayers(): Promise<Player[]> {

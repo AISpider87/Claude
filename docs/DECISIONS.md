@@ -265,3 +265,12 @@ listone,operazioni}`) con exceljs, letture paginate (`fetchAll`) sotto la
   mia, reversibile). `swap_player`/`free_swap_player` restano nel DB per lo
   storico e i test, la UI non le usa più. `reverse_transaction` invariata:
   funziona per campo (in/out/crediti/contatore). Migrazione `20260909210000`.
+
+- 2026-09-10 · **Rose, crediti e operazioni privati per squadra** (richiesta
+  dell'admin, cambia SPEC §2): policy RLS "propria squadra o admin" su `teams`,
+  `roster_players`, `transactions`; `league_teams()` (security definer) per
+  l'elenco pubblico nome/sigla/colori/manager; la vista `free_agents` passa a
+  `security_invoker = false` con filtro `is_league_member()` così la lista
+  svincolati resta corretta senza esporre le rose; `team_market_state` solo per
+  chi gestisce la squadra. Alternativa scartata: nascondere solo in UI.
+  Migrazione `20260909220000`.

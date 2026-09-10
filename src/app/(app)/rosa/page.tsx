@@ -27,7 +27,7 @@ export default async function RosaPage() {
         <EmptyState
           icon={Users}
           title="Nessuna squadra collegata"
-          description="L'admin deve ancora collegare il tuo account alla tua squadra. Intanto puoi guardare le rose delle altre squadre e il listone."
+          description="L'admin deve ancora collegare il tuo account alla tua squadra. Intanto puoi guardare le squadre della lega e il listone."
         >
           <Link href="/squadre" className="text-primary min-h-11 text-sm font-medium">
             Vedi le squadre della lega
@@ -66,7 +66,7 @@ export default async function RosaPage() {
         <RosterTable roster={roster} composition={composition} />
         <p className="text-muted text-sm">
           <Link href="/squadre" className="text-primary">
-            Guarda le rose delle altre squadre
+            Vedi le squadre della lega
           </Link>
         </p>
       </div>

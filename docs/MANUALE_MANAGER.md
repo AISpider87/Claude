@@ -158,14 +158,17 @@ anche per chi era già partito quando l'admin ha caricato le rose.
 Un fuori lista non si può svincolare con lo svincolo normale: l'app risponde
 "usa lo svincolo gratuito".
 
-## 9. Bacheca mercato e rose degli altri
+## 9. Le tue operazioni e le altre squadre
 
-- In **Mercato → Bacheca mercato** vedi le ultime operazioni di tutta la lega:
-  Cambio, Cambio gratuito, Assegnazione/Rimozione/Crediti admin, Annullamento
-  (con il motivo). Le operazioni annullate restano visibili in grigio.
-- Da **Rosa → Guarda le rose delle altre squadre** apri l'elenco delle 20
-  squadre con crediti e numero di giocatori; tocca una squadra per la rosa
-  completa. Tutto in sola lettura.
+- In **Mercato → Le tue operazioni** vedi le tue ultime operazioni: Svincolo,
+  Acquisto, Svincolo gratuito, Assegnazione/Rimozione/Crediti admin,
+  Annullamento (con il motivo). Le operazioni annullate restano visibili in
+  grigio.
+- **Le rose, i crediti e le operazioni delle altre squadre sono privati**: li
+  vede solo il loro manager e l'admin. Da **Rosa → Vedi le squadre della
+  lega** trovi l'elenco delle 20 squadre con il nome del manager, niente di
+  più. Nel Listone il filtro "solo svincolati" funziona comunque: sai che un
+  calciatore è in qualche rosa, non in quale.
 
 ## 10. Tema chiaro o scuro
 

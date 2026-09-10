@@ -5,7 +5,9 @@ import type { RoleClassic } from "@/lib/import/quotations-parser";
 import type { Team } from "@/lib/supabase/database.types";
 import type { RosterSummary } from "@/lib/teams/queries";
 
-export function TeamEmblem({ team, size = "md" }: { team: Team; size?: "sm" | "md" | "lg" }) {
+export type TeamLook = Pick<Team, "short_name" | "color_primary" | "color_secondary">;
+
+export function TeamEmblem({ team, size = "md" }: { team: TeamLook; size?: "sm" | "md" | "lg" }) {
   const dim =
     size === "lg" ? "size-16 text-xl" : size === "sm" ? "size-8 text-xs" : "size-12 text-base";
   return (

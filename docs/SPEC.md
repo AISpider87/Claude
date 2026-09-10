@@ -24,8 +24,11 @@ regolamento**, non si faranno mai.
   Altri admin (previsti 2) promossi solo da un admin. Niente login Google in v1.
 - Ogni manager possiede esattamente una squadra (nome, sigla, colori/emblema
   generato, crediti). Le 20 squadre e i nomi esistono già (import iniziale).
-- Tutti i membri vedono rose, crediti e registro operazioni di tutti (sola lettura);
-  bacheca mercato visibile a tutta la lega.
+- **Privacy** (modifica approvata dall'admin il 2026-09-10): ogni manager vede
+  solo la propria rosa, i propri crediti e le proprie operazioni; l'admin vede
+  tutto. La lega vede di ogni squadra solo nome, sigla, colori e manager. La
+  lista svincolati resta calcolata su tutte le rose (dice che un calciatore è
+  posseduto, non da chi). Applicato con RLS, non solo in UI.
 
 ## 3. Regole di dominio (dal regolamento — implementate come `league_settings`)
 

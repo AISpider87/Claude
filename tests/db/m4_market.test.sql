@@ -122,8 +122,11 @@ begin
   -- #4 the same free agent can be bought by another team in the same session
   perform auth.test_login(v_luca, 'authenticated');
   perform public.swap_player(v_b, 1, 2);  -- Beta: Por1 -> Por2 too. 25 + 10 - 15 = 20
+  perform auth.test_logout();
+  -- rosters are private (M12): count the owners as superuser
   select count(*) into v_count from public.roster_players where player_id = 2 and released_at is null;
   if v_count <> 2 then raise exception 'non-exclusive ownership broken: % owners', v_count; end if;
+  perform auth.test_login(v_luca, 'authenticated');
   -- #6 insufficient credits: Beta (20) sells Att2 (20) for Att3 (40): 20 + 20 - 40 = 0 ok; then nothing left
   perform public.swap_player(v_b, 5, 6);
   select credits into v_credits from public.teams where id = v_b;

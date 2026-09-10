@@ -320,6 +320,18 @@ export type Database = {
       buy_player: { Args: { p_team_id: string; p_player_id: number }; Returns: string };
       release_out_of_list: { Args: { p_team_id: string; p_player_id: number }; Returns: string };
       team_market_state: { Args: { p_team_id: string }; Returns: Json };
+      league_teams: {
+        Args: Record<string, never>;
+        Returns: {
+          id: string;
+          name: string;
+          short_name: string;
+          color_primary: string;
+          color_secondary: string;
+          owner_id: string | null;
+          owner_name: string | null;
+        }[];
+      };
       reverse_transaction: { Args: { p_tx_id: string; p_reason: string }; Returns: string };
       consume_rate_limit: { Args: { p_bucket: RateLimitBucket }; Returns: undefined };
       consume_anonymous_attempt: {

@@ -215,8 +215,12 @@ export default async function MercatoPage({
 
         <Card>
           <CardHeader>
-            <CardTitle>Bacheca mercato</CardTitle>
-            <CardDescription>Le ultime operazioni di tutta la lega.</CardDescription>
+            <CardTitle>{user.role === "admin" ? "Bacheca mercato" : "Le tue operazioni"}</CardTitle>
+            <CardDescription>
+              {user.role === "admin"
+                ? "Le ultime operazioni di tutta la lega."
+                : "Le tue ultime operazioni: le rose e i mercati degli altri sono privati."}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <LedgerTable rows={ledger} />

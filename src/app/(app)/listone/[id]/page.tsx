@@ -12,7 +12,7 @@ import { createClient } from "@/lib/supabase/server";
 export const metadata = { title: "Calciatore" };
 
 export default async function PlayerPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireUser();
+  const user = await requireUser();
   const { id } = await params;
   const playerId = Number(id);
   if (!Number.isInteger(playerId) || playerId <= 0) notFound();
@@ -79,27 +79,31 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Chi lo ha in rosa</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {owners.length === 0 ? (
-              <p className="text-muted text-sm">Nessuna squadra della lega.</p>
-            ) : (
-              <ul className="flex flex-col gap-2 text-sm">
-                {owners.map((o) => (
-                  <li key={o.team_id} className="flex items-center justify-between gap-3">
-                    <Link href={`/squadre/${o.team_id}`} className="text-primary font-medium">
-                      {o.team?.name ?? "—"}
-                    </Link>
-                    <span className="text-muted tabular">pagato {formatInt(o.price_paid)}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
+        {(user.role === "admin" || owners.length > 0) && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">
+                {user.role === "admin" ? "Chi lo ha in rosa" : "Nella tua rosa"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {owners.length === 0 ? (
+                <p className="text-muted text-sm">Nessuna squadra della lega.</p>
+              ) : (
+                <ul className="flex flex-col gap-2 text-sm">
+                  {owners.map((o) => (
+                    <li key={o.team_id} className="flex items-center justify-between gap-3">
+                      <Link href={`/squadre/${o.team_id}`} className="text-primary font-medium">
+                        {o.team?.name ?? "—"}
+                      </Link>
+                      <span className="text-muted tabular">pagato {formatInt(o.price_paid)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <Link
           href="/listone"

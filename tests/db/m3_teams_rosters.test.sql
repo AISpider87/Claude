@@ -133,12 +133,15 @@ begin
 
   -- manager reads all teams and rosters, sees own team via owner_id, cannot write
   perform auth.test_login(v_mario, 'authenticated');
-  select count(*) into v_count from public.teams;
-  if v_count <> 3 then raise exception 'manager should read all teams'; end if;
+  select count(*) into v_count from public.league_teams();
+  if v_count <> 3 then raise exception 'manager should list all teams'; end if;
   perform 1 from public.teams where owner_id = auth.uid() and id = v_team_a;
   if not found then raise exception 'manager cannot find own team'; end if;
-  select count(*) into v_count from public.roster_players where released_at is null;
-  if v_count <> 6 then raise exception 'manager should read all 6 roster rows, saw %', v_count; end if;
+  -- rosters are private (M12): a manager reads only their own team's rows
+  select count(*) into v_count from public.roster_players where released_at is null and team_id = v_team_a;
+  if v_count <> 3 then raise exception 'manager should read own 3 roster rows, saw %', v_count; end if;
+  perform 1 from public.roster_players where team_id <> v_team_a;
+  if found then raise exception 'manager should not read other rosters'; end if;
   begin
     perform public.admin_assign_player(v_team_a, 3, 1);
     raise exception 'manager assigned a player';

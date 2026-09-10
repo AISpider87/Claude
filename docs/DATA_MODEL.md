@@ -154,11 +154,12 @@ funzioni `admin_*`.
 
 ## RLS (sintesi)
 
-| Tabella                                                                                               | SELECT                                                      | Scritture               |
-| ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ----------------------- |
-| profiles                                                                                              | proprio profilo; admin tutti; nome/ruolo visibili alla lega | solo funzioni/trigger   |
-| teams, roster_players, transactions, market_sessions, session_free_agents, players, player_quotations | tutti gli utenti autenticati e attivi                       | solo funzioni           |
-| imports, league_settings, audit_log                                                                   | solo admin (league_code mai esposto ai manager)             | solo admin via funzioni |
+| Tabella                                                          | SELECT                                                                                                                                                                              | Scritture               |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| profiles                                                         | proprio profilo; admin tutti; nome/ruolo visibili alla lega                                                                                                                         | solo funzioni/trigger   |
+| teams, roster_players, transactions                              | propria squadra (owner) o admin; `league_teams()` espone nome/sigla/colori/manager di tutte; `free_agents` (vista owner-run, filtro membro attivo) resta calcolata su tutte le rose | solo funzioni           |
+| market_sessions, session_free_agents, players, player_quotations | tutti gli utenti autenticati e attivi                                                                                                                                               | solo funzioni           |
+| imports, league_settings, audit_log                              | solo admin (league_code mai esposto ai manager)                                                                                                                                     | solo admin via funzioni |
 
 `is_admin()` e `is_league_member()` come funzioni helper `security definer stable`.
 
