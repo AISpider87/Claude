@@ -81,11 +81,15 @@ Tutte le chiavi vanno **solo** nelle impostazioni di Vercel/Supabase, mai nel re
    | `EMAIL_FROM`                    | mittente, es. `SuperLega <lega@tuodominio.it>`               |
    | `QUOTATIONS_SOURCE_URL`         | **vuota** finché non verifichi Fantacalcio.it (docs/SYNC.md) |
 
-3. **Deploy**. Il cron in `vercel.json` (`30 4 * * *`, una volta al giorno come
+3. **Branch di produzione**: se il repository ha come branch predefinito uno
+   diverso da `main`, in Vercel vai su _Settings → Environments → Production →
+   Branch Tracking_ e scrivi `main`; il primo deploy parte al primo push su
+   `main` (o da _Deployments → Create Deployment_).
+4. **Deploy**. Il cron in `vercel.json` (`30 4 * * *`, una volta al giorno come
    consente Hobby) chiama `/api/cron/sync-quotations` con `CRON_SECRET`:
    fa da keep-alive per Supabase Free (che altrimenti si pausa dopo 7 giorni
    di inattività) e, se configurata una sorgente, importa le quotazioni.
-4. Dominio personalizzato (facoltativo): _Settings → Domains_; aggiorna poi
+5. Dominio personalizzato (facoltativo): _Settings → Domains_; aggiorna poi
    `NEXT_PUBLIC_SITE_URL` e gli URL in Supabase Auth.
 
 ## 4. Smoke test in produzione (10 minuti)
