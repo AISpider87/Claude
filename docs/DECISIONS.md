@@ -234,3 +234,8 @@ listone,operazioni}`) con exceljs, letture paginate (`fetchAll`) sotto la
   scartata: saltare la riga (rosa a 22 e crediti sbagliati) o assegnare un Id
   fittizio positivo (collisione con Fantacalcio.it). · Fase 3, primo import
   reale (11 nomi non trovati). Migrazione `20260909190000`.
+- 2026-09-10 · **Skill `ui-ux-pro-max` installata nel repo** (copia di
+  `data/` + `scripts/` e SKILL.md reso dal template Claude, come farebbe
+  `uipro init --ai claude`; script Python solo locali, nessuna rete). Serve da
+  base per il secondo design pass (motion, micro-interazioni, eventuale 3D);
+  i token di docs/DESIGN.md restano vincolanti. Richiesta dell'admin.

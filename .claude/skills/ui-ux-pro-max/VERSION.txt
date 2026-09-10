@@ -1,0 +1,2 @@
+ui-ux-pro-max v2.13.0 — MIT, https://github.com/nextlevelbuilder/ui-ux-pro-max-skill
+Installed by copying src/ui-ux-pro-max/{data,scripts} and rendering templates/base with templates/platforms/claude.json (same as `uipro init --ai claude`).

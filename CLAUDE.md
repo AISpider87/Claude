@@ -15,6 +15,10 @@ BACKLOG.md.
 - Nessun secret nel repo, mai. Env in `.env.local` (gitignored) / Vercel.
 - `legacy/` è il vecchio tool asta: non toccare.
 - `fixtures/` contiene i file Excel reali: usarli nei test del parser.
+- Grafica: la skill `ui-ux-pro-max` (`.claude/skills/ui-ux-pro-max`, MIT) è
+  un aiuto per linee guida UX, motion e stack; **palette, token e regole di
+  docs/DESIGN.md vincono sempre** sulle sue proposte (niente palette generate,
+  niente foto/loghi non licenziati).
 
 ## Comandi (da M1 in poi)
 
