@@ -49,11 +49,31 @@ export async function signUp(_prev: FormState, formData: FormData): Promise<Form
     if (error.code === "over_email_send_rate_limit" || error.status === 429) {
       return { status: "error", message: "Troppi tentativi. Riprova tra qualche minuto." };
     }
-    // A rejected signup is almost always the league code (trigger INVALID_LEAGUE_CODE).
+    const text = error.message.toLowerCase();
+    if (text.includes("sending") && text.includes("email")) {
+      return {
+        status: "error",
+        message:
+          "Registrazione bloccata: il server non riesce a inviare l'email di conferma. Avvisa l'admin (configurazione SMTP).",
+      };
+    }
+    if (text.includes("already registered") || error.code === "user_already_exists") {
+      return {
+        status: "error",
+        errors: { email: ["Questa email è già registrata: usa Accedi o Recupera password."] },
+      };
+    }
+    // The signup trigger rejects unknown league codes ("Database error saving new user").
+    if (text.includes("database error") || text.includes("league")) {
+      return {
+        status: "error",
+        errors: { leagueCode: ["Codice lega non valido."] },
+        message: "Registrazione non riuscita: controlla il codice lega e riprova.",
+      };
+    }
     return {
       status: "error",
-      errors: { leagueCode: ["Codice lega non valido."] },
-      message: "Registrazione non riuscita: controlla il codice lega e riprova.",
+      message: `Registrazione non riuscita (${error.message}). Se il problema continua, avvisa l'admin.`,
     };
   }
 
