@@ -168,6 +168,8 @@ del deploy che le usa:
 - senza CLI (Opzione A): apri il nuovo file in `supabase/migrations/`, copia
   tutto il contenuto e incollalo in _SQL Editor → New query → Run_. Ogni
   migrazione va eseguita **una volta sola**, in ordine di nome; il file
-  `supabase/deploy/schema.sql` serve solo per il primo avvio da zero.
+  `supabase/deploy/schema.sql` serve solo per il primo avvio da zero. Quando
+  un aggiornamento porta più migrazioni insieme, in `supabase/deploy/updates/`
+  c'è un unico file già concatenato da incollare.
 
 Le migrazioni non si modificano dopo l'applicazione: si aggiunge un nuovo file.
