@@ -97,56 +97,66 @@ Qt.I, FVM e lo stato (**svincolato**, **in rosa** o **fuori lista**).
 Ricorda: nella SuperLega **lo stesso calciatore può stare in più rose**.
 "Svincolato" vuol dire che oggi non ce l'ha nessuno.
 
-## 7. Fare un cambio in sessione
+## 7. Il mercato: svincola prima, compra dopo
 
 Si compra solo durante una **sessione di mercato aperta** (4 a stagione; si
 aprono e chiudono da sole agli orari programmati dall'admin). La pagina
 **Mercato** dice se una sessione è aperta, quando chiude e quanto manca;
 altrimenti mostra la prossima programmata.
 
-Un cambio = esce un tuo calciatore, entra uno **svincolato dello stesso ruolo**.
-La rosa resta sempre 3/7/7/6.
+Le operazioni sono due, separate:
 
-1. **1. Chi esce** — tocca il calciatore che vuoi cedere (puoi filtrare per
-   ruolo). Vedi "pagato" e "rientro": il rientro è la **quotazione attuale**,
-   non quello che avevi pagato.
-2. **2. Chi entra** — cerca tra gli svincolati di quel ruolo con **Cerca tra
-   gli svincolati…**. Il prezzo è la **Qt.A attuale**. Chi costa più di quanto
-   hai (crediti + rientro) è grigio con "crediti insufficienti".
-3. **3. Conferma** — controlla il riepilogo "Crediti: X +rientro −costo = Y"
-   e tocca **Conferma il cambio**. Compare "Cambio registrato: la tua rosa è
-   aggiornata."
+1. **Svincolo** — nel riquadro **La tua rosa** tocca **Svincola** accanto al
+   calciatore che vuoi cedere e conferma. Incassi la sua **quotazione
+   attuale** (non quello che avevi pagato) e nel suo ruolo si apre un **posto
+   da riempire** (es. "Difensori 6/7 · 1 posto da riempire"). Puoi svincolare
+   più calciatori, anche in giorni diversi della stessa sessione, e accumulare
+   crediti.
+2. **Acquisto** — il riquadro **Acquista** mostra solo gli svincolati dei
+   ruoli in cui hai un posto libero: chi esce difensore rientra difensore, chi
+   esce centrocampista rientra centrocampista. Cerca, tocca il calciatore,
+   controlla "Crediti: X −costo = Y" e **Conferma l'acquisto**. Il prezzo è la
+   **Qt.A attuale**. Chi costa più dei tuoi crediti è grigio con "crediti
+   insufficienti".
 
 Regole che l'app fa rispettare:
 
-- Massimo **20 cambi a stagione** (nessun limite per sessione). Quando li hai
-  finiti la pagina dice "Hai usato tutti i 20 cambi della stagione."
+- **Ogni acquisto usa uno dei 20 cambi** della stagione; gli svincoli non
+  contano. Quando li hai finiti la pagina dice "Hai usato tutti i 20 cambi
+  della stagione."
+- Non puoi comprare in un ruolo senza posti liberi ("Non hai posti liberi in
+  questo ruolo: svincola prima…").
 - All'apertura di ogni sessione ricevi **+5 crediti** (lo vedi nella Bacheca
   come "Crediti admin · Budget extra apertura sessione").
 - Gli svincolati sono **fotografati all'apertura**: nella stessa sessione più
   squadre possono prendere lo stesso svincolato; chi era già in una rosa
-  all'apertura non è acquistabile fino alla sessione successiva.
+  all'apertura (compreso chi hai appena svincolato tu) non è acquistabile fino
+  alla sessione successiva.
+- **Alla chiusura la rosa deve essere di nuovo 3/7/7/6.** Chi lascia posti
+  vuoti finisce nel report di chiusura e l'admin interviene. Il contatore
+  **Posti da riempire** in cima alla pagina ti dice a che punto sei.
 - Troppi tentativi in un minuto → "Troppe operazioni in poco tempo: aspetta un
   minuto e riprova."
-- Un cambio confermato è definitivo: non puoi annullarlo da solo (vedi §11).
+- Un'operazione confermata è definitiva: non puoi annullarla da solo (vedi §11).
 
-Allo scadere dell'orario di chiusura i cambi si bloccano da soli, anche se
-l'admin non ha ancora chiuso la sessione.
+Allo scadere dell'orario di chiusura le operazioni si bloccano da sole.
 
-## 8. Cambio gratuito (chi è uscito dalla Serie A)
+## 8. Chi è uscito dalla Serie A (fuori lista)
 
 Se un tuo calciatore compare nel foglio "Ceduti" di Fantacalcio.it, dopo
-l'aggiornamento del listone diventa **fuori lista**. In **Mercato** compare il
-riquadro **Cambio gratuito**:
+l'aggiornamento del listone diventa **fuori lista** (etichetta rossa). Vale
+anche per chi era già partito quando l'admin ha caricato le rose.
 
-1. **1. Chi esce**: il fuori lista (rientra il **prezzo pagato**, non la Qt.A).
-2. **2. Chi entra**: uno svincolato dello stesso ruolo, pagato a **Qt.A attuale**.
-3. **Conferma il cambio gratuito**.
+1. In **La tua rosa** tocca **Svincola gratis** e conferma: rientra il
+   **prezzo pagato**, non la Qt.A. Si può fare **in qualsiasi momento**, anche
+   a mercato chiuso.
+2. Nel riquadro **Acquista** prendi il sostituto **dello stesso ruolo** tra
+   gli svincolati liberi **adesso** (non la foto della sessione), pagato a
+   **Qt.A attuale**. Anche questo in qualsiasi momento, e **non conta** nei 20
+   (nella lista è segnato "non conta nei cambi").
 
-Il cambio gratuito **non conta** nei 20 e si può fare **anche a mercato
-chiuso**, in qualsiasi momento. Un fuori lista non si può cedere con un cambio
-normale: l'app risponde "usa il cambio gratuito". Gli svincolati del cambio
-gratuito sono quelli liberi **adesso**, non la foto della sessione.
+Un fuori lista non si può svincolare con lo svincolo normale: l'app risponde
+"usa lo svincolo gratuito".
 
 ## 9. Bacheca mercato e rose degli altri
 

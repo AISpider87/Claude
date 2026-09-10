@@ -414,9 +414,10 @@ Cosa fare con le rose "da sistemare":
 ## 8. Registro operazioni e annullamenti
 
 Pagina **Admin → Registro operazioni**: le ultime 200 operazioni di tutta la
-lega (Quando, Squadra, Operazione, Dettaglio, Crediti, Azioni). Tipi: Cambio,
-Cambio gratuito, Assegnazione admin, Rimozione admin, Crediti admin,
-Annullamento. Le operazioni annullate restano visibili, in grigio, con il badge
+lega (Quando, Squadra, Operazione, Dettaglio, Crediti, Azioni). Tipi:
+Svincolo, Acquisto (badge "gratuito" se sostituisce un fuori lista), Svincolo
+gratuito, Assegnazione admin, Rimozione admin, Crediti admin, Annullamento
+(più Cambio e Cambio gratuito dello storico precedente). Le operazioni annullate restano visibili, in grigio, con il badge
 "annullata". Lo stesso registro, senza azioni, è la **Bacheca mercato** dei
 manager e l'export "Registro operazioni".
 
@@ -436,9 +437,12 @@ L'annullamento **non cancella nulla**: crea un'operazione di tipo
 - inverte i crediti (segno opposto);
 - se l'operazione contava nei 20 cambi, riporta indietro il contatore.
 
-Vale per cambi, cambi gratuiti, assegnazioni/rimozioni admin e rettifiche
-crediti (incluso il budget extra di una sessione, una squadra alla volta).
-È consentito anche a sessione aperta.
+Vale per svincoli, acquisti, svincoli gratuiti, assegnazioni/rimozioni admin
+e rettifiche crediti (incluso il budget extra di una sessione, una squadra
+alla volta). È consentito anche a sessione aperta. Annullare uno svincolo
+rimette il calciatore in rosa anche se nel frattempo il posto è stato
+riempito: la rosa risulta "in più della regola" finché non annulli anche
+l'acquisto o rimuovi qualcuno (§5.4).
 
 ### 8.2 Limiti
 
@@ -452,7 +456,7 @@ crediti (incluso il budget extra di una sessione, una squadra alla volta).
   annulla prima le operazioni successive." Annulla partendo dalla più recente
   e risali.
 - "Il calciatore uscito è già tornato in rosa." → il manager lo ha ricomprato:
-  annulla prima quel cambio, oppure lascia stare.
+  annulla prima quell'acquisto, oppure lascia stare.
 - "Crediti insufficienti" → l'inversione porterebbe la squadra sotto zero
   (es. annullare un accredito già speso): rettifica prima i crediti (§5.2).
 

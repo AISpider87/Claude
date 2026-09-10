@@ -80,6 +80,28 @@ export async function getCurrentFreeAgents(): Promise<FreeAgentOption[]> {
     .sort((a, b) => b.qtA - a.qtA || a.name.localeCompare(b.name));
 }
 
+export interface TeamMarketState {
+  /** Missing players per role vs the composition (negative = over the composition). */
+  slots: Record<RoleClassic, number>;
+  /** Free releases not yet compensated: purchases for these do not count. */
+  freeSlots: Record<RoleClassic, number>;
+}
+
+const ZERO: Record<RoleClassic, number> = { P: 0, D: 0, C: 0, A: 0 };
+
+export async function getTeamMarketState(teamId: string): Promise<TeamMarketState> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("team_market_state", { p_team_id: teamId });
+  const v = (data ?? {}) as { slots?: Record<string, number>; free_slots?: Record<string, number> };
+  const pick = (m: Record<string, number> | undefined): Record<RoleClassic, number> => ({
+    P: Number(m?.P ?? 0),
+    D: Number(m?.D ?? 0),
+    C: Number(m?.C ?? 0),
+    A: Number(m?.A ?? 0),
+  });
+  return { slots: data ? pick(v.slots) : ZERO, freeSlots: data ? pick(v.free_slots) : ZERO };
+}
+
 export async function getMarketSettings() {
   const supabase = await createClient();
   const { data } = await supabase

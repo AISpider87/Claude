@@ -5,60 +5,70 @@ description: Buy/sell/swap algorithms, validation rules, and the test-case table
 
 # Market rules — algorithms and test cases
 
-## swap_player(team, player_out, player_in) — pseudocode
+**Model v2 (2026-09-10)**: operations are separate. Release first, buy later,
+same role by count. `swap_player`/`free_swap_player` remain in the DB (a swap is
+a release + a purchase) but the UI no longer uses them.
+
+## sell_player(team, player) — pseudocode
 
 ```
-lock teams row FOR UPDATE
-assert caller owns team (or is admin acting for it)
-assert session exists and status = 'open' and now() within window
-assert player_out currently in team roster (released_at is null)
-assert player_in in session_free_agents(session) and players.status = 'active'
-assert role_classic(player_in) == role_classic(player_out)
-assert team.swaps_used < season_swap_limit (20)
-refund  = players.qt_a of player_out   -- current quotation
-cost    = players.qt_a of player_in
-assert team.credits + refund - cost >= 0
-close roster row (out), insert roster row (in, price_paid = cost)
-team.credits += refund - cost ; team.swaps_used += 1
-insert transactions (kind, out, refund, in, cost, counts_toward_limit = true)
-insert audit_log
+lock teams row FOR UPDATE; assert caller can manage team; throttle
+assert session open (now within window) — shared lock on the session row
+assert player currently in roster; assert players.status = 'active' (else USE_FREE_RELEASE)
+refund = players.qt_a (sale_price_rule)
+close roster row (released_via = 'sell'); team.credits += refund
+insert transactions (kind 'sell', player_out, refund, credits_delta = +refund, counts = false)
 ```
 
-## free_swap_player(team, player_out, player_in)
+## release_out_of_list(team, player)
 
-Same, except: no session required; `player_out.status = 'out_of_list'`;
-`player_in` must be a free agent **now** (no team owns it) and active;
-`refund = roster.price_paid` of player_out; `counts_toward_limit = false`;
-`swaps_used` unchanged.
+Any time. `players.status = 'out_of_list'`; refund = roster.price_paid
+(`free_swap_refund_rule`); `released_via = 'free_release'`; kind
+`free_release`; counts = false; session_id = current session or null.
 
-## open_market_session / close_market_session
+## buy_player(team, player)
 
-Open (admin): scheduled→open, snapshot free agents (active players with no
-open roster row), credit +extra_budget (5) to every team exactly once, email.
-Close (admin): open→closed, validate every roster (23, 3/7/7/6, credits >= 0),
-store validation_report, email summary.
+```
+lock team; throttle; lock players row FOR UPDATE (serialises free purchases)
+assert player active and not already in roster
+assert role_slots(team, role) > 0      -- composition[role] − current roster count in role  (NO_ROLE_SLOT)
+free = free_slots(team, role) > 0      -- free releases − free purchases, non-reversed, from the ledger
+if free:  assert player in free_agents (now); session = current or null; counts = false
+else:     assert session open; player in session_free_agents(session); swaps_used < 20; counts = true; swaps_used += 1
+cost = players.qt_a; assert credits − cost >= 0
+insert roster row (acquired_via 'buy', price_paid = cost); credits −= cost
+insert transactions (kind 'buy', player_in, cost, credits_delta = −cost, counts_toward_limit = not free)
+```
+
+## open / close / sync_market_sessions
+
+Open: scheduled→open, snapshot free agents, +extra_budget once, email. Close:
+open→closed, validation report (23, 3/7/7/6, no out-of-list, credits ≥ 0).
+`sync_market_sessions()` (any authenticated user, every page load, cron) closes
+expired open sessions and opens the earliest due scheduled one.
 
 ## reverse_transaction(tx, reason) — admin only
 
-Creates the inverse rows (reopen/annul roster rows, refund/charge credits,
-decrement swaps_used if it counted), links `reversal_of`, requires a reason.
-Never deletes anything. A reversal cannot itself be reversed twice.
+Field-driven inverse: removes player_in, restores player_out at his last
+price, inverts credits, decrements swaps_used if it counted. Works for sell,
+buy, free_release, swap, free_swap, admin_*. Never deletes; a reversal cannot
+be reversed; one reversal per operation.
 
-## Tabella dei casi di test (minimo)
+## Test cases (tests/db/m11_market_sell_buy.test.sql, m4_market.test.sql)
 
-| #   | Caso                                              | Esito atteso                                 |
-| --- | ------------------------------------------------- | -------------------------------------------- |
-| 1   | Cambio valido in sessione aperta                  | ok; crediti e swaps_used aggiornati          |
-| 2   | Sessione chiusa/programmata                       | errore "sessione non aperta"                 |
-| 3   | player_in non nella foto svincolati               | errore                                       |
-| 4   | player_in preso da altri NELLA STESSA sessione    | **ok** (non esclusivo)                       |
-| 5   | Ruoli diversi out/in                              | errore                                       |
-| 6   | Crediti insufficienti (refund−cost porta sotto 0) | errore, nulla scritto                        |
-| 7   | 20° cambio                                        | ok; 21°                                      | errore limite |
-| 8   | Due cambi simultanei stessa squadra (concorrenza) | mai crediti<0 né >20                         |
-| 9   | Free swap con out non fuori-lista                 | errore                                       |
-| 10  | Free swap a sessione chiusa                       | ok, non conta nei 20, rimborso=prezzo pagato |
-| 11  | Free swap: in posseduto da qualcuno ora           | errore                                       |
-| 12  | Reversal di un cambio                             | rosa e crediti ripristinati, swaps_used--    |
-| 13  | Chiamata diretta API fuori sessione (no UI)       | errore server-side                           |
-| 14  | open_session ritentata                            | +5 accreditato una sola volta                |
+| #   | Caso                                                  | Esito atteso                                    |
+| --- | ----------------------------------------------------- | ----------------------------------------------- |
+| 1   | Svincolo a sessione chiusa                            | errore SESSION_NOT_OPEN                         |
+| 2   | Acquisto senza posto libero nel ruolo                 | errore NO_ROLE_SLOT                             |
+| 3   | Svincolo gratuito di un fuori lista                   | ok, rimborso = pagato, non conta                |
+| 4   | Acquisto del sostituto fuori sessione (slot gratuito) | ok, svincolati attuali, non conta               |
+| 5   | Difensore per un buco da attaccante                   | errore NO_ROLE_SLOT                             |
+| 6   | Due svincoli D + acquisti D in sessione               | ok, ogni acquisto conta 1, crediti = Qt.A       |
+| 7   | Centrocampista per un buco da difensore               | errore                                          |
+| 8   | Crediti insufficienti                                 | errore, nulla scritto                           |
+| 9   | Terzo difensore senza buco                            | errore                                          |
+| 10  | Ricomprare nella stessa sessione chi si è svincolato  | errore NOT_FREE_AGENT (era posseduto alla foto) |
+| 11  | Manager di un'altra squadra                           | errore FORBIDDEN                                |
+| 12  | Annullamento di un acquisto                           | giocatore fuori, crediti e contatore indietro   |
+| 13  | Annullamento di uno svincolo                          | giocatore rientra al vecchio prezzo             |
+| 14  | Chiusura con buchi                                    | report `invalid ≥ 1`                            |

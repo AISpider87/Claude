@@ -40,6 +40,11 @@
   (oggi via file Excel dell'admin; l'app sostituisce questo flusso).
 - **Limite: 20 compravendite ("cambi") a squadra per l'intera stagione**; nessun limite
   per singola sessione. **Scambi di calciatori tra squadre vietati.**
+- Procedura (confermata dall'admin il 2026-09-10): prima si **svincola** (crediti =
+  quotazione attuale), poi si **acquista** tra gli svincolati **dello stesso ruolo**
+  di chi è uscito (2 difensori + 1 centrocampista fuori → 2 difensori + 1
+  centrocampista dentro). Ogni acquisto conta un cambio; alla chiusura la rosa deve
+  essere di nuovo 3/7/7/6.
 
 ## Calciatori usciti dalla Serie A ("fuori lista")
 

@@ -6,6 +6,9 @@ import type { LedgerRow } from "@/lib/market/queries";
 export const KIND_LABEL: Record<string, string> = {
   swap: "Cambio",
   free_swap: "Cambio gratuito",
+  sell: "Svincolo",
+  buy: "Acquisto",
+  free_release: "Svincolo gratuito",
   admin_assign: "Assegnazione admin",
   admin_remove: "Rimozione admin",
   admin_credits: "Crediti admin",
@@ -50,11 +53,20 @@ export function LedgerTable({
             <TD>
               <Badge
                 variant={
-                  t.kind === "reversal" ? "danger" : t.kind === "swap" ? "primary" : "neutral"
+                  t.kind === "reversal"
+                    ? "danger"
+                    : t.kind === "swap" || t.kind === "buy"
+                      ? "primary"
+                      : "neutral"
                 }
               >
                 {KIND_LABEL[t.kind] ?? t.kind}
               </Badge>
+              {t.kind === "buy" && !t.counts_toward_limit && (
+                <Badge variant="muted" className="ml-1">
+                  gratuito
+                </Badge>
+              )}
               {t.reversed && (
                 <Badge variant="muted" className="ml-1">
                   annullata

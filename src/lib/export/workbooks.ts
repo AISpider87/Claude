@@ -67,12 +67,16 @@ const ACQUIRED_LABEL: Record<string, string> = {
   admin: "Admin",
   swap: "Cambio",
   free_swap: "Cambio gratuito",
+  buy: "Acquisto",
   reversal: "Annullamento",
 };
 
 const KIND_LABEL: Record<string, string> = {
   swap: "Cambio",
   free_swap: "Cambio gratuito",
+  sell: "Svincolo",
+  buy: "Acquisto",
+  free_release: "Svincolo gratuito",
   admin_assign: "Assegnazione admin",
   admin_remove: "Rimozione admin",
   admin_credits: "Crediti admin",

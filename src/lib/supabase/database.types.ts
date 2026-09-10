@@ -17,9 +17,17 @@ export type ImportSource = "manual" | "auto";
 export type ImportStatus = "previewed" | "applied" | "failed";
 export type SessionStatus = "scheduled" | "open" | "closed";
 export type TransactionKind =
-  "swap" | "free_swap" | "admin_assign" | "admin_remove" | "admin_credits" | "reversal";
-export type AcquiredVia = "initial_import" | "admin" | "swap" | "free_swap" | "reversal";
-export type ReleasedVia = "swap" | "free_swap" | "admin" | "reversal";
+  | "swap"
+  | "free_swap"
+  | "sell"
+  | "buy"
+  | "free_release"
+  | "admin_assign"
+  | "admin_remove"
+  | "admin_credits"
+  | "reversal";
+export type AcquiredVia = "initial_import" | "admin" | "swap" | "free_swap" | "buy" | "reversal";
+export type ReleasedVia = "swap" | "free_swap" | "sell" | "free_release" | "admin" | "reversal";
 
 export type RateLimitBucket = "market" | "import" | "export" | "email" | "admin";
 export type NotificationStatus = "sent" | "partial" | "failed" | "skipped";
@@ -308,6 +316,10 @@ export type Database = {
         Args: { p_team_id: string; p_player_out: number; p_player_in: number };
         Returns: string;
       };
+      sell_player: { Args: { p_team_id: string; p_player_id: number }; Returns: string };
+      buy_player: { Args: { p_team_id: string; p_player_id: number }; Returns: string };
+      release_out_of_list: { Args: { p_team_id: string; p_player_id: number }; Returns: string };
+      team_market_state: { Args: { p_team_id: string }; Returns: Json };
       reverse_transaction: { Args: { p_tx_id: string; p_reason: string }; Returns: string };
       consume_rate_limit: { Args: { p_bucket: RateLimitBucket }; Returns: undefined };
       consume_anonymous_attempt: {

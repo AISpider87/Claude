@@ -10,17 +10,28 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Stat } from "@/components/ui/stat";
 import { requireUser } from "@/lib/auth/dal";
 import { formatDateTime, formatInt } from "@/lib/format";
-import { freeSwapPlayer, swapPlayer } from "@/lib/market/actions";
+import type { RoleClassic } from "@/lib/import/quotations-parser";
+import { buyPlayer, releaseOutOfList, sellPlayer } from "@/lib/market/actions";
 import {
   getCurrentFreeAgents,
   getCurrentSession,
   getMarketSettings,
   getNextScheduledSession,
   getSessionFreeAgents,
+  getTeamMarketState,
   listTransactions,
+  type FreeAgentOption,
 } from "@/lib/market/queries";
-import { getMyTeam, getTeamRoster } from "@/lib/teams/queries";
-import { SwapPanel, type RosterOption } from "./swap-panel";
+import { ROLE_ORDER } from "@/lib/roles";
+import { getMyTeam, getRosterComposition, getTeamRoster } from "@/lib/teams/queries";
+import { BuyPanel, type BuyCandidate } from "./buy-panel";
+import { MarketRoster, type RosterOption } from "./market-roster";
+
+const DONE_MESSAGE: Record<string, string> = {
+  sell: "Svincolo registrato: i crediti sono tornati nel tuo budget.",
+  buy: "Acquisto registrato: la tua rosa è aggiornata.",
+  free_release: "Svincolo gratuito registrato.",
+};
 
 export const metadata = { title: "Mercato" };
 
@@ -31,15 +42,18 @@ export default async function MercatoPage({
 }) {
   const user = await requireUser();
   const { done } = await searchParams;
-  const [team, session, nextSession, settings, ledger] = await Promise.all([
+  const [team, session, nextSession, settings, composition, ledger] = await Promise.all([
     getMyTeam(user.id),
     getCurrentSession(),
     getNextScheduledSession(),
     getMarketSettings(),
+    getRosterComposition(),
     listTransactions({ limit: 30 }),
   ]);
 
-  const roster = team ? await getTeamRoster(team.id) : [];
+  const [roster, state] = team
+    ? await Promise.all([getTeamRoster(team.id), getTeamMarketState(team.id)])
+    : [[], null];
   const rosterOptions: RosterOption[] = roster.map((r) => ({
     id: r.player.id,
     name: r.player.name,
@@ -49,18 +63,37 @@ export default async function MercatoPage({
     pricePaid: r.pricePaid,
     outOfList: r.player.status === "out_of_list",
   }));
-  const outOfList = rosterOptions.filter((r) => r.outOfList);
+  const slots = state?.slots ?? { P: 0, D: 0, C: 0, A: 0 };
+  const freeSlots = state?.freeSlots ?? { P: 0, D: 0, C: 0, A: 0 };
+  // Roles the team can buy for: a free slot (any time, current free agents) or a
+  // hole to fill during the open session (from the session snapshot).
+  const freeRoles = ROLE_ORDER.filter((r) => freeSlots[r] > 0 && slots[r] > 0);
+  const sessionRoles = session
+    ? ROLE_ORDER.filter((r) => slots[r] > 0 && !freeRoles.includes(r))
+    : [];
+  const openRoles: RoleClassic[] = ROLE_ORDER.filter(
+    (r) => freeRoles.includes(r) || sessionRoles.includes(r),
+  );
   const [sessionFreeAgents, currentFreeAgents] = await Promise.all([
-    session && team ? getSessionFreeAgents(session.id) : Promise.resolve([]),
-    outOfList.length > 0 ? getCurrentFreeAgents() : Promise.resolve([]),
+    session && sessionRoles.length > 0 ? getSessionFreeAgents(session.id) : Promise.resolve([]),
+    freeRoles.length > 0 ? getCurrentFreeAgents() : Promise.resolve([]),
   ]);
+  const owned = new Set(rosterOptions.map((r) => r.id));
+  const toCandidate = (p: FreeAgentOption, free: boolean): BuyCandidate => ({ ...p, free });
+  const candidates: BuyCandidate[] = [
+    ...currentFreeAgents.filter((p) => freeRoles.includes(p.role)).map((p) => toCandidate(p, true)),
+    ...sessionFreeAgents
+      .filter((p) => sessionRoles.includes(p.role))
+      .map((p) => toCandidate(p, false)),
+  ].filter((p) => !owned.has(p.id));
+  const holes = ROLE_ORDER.reduce((n, r) => n + Math.max(0, slots[r]), 0);
+  const limitReached = team ? team.swaps_used >= settings.swapLimit : false;
 
   return (
     <>
       <PageHeader title="Mercato" description="Sessioni, cambi e bacheca della lega." />
       <div className="flex flex-col gap-6">
-        {done === "swap" && <SwapDone message="Cambio registrato: la tua rosa è aggiornata." />}
-        {done === "free_swap" && <SwapDone message="Cambio gratuito registrato." />}
+        {done && DONE_MESSAGE[done] && <SwapDone message={DONE_MESSAGE[done]} />}
 
         {session ? (
           <Card className="border-primary/50">
@@ -88,8 +121,9 @@ export default async function MercatoPage({
                   tone={team.swaps_used >= settings.swapLimit ? "danger" : "neutral"}
                 />
                 <Stat
-                  label="Svincolati"
-                  value={formatInt(sessionFreeAgents.length)}
+                  label="Posti da riempire"
+                  value={formatInt(holes)}
+                  tone={holes > 0 ? "danger" : "neutral"}
                   className="col-span-2 sm:col-span-1"
                 />
               </CardContent>
@@ -121,45 +155,61 @@ export default async function MercatoPage({
           </FormMessage>
         )}
 
-        {team && session && (
+        {team && (
           <Card>
+            <CardHeader>
+              <CardTitle>La tua rosa</CardTitle>
+              <CardDescription>
+                {session
+                  ? `Svincola chi vuoi cedere: incassi la quotazione attuale. Poi prendi uno svincolato dello stesso ruolo. Ti restano ${Math.max(0, settings.swapLimit - team.swaps_used)} cambi (ogni acquisto ne usa uno).`
+                  : "Fuori sessione puoi solo svincolare gratis chi è uscito dalla Serie A e prendere il suo sostituto."}
+              </CardDescription>
+            </CardHeader>
             <CardContent>
-              {team.swaps_used >= settings.swapLimit ? (
-                <FormMessage tone="info">
-                  Hai usato tutti i {settings.swapLimit} cambi della stagione.
-                </FormMessage>
-              ) : (
-                <SwapPanel
-                  teamId={team.id}
-                  credits={team.credits}
-                  roster={rosterOptions.filter((r) => !r.outOfList)}
-                  candidates={sessionFreeAgents}
-                  refundRule={settings.saleRule}
-                  action={swapPlayer}
-                  title="Fai un cambio"
-                  description={`Vendi un tuo calciatore alla quotazione attuale e prendi uno svincolato dello stesso ruolo. Ti restano ${settings.swapLimit - team.swaps_used} cambi.`}
-                  submitLabel="Conferma il cambio"
-                />
-              )}
+              <MarketRoster
+                teamId={team.id}
+                credits={team.credits}
+                roster={rosterOptions}
+                composition={composition}
+                slots={slots}
+                sessionOpen={Boolean(session)}
+                refundRule={settings.saleRule}
+                sellAction={sellPlayer}
+                releaseAction={releaseOutOfList}
+              />
             </CardContent>
           </Card>
         )}
 
-        {team && outOfList.length > 0 && (
-          <Card className="border-danger/40">
-            <CardContent>
-              <SwapPanel
-                teamId={team.id}
-                credits={team.credits}
-                roster={outOfList}
-                candidates={currentFreeAgents}
-                refundRule={settings.freeSwapRule}
-                action={freeSwapPlayer}
-                title="Cambio gratuito"
-                description={`${outOfList.length === 1 ? "Un tuo calciatore è uscito" : `${outOfList.length} tuoi calciatori sono usciti`} dalla Serie A: puoi sostituirli in qualsiasi momento, senza consumare cambi. Rientra il prezzo pagato.`}
-                submitLabel="Conferma il cambio gratuito"
-              />
-            </CardContent>
+        {team && holes > 0 && (
+          <Card className="border-primary/50">
+            <CardHeader>
+              <CardTitle>Acquista</CardTitle>
+              <CardDescription>
+                {openRoles.length > 0
+                  ? "Solo svincolati dei ruoli in cui hai un posto libero: chi esce difensore rientra difensore."
+                  : session
+                    ? "Nessuno svincolato disponibile per i ruoli scoperti."
+                    : "Il mercato è chiuso: potrai riempire i posti liberi alla prossima sessione."}
+              </CardDescription>
+            </CardHeader>
+            {openRoles.length > 0 && (
+              <CardContent>
+                {limitReached && sessionRoles.length > 0 && freeRoles.length === 0 ? (
+                  <FormMessage tone="info">
+                    Hai usato tutti i {settings.swapLimit} cambi della stagione.
+                  </FormMessage>
+                ) : (
+                  <BuyPanel
+                    teamId={team.id}
+                    credits={team.credits}
+                    candidates={candidates}
+                    openRoles={openRoles}
+                    action={buyPlayer}
+                  />
+                )}
+              </CardContent>
+            )}
           </Card>
         )}
 

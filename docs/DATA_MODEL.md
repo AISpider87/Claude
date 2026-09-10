@@ -55,8 +55,8 @@ stessa sessione).
 ### roster_players
 
 `id`, `team_id → teams`, `player_id → players`, `price_paid int`, `acquired_at`,
-`acquired_via check (initial_import|admin|buy|free_swap)`, `released_at null`,
-`released_via null check (sell|free_swap|admin|reversal)`.
+`acquired_via check (initial_import|admin|swap|free_swap|buy|reversal)`, `released_at null`,
+`released_via null check (swap|free_swap|sell|free_release|admin|reversal)`.
 Vincolo: unique (team_id, player_id) dove `released_at is null`.
 **Nessun vincolo di unicità globale sul player** (proprietà non esclusiva).
 Rosa corrente = righe con `released_at is null`; lo storico non si cancella mai.
@@ -64,7 +64,7 @@ Rosa corrente = righe con `released_at is null`; lo storico non si cancella mai.
 ### transactions (registro immutabile)
 
 `id`, `team_id`, `session_id null` (null per cambio gratuito fuori sessione),
-`kind check (swap|free_swap|admin_assign|admin_remove|reversal)`,
+`kind check (sell|buy|free_release|swap|free_swap|admin_assign|admin_remove|admin_credits|reversal)`,
 `player_out_id null`, `player_out_price null` (rientro),
 `player_in_id null`, `player_in_price null`, `credits_delta int`,
 `counts_toward_limit bool`, `note`, `reversal_of null → transactions unique`,
@@ -100,12 +100,26 @@ un trigger `forbid_change` che blocca anche le funzioni security definer.
   righe `admin_credits`), audit.
 - `close_market_session(session_id)` — solo admin: stato→closed, valida ogni rosa
   (23, 3/7/7/6, niente fuori lista, crediti ≥ 0), salva `validation_report`.
-- `swap_player(team_id, player_out, player_in)` — manager proprietario (o admin),
+- `sell_player(team_id, player)` — manager proprietario (o admin), sessione aperta:
+  chiude la riga rosa (`released_via = sell`), crediti += Qt.A attuale
+  (`sale_price_rule`), riga `sell` nel registro, non conta nei 20.
+- `release_out_of_list(team_id, player)` — in qualsiasi momento, `player.status =
+out_of_list`: rimborso = `price_paid` (`free_swap_refund_rule`), riga
+  `free_release`, non conta.
+- `buy_player(team_id, player)` — riempie un posto libero **dello stesso ruolo**
+  (`private.role_slots` = composizione − rosa attuale). Se il ruolo ha uno "slot
+  gratuito" (`private.free_slots` = svincoli gratuiti non ancora compensati, dal
+  registro non annullato) l'acquisto è consentito in qualsiasi momento tra gli
+  svincolati attuali e non conta; altrimenti serve la sessione aperta, il
+  giocatore nella foto svincolati e `swaps_used < limite` (conta, `swaps_used += 1`).
+  Costo = Qt.A attuale; crediti ≥ 0. `team_market_state(team)` espone posti e slot
+  gratuiti per ruolo alla UI.
+- `swap_player(team_id, player_out, player_in)` — (storico, non più usato dalla UI) manager proprietario (o admin),
   sessione aperta: `player_in` nella foto svincolati e `active`; stesso ruolo
   classic; rientro = Qt.A attuale di out (`sale_price_rule`), costo = Qt.A attuale
   di in; crediti ≥ 0 dopo; `swaps_used < season_swap_limit`; chiude la riga rosa
   di out, apre quella di in, una riga `swap` nel registro, `swaps_used += 1`.
-- `free_swap_player(team_id, player_out, player_in)` — anche fuori sessione:
+- `free_swap_player(team_id, player_out, player_in)` — (storico, non più usato dalla UI) anche fuori sessione:
   `player_out.status = out_of_list`; `player_in` svincolato **al momento attuale**
   e attivo, stesso ruolo; rimborso = `price_paid` di out, costo = Qt.A di in;
   non incrementa `swaps_used`, `counts_toward_limit=false`.

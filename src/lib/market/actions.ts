@@ -24,9 +24,12 @@ const MARKET_MESSAGES: Record<string, string> = {
   ROLE_MISMATCH: "Il cambio deve essere tra calciatori dello stesso ruolo.",
   SWAP_LIMIT_REACHED: "Hai esaurito i cambi disponibili per la stagione.",
   INSUFFICIENT_CREDITS: "Crediti insufficienti per questo cambio.",
-  NOT_OUT_OF_LIST: "Il cambio gratuito vale solo per chi è uscito dalla Serie A.",
+  NOT_OUT_OF_LIST: "Lo svincolo gratuito vale solo per chi è uscito dalla Serie A.",
   SAME_PLAYER: "Scegli due calciatori diversi.",
-  USE_FREE_SWAP: "Questo calciatore è uscito dalla Serie A: usa il cambio gratuito.",
+  USE_FREE_SWAP: "Questo calciatore è uscito dalla Serie A: usa lo svincolo gratuito.",
+  USE_FREE_RELEASE: "Questo calciatore è uscito dalla Serie A: usa lo svincolo gratuito.",
+  NO_ROLE_SLOT:
+    "Non hai posti liberi in questo ruolo: svincola prima un calciatore dello stesso ruolo.",
   RATE_LIMITED: "Troppe operazioni in poco tempo: aspetta un minuto e riprova.",
   FORBIDDEN: "Non puoi operare su questa squadra.",
   TEAM_NOT_FOUND: "Squadra non trovata.",
@@ -123,6 +126,60 @@ export async function freeSwapPlayer(_prev: FormState, formData: FormData): Prom
   revalidatePath("/rosa");
   revalidatePath("/listone");
   redirect("/mercato?done=free_swap");
+}
+
+const playerActionSchema = z.object({
+  teamId: z.uuid(),
+  // out-of-list placeholders created by the rosters import have negative ids
+  playerId: z.coerce
+    .number()
+    .int()
+    .refine((n) => n !== 0, { error: "Scegli un calciatore." }),
+});
+
+type PlayerRpc = "sell_player" | "buy_player" | "release_out_of_list";
+
+async function playerOperation(
+  rpc: PlayerRpc,
+  done: string,
+  formData: FormData,
+): Promise<FormState> {
+  await requireUser();
+  const limited = await throttle("market");
+  if (limited) return { status: "error", message: limited };
+  const parsed = playerActionSchema.safeParse({
+    teamId: formData.get("teamId"),
+    playerId: formData.get("playerId"),
+  });
+  if (!parsed.success) return { status: "error", errors: fieldErrors(parsed.error) };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc(rpc, {
+    p_team_id: parsed.data.teamId,
+    p_player_id: parsed.data.playerId,
+  });
+  if (error)
+    return { status: "error", message: marketMessage(error.message, "Operazione non riuscita.") };
+
+  revalidatePath("/mercato");
+  revalidatePath("/rosa");
+  revalidatePath("/listone");
+  redirect(`/mercato?done=${done}`);
+}
+
+/** Manager: release a player during an open session (credits back at the current Qt.A). */
+export async function sellPlayer(_prev: FormState, formData: FormData): Promise<FormState> {
+  return playerOperation("sell_player", "sell", formData);
+}
+
+/** Manager: buy a free agent to fill a hole of the same role. */
+export async function buyPlayer(_prev: FormState, formData: FormData): Promise<FormState> {
+  return playerOperation("buy_player", "buy", formData);
+}
+
+/** Manager: release a player who left Serie A, any time, refund = price paid. */
+export async function releaseOutOfList(_prev: FormState, formData: FormData): Promise<FormState> {
+  return playerOperation("release_out_of_list", "free_release", formData);
 }
 
 // ---------------------------------------------------------------------------

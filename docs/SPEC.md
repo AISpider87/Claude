@@ -35,25 +35,31 @@ regolamento**, non si faranno mai.
 - **Proprietà non esclusiva**: lo stesso calciatore può appartenere a più squadre.
 - **Svincolato** = calciatore del listone attivo posseduto da **nessuna** squadra.
 - **Sessioni di mercato** (4/stagione, dopo le giornate 3, 13, 23, 30): create
-  dall'admin con nome, apertura e chiusura (Europe/Rome), apribili/chiudibili
-  manualmente. All'apertura la lista svincolati viene **fotografata**: nella stessa
+  dall'admin con nome, apertura e chiusura (Europe/Rome); si aprono e chiudono
+  da sole agli orari (apribili/chiudibili anche a mano, in anticipo). All'apertura la lista svincolati viene **fotografata**: nella stessa
   sessione più squadre possono comprare lo stesso svincolato; dalla sessione
   successiva chi è posseduto non è più acquistabile.
-- **Cambio** = vendita di un proprio giocatore + acquisto di uno svincolato dello
-  stesso ruolo (la rosa resta 3/7/7/6). Limite **20 cambi a stagione** per squadra,
-  nessun limite per sessione. Consentito solo a sessione aperta.
+- **Operazioni separate** (modifica approvata dall'admin il 2026-09-10; in
+  origine "cambio" atomico): a sessione aperta il manager **svincola** un
+  proprio giocatore (rientro = Qt.A attuale, si apre un posto nel suo ruolo) e
+  **acquista** svincolati solo nei ruoli con posti liberi (chi esce difensore
+  rientra difensore). Ogni acquisto usa uno dei **20 cambi a stagione** per
+  squadra (nessun limite per sessione); gli svincoli non contano. Alla chiusura
+  la rosa deve tornare 3/7/7/6: i posti vuoti finiscono nel report.
 - **Prezzi: sempre quotazione attuale (Qt.A)** dell'ultimo listone importato, sia
   per l'acquisto sia per il rientro della vendita.
-- **Fuori lista** (usciti dalla Serie A, foglio "Ceduti" / asterisco): la
-  sostituzione è un **cambio gratuito** (non conta nei 20), possibile **anche fuori
-  sessione** in qualsiasi momento; rimborso = **prezzo pagato**, sostituto pagato a
-  **Qt.A attuale**. I fuori lista restano visibili nello storico, mai cancellati.
+- **Fuori lista** (usciti dalla Serie A, foglio "Ceduti" / asterisco, o assenti
+  dal listone all'import delle rose): **svincolo gratuito** in qualsiasi momento
+  (rimborso = **prezzo pagato**) e acquisto del sostituto dello stesso ruolo, tra
+  gli svincolati liberi adesso, a **Qt.A attuale**, anche fuori sessione e senza
+  contare nei 20. I fuori lista restano visibili nello storico, mai cancellati.
 - Alla chiusura di una sessione: validazione delle rose (23, 3/7/7/6, crediti ≥ 0)
   e report per l'admin.
 - Ogni operazione è registrata in modo **immutabile** con snapshot del prezzo;
   l'annullamento è solo admin, con motivazione, e crea l'operazione inversa.
-- Fuori sessione le rose sono in sola lettura (unica eccezione: cambio gratuito
-  fuori lista), applicato lato server (RLS + funzioni DB), anche via API diretta.
+- Fuori sessione le rose sono in sola lettura (unica eccezione: svincolo
+  gratuito dei fuori lista e relativo sostituto), applicato lato server (RLS +
+  funzioni DB), anche via API diretta.
 
 ## 4. Listone e quotazioni
 

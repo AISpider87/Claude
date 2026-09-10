@@ -254,3 +254,14 @@ listone,operazioni}`) con exceljs, letture paginate (`fetchAll`) sotto la
   `!= 0` invece di `positive()`): il cambio gratuito di un segnaposto fuori
   lista veniva rifiutato in silenzio. Il pannello cambio mostra anche l'errore
   sul calciatore in uscita.
+- 2026-09-10 · **Mercato v2: svincolo e acquisto separati** (richiesta
+  dell'admin dopo il primo test, cambia SPEC §3): `sell_player` (sessione
+  aperta, rientro Qt.A), `buy_player` (solo ruoli con posti liberi, conta un
+  cambio), `release_out_of_list` + acquisto "gratuito" in qualsiasi momento
+  per i fuori lista, con gli slot gratuiti derivati dal registro non annullato
+  (nessuno stato aggiuntivo). Il vincolo di ruolo è per conteggio (2D+1C fuori
+  → 2D+1C dentro), non per abbinamento. I posti vuoti alla chiusura restano
+  nel report: non si blocca la chiusura né lo svincolo a fine sessione (scelta
+  mia, reversibile). `swap_player`/`free_swap_player` restano nel DB per lo
+  storico e i test, la UI non le usa più. `reverse_transaction` invariata:
+  funziona per campo (in/out/crediti/contatore). Migrazione `20260909210000`.
