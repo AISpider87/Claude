@@ -11,6 +11,7 @@ import {
   buildRostersPreview,
   toRostersPayload,
   type ManualResolutions,
+  type OutOfListMarks,
 } from "@/lib/import/rosters-preview";
 import { loadListone, loadRostersPreview, loadSettings } from "@/lib/import/rosters-loader";
 import type { Json } from "@/lib/supabase/database.types";
@@ -121,17 +122,32 @@ function summarize(preview: ReturnType<typeof buildRostersPreview>) {
 }
 
 const resolutionsSchema = z.record(z.string(), z.coerce.number().int().positive());
+const outOfListSchema = z.record(z.string(), z.enum(["P", "D", "C", "A", "auto"]));
 
-/** Parses "<team>|<row>" → player id fields ("res:<key>") from the confirmation form. */
-function readResolutions(formData: FormData): ManualResolutions {
-  const raw: Record<string, string> = {};
+/**
+ * Parses the admin's choices from the confirmation form: "res:<team>|<row>" →
+ * player id, "ool:<team>|<row>" → role (or "auto") for names imported as
+ * out-of-list placeholders, "ool_all" → every unmatched name is a placeholder.
+ */
+function readChoices(formData: FormData): {
+  resolutions: ManualResolutions;
+  outOfList: OutOfListMarks;
+  outOfListAll: boolean;
+} {
+  const res: Record<string, string> = {};
+  const ool: Record<string, string> = {};
   for (const [key, value] of formData.entries()) {
-    if (key.startsWith("res:") && typeof value === "string" && value !== "") {
-      raw[key.slice(4)] = value;
-    }
+    if (typeof value !== "string" || value === "") continue;
+    if (key.startsWith("res:")) res[key.slice(4)] = value;
+    else if (key.startsWith("ool:")) ool[key.slice(4)] = value;
   }
-  const parsed = resolutionsSchema.safeParse(raw);
-  return parsed.success ? parsed.data : {};
+  const resolutions = resolutionsSchema.safeParse(res);
+  const outOfList = outOfListSchema.safeParse(ool);
+  return {
+    resolutions: resolutions.success ? resolutions.data : {},
+    outOfList: outOfList.success ? outOfList.data : {},
+    outOfListAll: formData.get("ool_all") === "1",
+  };
 }
 
 /** Step 2: apply with the admin's manual resolutions. */
@@ -140,16 +156,21 @@ export async function applyRostersImport(_prev: FormState, formData: FormData): 
   const parsedId = z.uuid().safeParse(formData.get("importId"));
   if (!parsedId.success) return { status: "error", message: "Import non valido." };
   const importId = parsedId.data;
-  const resolutions = readResolutions(formData);
-  const loaded = await loadRostersPreview(importId, resolutions);
+  const choices = readChoices(formData);
+  const loaded = await loadRostersPreview(importId, choices);
   if (!loaded?.preview) return { status: "error", message: "Import non trovato o già applicato." };
   if (!loaded.preview.ready) {
+    const roleMissing = loaded.preview.teams.flatMap((t) =>
+      t.entries.filter((e) => e.roleMissing).map((e) => `${e.name} (${t.name})`),
+    );
     return {
       status: "error",
       message:
-        loaded.preview.unresolved > 0
-          ? `Ci sono ancora ${loaded.preview.unresolved} nomi da risolvere.`
-          : "Alcune squadre non rispettano la composizione 3/7/7/6 o il file ha anomalie bloccanti.",
+        roleMissing.length > 0
+          ? `Scegli il ruolo per i fuori lista che non si deduce dalla composizione: ${roleMissing.join(", ")}.`
+          : loaded.preview.unresolved > 0
+            ? `Ci sono ancora ${loaded.preview.unresolved} nomi da risolvere.`
+            : "Alcune squadre non rispettano la composizione 3/7/7/6 o il file ha anomalie bloccanti.",
     };
   }
 
@@ -162,7 +183,10 @@ export async function applyRostersImport(_prev: FormState, formData: FormData): 
     p_payload: payload as unknown as Json,
     p_stats: {
       ...((loaded.imp.stats as Record<string, unknown>) ?? {}),
-      resolutions,
+      resolutions: choices.resolutions,
+      out_of_list: choices.outOfList,
+      out_of_list_all: choices.outOfListAll,
+      placeholders: loaded.preview.placeholders,
       supersedes: importId,
     } as unknown as Json,
   });
@@ -191,6 +215,7 @@ export async function applyRostersImport(_prev: FormState, formData: FormData): 
 
 function rostersErrorMessage(message: string) {
   if (message.includes("PLAYER_NOT_FOUND")) return "Un calciatore non esiste più nel listone.";
+  if (message.includes("PLACEHOLDER_ROLE")) return "Ruolo mancante per un calciatore fuori lista.";
   if (message.includes("NEGATIVE_CREDITS")) return "Una squadra avrebbe crediti negativi.";
   if (message.includes("IMPORT_ALREADY_APPLIED")) return "Import già applicato.";
   if (message.includes("SESSION_OPEN"))

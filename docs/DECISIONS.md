@@ -222,3 +222,15 @@ listone,operazioni}`) con exceljs, letture paginate (`fetchAll`) sotto la
 - 2026-09-09 · **CSP rinviata al backlog**: Next inietta script inline di
   idratazione che richiedono un nonce per richiesta (proxy + `headers()`);
   gli altri header di sicurezza sono attivi in `next.config.ts`.
+- 2026-09-10 · **Import rose: nomi assenti dal listone importabili come "fuori
+  lista" (segnaposto)**. Chi ha lasciato la Serie A dopo l'asta non compare più
+  in nessun foglio del listone, ma per regolamento resta in rosa finché il
+  manager non lo svincola gratis con rimborso del prezzo pagato. L'anteprima
+  offre per ogni "non trovato" la scelta Id Fantacalcio **oppure** fuori lista
+  (ruolo scelto o dedotto dal buco nella composizione 3/7/7/6; `*` nel file =
+  fuori lista di default; casella "segna tutti"). Il DB crea `players` con Id
+  **negativo**, squadra "Fuori Serie A", Qt.A 0, `out_of_list`; gli import del
+  listone (upsert per Id) non li toccano e non sono mai svincolati. Alternativa
+  scartata: saltare la riga (rosa a 22 e crediti sbagliati) o assegnare un Id
+  fittizio positivo (collisione con Fantacalcio.it). · Fase 3, primo import
+  reale (11 nomi non trovati). Migrazione `20260909190000`.

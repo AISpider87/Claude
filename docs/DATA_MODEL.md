@@ -19,7 +19,9 @@ timestamps. 20 righe.
 
 ### players (listone)
 
-`id int PK` (Id Fantacalcio), `name`, `team text` (squadra Serie A),
+`id int PK` (Id Fantacalcio; **negativo** per i "segnaposto" creati dall'import
+rose per chi ha lasciato la Serie A: `team = 'Fuori Serie A'`, `status =
+out_of_list`, mai toccati dagli import del listone), `name`, `team text` (squadra Serie A),
 `role_classic check (P|D|C|A)`, `role_mantra text`, `qt_a, qt_i, diff, qt_a_m,
 qt_i_m, diff_m, fvm, fvm_m int`, `status check (active|out_of_list)`,
 `out_of_list_at`, `updated_at`.
@@ -115,7 +117,10 @@ user?)` (un solo team per utente), `admin_set_team_credits(team, credits, note)`
 player_id, refund)` — per la rosa iniziale e le correzioni; scalano/rimborsano
   crediti, righe `admin_assign`/`admin_remove` nel registro, audit sempre.
 - `create_rosters_import(...)` / `apply_rosters_import(id)` — sostituzione delle
-  rose dal file (vedi DECISIONS); `team_roster_summary(team)` — conteggi per la UI.
+  rose dal file (vedi DECISIONS); le righe `{placeholder: {name, role}, price_paid}`
+  creano/riusano un segnaposto fuori lista (`private.ensure_placeholder_player`,
+  sequenza negativa `private.placeholder_player_id_seq`); `team_roster_summary(team)`
+  — conteggi per la UI.
 - `create_quotations_import(source, file_name, file_path, payload, stats)` —
   salva l'anteprima (righe parsate in `payload`); `apply_quotations_import(id)` —
   upsert per Id, snapshot in `player_quotations`, fuori lista per assenti e

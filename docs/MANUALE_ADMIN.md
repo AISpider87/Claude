@@ -195,9 +195,20 @@ Prerequisiti:
 5. Risolvi le righe evidenziate:
    - **omonimi** (più calciatori con lo stesso nome): menu "— scegli tra N
      omonimi —" con ruolo, squadra e Qt.A di ciascuno;
-   - **non trovato**: scrivi l'**Id Fantacalcio** nel campo accanto. Lo trovi
-     nella colonna `Id` del file quotazioni oppure aprendo la scheda del
-     calciatore nel Listone (il numero finale dell'indirizzo `/listone/…`);
+   - **non trovato**: due possibilità. Se è un errore di nome, scrivi l'**Id
+     Fantacalcio** nel campo accanto (colonna `Id` del file quotazioni, oppure
+     il numero finale dell'indirizzo `/listone/…` della scheda). Se invece il
+     calciatore **ha lasciato la Serie A** dopo l'asta e non compare più nel
+     listone, scegli nel menu **"fuori lista"**: entra in rosa come fuori lista
+     e il manager lo svincola con un **cambio gratuito** recuperando il prezzo
+     pagato (regolamento). Il ruolo si sceglie nel menu (P/D/C/A) oppure
+     "ruolo dedotto": l'app lo ricava dal buco nella composizione 3/7/7/6
+     della squadra e, se non è univoco, te lo chiede alla conferma.
+     I nomi con `*` nel file che non sono nel listone sono già segnati
+     "fuori lista" con ruolo dedotto.
+     La casella **"Segna tutti i nomi non trovati come fuori lista"** sopra le
+     squadre applica la scelta a tutte le righe in un colpo solo (utile a
+     inizio stagione, quando i non trovati sono tutti calciatori partiti).
    - **già in rosa**: due righe della stessa squadra puntano allo stesso
      calciatore; indica l'Id giusto per la seconda.
      Il messaggio "N nomi non hanno una corrispondenza certa…" resta finché non
@@ -205,7 +216,7 @@ Prerequisiti:
 6. Tocca **Conferma e sostituisci le rose** (in alto o in fondo alla pagina).
    Oppure **Annulla import**.
 7. La pagina diventa **Rose importate** con **Squadre create**, **Squadre
-   aggiornate**, **Giocatori assegnati**, **Righe sostituite**.
+   aggiornate**, **Giocatori assegnati**, **Fuori lista creati**.
 
 Errori alla conferma: "Ci sono ancora N nomi da risolvere.", "Alcune squadre
 non rispettano la composizione 3/7/7/6 o il file ha anomalie bloccanti.",
@@ -225,8 +236,13 @@ Riprova.": chiudi la sessione prima.
 - **Cambi usati azzerati** a 0.
 - Il **manager collegato resta collegato**.
 - Le squadre **assenti dal file non vengono toccate**.
-- I giocatori con `*` entrano in rosa come fuori lista solo se lo sono anche
-  nel listone: è lo stato del listone che comanda.
+- I giocatori con `*` che esistono nel listone entrano in rosa con lo stato
+  del listone (è il listone che comanda). Quelli **non presenti nel listone**
+  e segnati fuori lista diventano calciatori "segnaposto": Id negativo,
+  squadra "Fuori Serie A", Qt.A 0, stato fuori lista. Non sono mai svincolati
+  acquistabili, non vengono toccati dagli import del listone, e si
+  sostituiscono solo con il cambio gratuito (rimborso = prezzo pagato). Un
+  re-import con lo stesso nome riusa lo stesso segnaposto.
 
 È l'operazione di inizio stagione. Per correggere un singolo caso non
 re-importare: usa le funzioni della pagina squadra (§5).

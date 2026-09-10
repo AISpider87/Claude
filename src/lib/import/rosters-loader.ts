@@ -3,7 +3,11 @@ import { requireAdmin } from "@/lib/auth/dal";
 import type { ListonePlayer } from "@/lib/import/name-matching";
 import type { RoleClassic } from "@/lib/import/quotations-parser";
 import type { ParsedRosters } from "@/lib/import/rosters-parser";
-import { buildRostersPreview, type ManualResolutions } from "@/lib/import/rosters-preview";
+import {
+  buildRostersPreview,
+  type ManualResolutions,
+  type OutOfListMarks,
+} from "@/lib/import/rosters-preview";
 import { fetchAll } from "@/lib/supabase/fetch-all";
 import { createClient } from "@/lib/supabase/server";
 
@@ -30,7 +34,14 @@ export async function loadSettings() {
 }
 
 /** Rebuilds the preview for an import from its stored parsed file. Admin only. */
-export async function loadRostersPreview(importId: string, resolutions: ManualResolutions = {}) {
+export async function loadRostersPreview(
+  importId: string,
+  choices: {
+    resolutions?: ManualResolutions;
+    outOfList?: OutOfListMarks;
+    outOfListAll?: boolean;
+  } = {},
+) {
   await requireAdmin();
   const supabase = await createClient();
   const { data: imp } = await supabase
@@ -52,10 +63,7 @@ export async function loadRostersPreview(importId: string, resolutions: ManualRe
     payload.parsed,
     listone,
     (teams ?? []).map((t) => t.name),
-    {
-      ...settings,
-      resolutions,
-    },
+    { ...settings, ...choices },
   );
   return { imp, preview };
 }

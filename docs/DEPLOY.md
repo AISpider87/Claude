@@ -161,6 +161,13 @@ Tutte le chiavi vanno **solo** nelle impostazioni di Vercel/Supabase, mai nel re
 
 ## 8. Aggiornamenti
 
-Ogni push sul branch principale rideploya l'app. Nuove migrazioni:
-`supabase db push` dal computer dell'admin **prima** del deploy che le usa.
+Ogni push sul branch principale rideploya l'app. Nuove migrazioni, **prima**
+del deploy che le usa:
+
+- con la CLI: `supabase db push`;
+- senza CLI (Opzione A): apri il nuovo file in `supabase/migrations/`, copia
+  tutto il contenuto e incollalo in _SQL Editor → New query → Run_. Ogni
+  migrazione va eseguita **una volta sola**, in ordine di nome; il file
+  `supabase/deploy/schema.sql` serve solo per il primo avvio da zero.
+
 Le migrazioni non si modificano dopo l'applicazione: si aggiunge un nuovo file.

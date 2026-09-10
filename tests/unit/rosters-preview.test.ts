@@ -91,7 +91,11 @@ describe("buildRostersPreview — unresolved entries and manual resolutions", ()
     expect(preview.unresolved).toBe(0);
     expect(preview.teams[0]?.roleCounts).toEqual({ P: 2, D: 1, C: 0, A: 0 });
     expect(preview.ready).toBe(true);
-    expect(toRostersPayload(preview).teams[0]?.players.map((p) => p.player_id)).toEqual([1, 2, 3]);
+    expect(
+      toRostersPayload(preview).teams[0]?.players.map((p) =>
+        "player_id" in p ? p.player_id : null,
+      ),
+    ).toEqual([1, 2, 3]);
   });
 });
 
@@ -136,5 +140,111 @@ describe("buildRostersPreview — duplicate resolutions inside one team", () => 
       resolutions: { [resolutionKey("Alpha", 3)]: 2 },
     });
     expect(preview.ready).toBe(true);
+  });
+});
+
+describe("buildRostersPreview — names that left Serie A become out-of-list placeholders", () => {
+  const listone: ListonePlayer[] = [
+    { id: 1, name: "Uno", team: "Roma", role_classic: "P", qt_a: 1, status: "active" },
+    { id: 2, name: "Due", team: "Roma", role_classic: "D", qt_a: 1, status: "active" },
+    { id: 3, name: "Tre", team: "Como", role_classic: "D", qt_a: 1, status: "active" },
+  ];
+  const composition = { P: 1, D: 2, C: 1, A: 0 };
+  const parsed = (extra: { name: string; cost: number; outOfList: boolean; row: number }[]) => ({
+    sheet: "ROSE",
+    anomalies: [],
+    teams: [
+      {
+        name: "Alpha",
+        headerRow: 1,
+        column: 1,
+        declaredTotal: null,
+        total: 10,
+        entries: [
+          { name: "Uno", cost: 5, outOfList: false, row: 2 },
+          { name: "Due", cost: 2, outOfList: false, row: 3 },
+          { name: "Tre", cost: 2, outOfList: false, row: 4 },
+          ...extra,
+        ],
+      },
+    ],
+  });
+
+  it("a name marked '*' is a placeholder by default, with the role inferred from the gap", () => {
+    const preview = buildRostersPreview(
+      parsed([{ name: "Partito", cost: 1, outOfList: true, row: 5 }]),
+      listone,
+      [],
+      { composition },
+    );
+    const alpha = preview.teams[0]!;
+    const gone = alpha.entries[3]!;
+    expect(gone.status).toBe("placeholder");
+    expect(gone.placeholderRole).toBe("C");
+    expect(alpha.unresolved).toBe(0);
+    expect(alpha.placeholders).toBe(1);
+    expect(alpha.roleCounts).toEqual({ P: 1, D: 2, C: 1, A: 0 });
+    expect(preview.ready).toBe(true);
+    expect(preview.placeholders).toBe(1);
+    expect(toRostersPayload(preview).teams[0]?.players[3]).toEqual({
+      placeholder: { name: "Partito", role: "C" },
+      price_paid: 1,
+    });
+  });
+
+  it("a plain unknown name stays unresolved until the admin marks it out of list", () => {
+    const rows = parsed([{ name: "Sconosciuto", cost: 1, outOfList: false, row: 5 }]);
+    const before = buildRostersPreview(rows, listone, [], { composition });
+    expect(before.teams[0]?.entries[3]?.status).toBe("not_found");
+    expect(before.unresolved).toBe(1);
+    expect(before.ready).toBe(false);
+
+    const explicit = buildRostersPreview(rows, listone, [], {
+      composition,
+      outOfList: { [resolutionKey("Alpha", 5)]: "C" },
+    });
+    expect(explicit.teams[0]?.entries[3]?.status).toBe("placeholder");
+    expect(explicit.teams[0]?.entries[3]?.placeholderRole).toBe("C");
+    expect(explicit.ready).toBe(true);
+
+    const all = buildRostersPreview(rows, listone, [], { composition, outOfListAll: true });
+    expect(all.teams[0]?.entries[3]?.placeholderRole).toBe("C");
+    expect(all.ready).toBe(true);
+  });
+
+  it("asks for the role when the composition gap is not unique", () => {
+    const rows = parsed([
+      { name: "Partito", cost: 1, outOfList: true, row: 5 },
+      { name: "Andato", cost: 1, outOfList: true, row: 6 },
+    ]);
+    const preview = buildRostersPreview(rows, listone, [], {
+      composition: { P: 1, D: 3, C: 1, A: 0 },
+    });
+    const entries = preview.teams[0]!.entries;
+    expect(entries[3]?.status).toBe("not_found");
+    expect(entries[3]?.roleMissing).toBe(true);
+    expect(entries[4]?.roleMissing).toBe(true);
+    expect(preview.unresolved).toBe(2);
+    expect(preview.ready).toBe(false);
+
+    const fixed = buildRostersPreview(rows, listone, [], {
+      composition: { P: 1, D: 3, C: 1, A: 0 },
+      outOfList: { [resolutionKey("Alpha", 5)]: "D" },
+    });
+    // With one row settled, the remaining gap (C) is unique again.
+    expect(fixed.teams[0]?.entries[3]?.placeholderRole).toBe("D");
+    expect(fixed.teams[0]?.entries[4]?.placeholderRole).toBe("C");
+    expect(fixed.ready).toBe(true);
+  });
+
+  it("an explicit Id Fantacalcio wins over the out-of-list mark", () => {
+    const rows = parsed([{ name: "Partito", cost: 1, outOfList: true, row: 5 }]);
+    const preview = buildRostersPreview(rows, listone, [], {
+      composition: { P: 1, D: 3, C: 0, A: 0 },
+      resolutions: { [resolutionKey("Alpha", 5)]: 3 },
+    });
+    // id 3 is already in the roster: duplicate, not placeholder
+    expect(preview.teams[0]?.entries[3]?.status).toBe("duplicate");
+    expect(preview.ready).toBe(false);
   });
 });

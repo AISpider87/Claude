@@ -65,7 +65,11 @@ export default async function RostersImportPreviewPage({
             />
             <Stat label="Squadre aggiornate" value={formatInt(stats.teams_updated as number)} />
             <Stat label="Giocatori assegnati" value={formatInt(stats.players_assigned as number)} />
-            <Stat label="Righe sostituite" value={formatInt(stats.players_released as number)} />
+            <Stat
+              label="Fuori lista creati"
+              value={formatInt((stats.placeholders as number) ?? 0)}
+              tone={stats.placeholders ? "danger" : "neutral"}
+            />
           </div>
         </div>
       )}
@@ -107,7 +111,12 @@ export default async function RostersImportPreviewPage({
             </Card>
           )}
 
-          <RostersApplyForm importId={imp.id} ready={preview.ready} unresolved={preview.unresolved}>
+          <RostersApplyForm
+            importId={imp.id}
+            ready={preview.ready}
+            unresolved={preview.unresolved}
+            placeholders={preview.placeholders}
+          >
             {preview.teams.map((team) => (
               <Card key={team.name}>
                 <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
@@ -151,7 +160,12 @@ export default async function RostersImportPreviewPage({
                       {team.entries.map((e) => {
                         const key = resolutionKey(team.name, e.row);
                         return (
-                          <TR key={key} className={e.player ? undefined : "bg-danger/5"}>
+                          <TR
+                            key={key}
+                            className={
+                              e.player || e.status === "placeholder" ? undefined : "bg-danger/5"
+                            }
+                          >
                             <TD className="font-medium">
                               {e.name}
                               {e.outOfList && (
@@ -170,6 +184,17 @@ export default async function RostersImportPreviewPage({
                                   />
                                   {e.player.name}{" "}
                                   <span className="text-muted">· {e.player.team}</span>
+                                </span>
+                              ) : e.status === "placeholder" && e.placeholderRole ? (
+                                <span className="inline-flex flex-wrap items-center gap-2">
+                                  <RoleBadge
+                                    role={e.placeholderRole}
+                                    className="size-5 text-[10px]"
+                                  />
+                                  <Badge variant="danger">fuori lista</Badge>
+                                  <span className="text-muted">
+                                    non nel listone: da svincolare gratis
+                                  </span>
                                 </span>
                               ) : e.status === "ambiguous" ? (
                                 <select
@@ -201,6 +226,21 @@ export default async function RostersImportPreviewPage({
                                     className="border-line bg-surface min-h-11 w-32 rounded-[var(--radius-control)] border px-2 text-sm"
                                     aria-label={`Id Fantacalcio per ${e.name}`}
                                   />
+                                  {e.status === "not_found" && (
+                                    <select
+                                      name={`ool:${key}`}
+                                      defaultValue={e.roleMissing ? "" : e.outOfList ? "auto" : ""}
+                                      className="border-line bg-surface min-h-11 rounded-[var(--radius-control)] border px-2 text-sm"
+                                      aria-label={`Fuori lista per ${e.name}`}
+                                    >
+                                      <option value="">oppure: fuori lista…</option>
+                                      <option value="auto">fuori lista, ruolo dedotto</option>
+                                      <option value="P">fuori lista · P</option>
+                                      <option value="D">fuori lista · D</option>
+                                      <option value="C">fuori lista · C</option>
+                                      <option value="A">fuori lista · A</option>
+                                    </select>
+                                  )}
                                 </span>
                               )}
                             </TD>
