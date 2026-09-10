@@ -103,7 +103,7 @@ export async function notifySessionClosed(sessionId: string, client?: Client) {
       .from("transactions")
       .select("id", { count: "exact", head: true })
       .eq("session_id", sessionId)
-      .in("kind", ["swap", "free_swap"]),
+      .in("kind", ["swap", "free_swap", "sell", "buy", "free_release"]),
   ]);
   if (!session) return;
   const report = (session.validation_report ?? null) as {

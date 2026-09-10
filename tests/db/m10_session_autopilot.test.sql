@@ -59,8 +59,10 @@ begin
 
   -- when s1 expires, the next load closes it (with report) and opens s2
   perform auth.test_login(v_admin, 'authenticated');
-  perform 1 from public.audit_log where action = 'session.open' and entity_id = v_s1::text and payload ->> 'source' = 'auto';
-  if not found then raise exception 'auto open not audited'; end if;
+  perform 1 from public.audit_log where action = 'session.open' and entity_id = v_s1::text and payload ->> 'source' = 'auto' and user_id is null;
+  if not found then raise exception 'auto open not audited as the system'; end if;
+  perform 1 from public.transactions where session_id = v_s1 and kind = 'admin_credits' and created_by is not null;
+  if found then raise exception 'automatic extra budget attributed to a person'; end if;
   perform auth.test_logout();
   -- superuser: rewind the clock for s1
   update public.market_sessions set closes_at = now() - interval '1 second' where id = v_s1;
@@ -79,6 +81,10 @@ begin
 
   -- the service role (cron) can sync, read recipients and log notifications; the
   -- admin functions still refuse plain managers
+  -- PostgREST exposes the verified JWT as request.jwt.claims (JSON); the legacy GUC is also accepted
+  perform set_config('request.jwt.claims', '{"role":"service_role"}', true);
+  v_res := public.sync_market_sessions();
+  perform set_config('request.jwt.claims', '', true);
   perform set_config('request.jwt.claim.role', 'service_role', true);
   v_res := public.sync_market_sessions();
   select count(*) into v_count from public.admin_notification_recipients();

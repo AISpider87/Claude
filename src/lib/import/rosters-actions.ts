@@ -121,8 +121,8 @@ function summarize(preview: ReturnType<typeof buildRostersPreview>) {
   };
 }
 
-const resolutionsSchema = z.record(z.string(), z.coerce.number().int().positive());
-const outOfListSchema = z.record(z.string(), z.enum(["P", "D", "C", "A", "auto"]));
+const resolutionSchema = z.coerce.number().int().positive();
+const outOfListSchema = z.enum(["P", "D", "C", "A", "auto"]);
 
 /**
  * Parses the admin's choices from the confirmation form: "res:<team>|<row>" →
@@ -134,20 +134,20 @@ function readChoices(formData: FormData): {
   outOfList: OutOfListMarks;
   outOfListAll: boolean;
 } {
-  const res: Record<string, string> = {};
-  const ool: Record<string, string> = {};
+  // Validated entry by entry: one bad value must not drop the others.
+  const resolutions: ManualResolutions = {};
+  const outOfList: OutOfListMarks = {};
   for (const [key, value] of formData.entries()) {
     if (typeof value !== "string" || value === "") continue;
-    if (key.startsWith("res:")) res[key.slice(4)] = value;
-    else if (key.startsWith("ool:")) ool[key.slice(4)] = value;
+    if (key.startsWith("res:")) {
+      const parsed = resolutionSchema.safeParse(value);
+      if (parsed.success) resolutions[key.slice(4)] = parsed.data;
+    } else if (key.startsWith("ool:")) {
+      const parsed = outOfListSchema.safeParse(value);
+      if (parsed.success) outOfList[key.slice(4)] = parsed.data;
+    }
   }
-  const resolutions = resolutionsSchema.safeParse(res);
-  const outOfList = outOfListSchema.safeParse(ool);
-  return {
-    resolutions: resolutions.success ? resolutions.data : {},
-    outOfList: outOfList.success ? outOfList.data : {},
-    outOfListAll: formData.get("ool_all") === "1",
-  };
+  return { resolutions, outOfList, outOfListAll: formData.get("ool_all") === "1" };
 }
 
 /** Step 2: apply with the admin's manual resolutions. */

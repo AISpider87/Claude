@@ -14,6 +14,9 @@ begin
   -- composition for the test: 1P / 2D / 1C / 1A
   insert into public.league_settings (key, value) values ('roster_composition', '{"P":1,"D":2,"C":1,"A":1}')
   on conflict (key) do update set value = excluded.value;
+  -- the scenario does many operations in one minute: relax the throttle, tested separately below
+  insert into public.league_settings (key, value) values ('market_ops_per_minute', '100')
+  on conflict (key) do update set value = excluded.value;
   insert into public.players (id, name, team, role_classic, qt_a, qt_i, diff) values
     (1, 'Por1', 'Roma', 'P', 10, 10, 0),
     (2, 'Def1', 'Roma', 'D', 6, 6, 0), (3, 'Def2', 'Inter', 'D', 8, 8, 0), (4, 'Def3', 'Como', 'D', 12, 12, 0), (5, 'Def4', 'Lazio', 'D', 30, 30, 0), (11, 'Def5', 'Pisa', 'D', 4, 4, 0),
@@ -144,6 +147,17 @@ begin
   perform 1 from public.teams where id = v_a and credits = 4 and swaps_used = 3;
   if not found then raise exception 'C purchase wrong'; end if;
   perform auth.test_logout();
+
+  -- ---------------- throttle (H1): sells, buys and free releases count toward the per-minute limit
+  update public.league_settings set value = '5' where key = 'market_ops_per_minute';  -- superuser; Alpha already has 8 ops this minute
+  perform auth.test_login(v_mario, 'authenticated');
+  begin
+    perform public.sell_player(v_a, 1);
+    raise exception 'throttle did not fire on v2 operations';
+  exception when program_limit_exceeded then null;  -- 54000 RATE_LIMITED
+  end;
+  perform auth.test_logout();
+  update public.league_settings set value = '100' where key = 'market_ops_per_minute';
 
   -- ---------------- reversals: undo the purchase of Cen2, then the sale of Def1
   perform auth.test_login(v_admin, 'authenticated');

@@ -93,7 +93,7 @@ export default async function MercatoPage({
     <>
       <PageHeader title="Mercato" description="Sessioni, cambi e bacheca della lega." />
       <div className="flex flex-col gap-6">
-        {done && DONE_MESSAGE[done] && <SwapDone message={DONE_MESSAGE[done]} />}
+        {done && Object.hasOwn(DONE_MESSAGE, done) && <SwapDone message={DONE_MESSAGE[done]!} />}
 
         {session ? (
           <Card className="border-primary/50">

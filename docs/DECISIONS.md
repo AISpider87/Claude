@@ -274,3 +274,12 @@ listone,operazioni}`) con exceljs, letture paginate (`fetchAll`) sotto la
   svincolati resta corretta senza esporre le rose; `team_market_state` solo per
   chi gestisce la squadra. Alternativa scartata: nascondere solo in UI.
   Migrazione `20260909220000`.
+- 2026-09-10 · **Security review mercato v2** (bloccante risolto): il
+  limitatore DB `check_market_throttle` conta anche `sell/buy/free_release`
+  (prima contava solo i cambi: 0 per le nuove funzioni, aggirabile via API
+  diretta). Le transizioni automatiche delle sessioni sono attribuite al
+  sistema (`user_id`/`created_by` null, `source: auto`, via `private.audit_as`)
+  e non al manager che ha caricato la pagina; ricontrollo "una sola sessione
+  aperta" dopo il lock delle squadre; email di chiusura conta le operazioni v2;
+  scelte "fuori lista" dell'import validate riga per riga. Migrazione
+  `20260909230000`.
