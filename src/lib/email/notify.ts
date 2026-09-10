@@ -3,9 +3,11 @@ import { publicEnv } from "@/lib/env";
 import { isEmailConfigured, sendEmails } from "@/lib/email/resend";
 import { sessionClosedEmail, sessionOpenedEmail, type EmailContent } from "@/lib/email/templates";
 import { createClient } from "@/lib/supabase/server";
+import type { createServiceClient } from "@/lib/supabase/service";
 import type { NotificationStatus } from "@/lib/supabase/database.types";
 
-type Client = Awaited<ReturnType<typeof createClient>>;
+/** The signed-in user's client (admin actions) or the service client (automatic transitions). */
+type Client = Awaited<ReturnType<typeof createClient>> | ReturnType<typeof createServiceClient>;
 
 async function log(
   supabase: Client,
@@ -28,8 +30,8 @@ async function log(
  * Sends one email per active member and records the outcome. Never throws: a
  * notification problem must not undo a session that was already opened/closed.
  */
-async function deliver(kind: string, content: EmailContent) {
-  const supabase = await createClient();
+async function deliver(kind: string, content: EmailContent, client?: Client) {
+  const supabase = client ?? (await createClient());
   try {
     const { data: enabled } = await supabase
       .from("league_settings")
@@ -70,8 +72,8 @@ async function deliver(kind: string, content: EmailContent) {
   }
 }
 
-export async function notifySessionOpened(sessionId: string) {
-  const supabase = await createClient();
+export async function notifySessionOpened(sessionId: string, client?: Client) {
+  const supabase = client ?? (await createClient());
   const [{ data: session }, { count }] = await Promise.all([
     supabase.from("market_sessions").select("*").eq("id", sessionId).maybeSingle(),
     supabase
@@ -89,11 +91,12 @@ export async function notifySessionOpened(sessionId: string) {
       freeAgents: count ?? 0,
       siteUrl: publicEnv.NEXT_PUBLIC_SITE_URL,
     }),
+    supabase,
   );
 }
 
-export async function notifySessionClosed(sessionId: string) {
-  const supabase = await createClient();
+export async function notifySessionClosed(sessionId: string, client?: Client) {
+  const supabase = client ?? (await createClient());
   const [{ data: session }, { count }] = await Promise.all([
     supabase.from("market_sessions").select("*").eq("id", sessionId).maybeSingle(),
     supabase
@@ -114,5 +117,6 @@ export async function notifySessionClosed(sessionId: string) {
       invalidTeams: (report?.teams ?? []).filter((t) => !t.ok).map((t) => t.team),
       siteUrl: publicEnv.NEXT_PUBLIC_SITE_URL,
     }),
+    supabase,
   );
 }

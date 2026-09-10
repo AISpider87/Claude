@@ -91,7 +91,9 @@ un trigger `forbid_change` che blocca anche le funzioni security definer.
 ## Funzioni Postgres (SECURITY DEFINER, tutte con lock `teams FOR UPDATE`)
 
 - `admin_create_session / admin_update_session / admin_delete_session` — solo
-  admin; `current_market_session()` — la sessione in cui si può operare adesso
+  admin; `sync_market_sessions()` — chiude le sessioni aperte scadute e apre la
+  prima programmata in orario (chiamata a ogni pagina autenticata e dal cron;
+  idempotente, `for update skip locked`); `current_market_session()` — la sessione in cui si può operare adesso
   (`open` e `now() < closes_at`); `validate_rosters()` — report per squadra.
 - `open_market_session(session_id)` — solo admin: stato→open, fotografa
   `session_free_agents`, accredita `extra_budget` a tutte le squadre (una volta,

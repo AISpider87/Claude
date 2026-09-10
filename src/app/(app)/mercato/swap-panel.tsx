@@ -273,7 +273,7 @@ export function SwapPanel({
               </span>
             </p>
             <FormMessage className="mt-3">
-              {state?.message ?? state?.errors?.playerIn?.[0]}
+              {state?.message ?? state?.errors?.playerIn?.[0] ?? state?.errors?.playerOut?.[0]}
             </FormMessage>
             <Button type="submit" disabled={pending || after < 0} className="mt-3 w-full sm:w-auto">
               <Check className="size-4" aria-hidden />

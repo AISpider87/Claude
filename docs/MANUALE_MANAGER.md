@@ -99,9 +99,10 @@ Ricorda: nella SuperLega **lo stesso calciatore può stare in più rose**.
 
 ## 7. Fare un cambio in sessione
 
-Si compra solo durante una **sessione di mercato aperta** (l'admin ne apre 4
-a stagione). La pagina **Mercato** dice se una sessione è aperta, quando
-chiude e quanto manca; altrimenti mostra la prossima programmata.
+Si compra solo durante una **sessione di mercato aperta** (4 a stagione; si
+aprono e chiudono da sole agli orari programmati dall'admin). La pagina
+**Mercato** dice se una sessione è aperta, quando chiude e quanto manca;
+altrimenti mostra la prossima programmata.
 
 Un cambio = esce un tuo calciatore, entra uno **svincolato dello stesso ruolo**.
 La rosa resta sempre 3/7/7/6.

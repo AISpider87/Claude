@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { syncMarketSessionsAsService } from "@/lib/market/sync";
 import { createServiceClient } from "@/lib/supabase/service";
 import { supabaseSyncDb } from "@/lib/sync/db";
 import { runQuotationsSync } from "@/lib/sync/run";
@@ -22,6 +23,12 @@ export async function GET(request: NextRequest) {
   const logs: string[] = [];
   try {
     const supabase = createServiceClient();
+    const sessions = await syncMarketSessionsAsService(supabase).catch((e: unknown) => {
+      logs.push(`sessions: ${e instanceof Error ? e.message : "sync failed"}`);
+      return null;
+    });
+    if (sessions)
+      logs.push(`sessions: opened ${sessions.opened.length}, closed ${sessions.closed.length}`);
     const outcome = await runQuotationsSync(
       quotationSourceFromEnv(),
       supabaseSyncDb(supabase),

@@ -102,7 +102,7 @@ export default async function MercatoPage({
                 <CalendarClock className="text-primary size-5" aria-hidden /> {nextSession.name}
               </CardTitle>
               <CardDescription>
-                Programmata: apre il {formatDateTime(nextSession.opens_at)} e chiude il{" "}
+                Programmata: si apre da sola il {formatDateTime(nextSession.opens_at)} e chiude il{" "}
                 {formatDateTime(nextSession.closes_at)}. Il mercato è chiuso fino ad allora.
               </CardDescription>
             </CardHeader>

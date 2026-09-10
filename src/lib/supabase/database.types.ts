@@ -299,6 +299,7 @@ export type Database = {
       open_market_session: { Args: { p_id: string }; Returns: undefined };
       close_market_session: { Args: { p_id: string }; Returns: Json };
       validate_rosters: { Args: Record<string, never>; Returns: Json };
+      sync_market_sessions: { Args: Record<string, never>; Returns: Json };
       swap_player: {
         Args: { p_team_id: string; p_player_out: number; p_player_in: number };
         Returns: string;

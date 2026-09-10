@@ -153,7 +153,10 @@ export async function removePlayer(_prev: FormState, formData: FormData): Promis
   const parsed = z
     .object({
       teamId: z.uuid(),
-      playerId: z.coerce.number().int().positive(),
+      playerId: z.coerce
+        .number()
+        .int()
+        .refine((n) => n !== 0),
       refund: z.coerce.number().int().min(0),
     })
     .safeParse({

@@ -239,3 +239,18 @@ listone,operazioni}`) con exceljs, letture paginate (`fetchAll`) sotto la
   `uipro init --ai claude`; script Python solo locali, nessuna rete). Serve da
   base per il secondo design pass (motion, micro-interazioni, eventuale 3D);
   i token di docs/DESIGN.md restano vincolanti. Richiesta dell'admin.
+- 2026-09-10 · **Sessioni: apertura e chiusura automatiche** all'orario
+  programmato, senza pg_cron né job esterni: `sync_market_sessions()` viene
+  chiamata dal layout dell'app a ogni pagina autenticata e dal cron notturno;
+  la transizione avviene alla prima richiesta dopo l'orario (idempotente,
+  lock `skip locked`). "Apri ora"/"Chiudi sessione" restano per anticipare.
+  Le email delle transizioni automatiche partono con il service role: le
+  funzioni `admin_notification_recipients`, `log_notification` e
+  `consume_rate_limit` riconoscono il service role dalla claim JWT
+  (`private.is_service_role()`, null-safe). Motivo: nel primo test l'admin si
+  aspettava l'apertura all'orario e la sessione era rimasta "programmata".
+  Migrazione `20260909200000`.
+- 2026-09-10 · **Id negativi ammessi nelle azioni di mercato e admin** (Zod
+  `!= 0` invece di `positive()`): il cambio gratuito di un segnaposto fuori
+  lista veniva rifiutato in silenzio. Il pannello cambio mostra anche l'errore
+  sul calciatore in uscita.

@@ -342,28 +342,34 @@ modifiche**. Programmata: tutto modificabile. Aperta: nome e date (il budget
 extra è già stato accreditato e resta bloccato). Chiusa: sola lettura.
 **Elimina** (icona cestino) solo se Programmata.
 
-### 7.2 Aprire
+### 7.2 Apertura (automatica all'orario, o "Apri ora")
 
-L'apertura è **sempre manuale**: la data di "Apertura" è informativa (i
-manager la vedono come "Programmata: apre il …") ma nessun automatismo apre la
-sessione. All'ora stabilita:
+La sessione **si apre da sola** all'orario di "Apertura": alla prima visita di
+un qualsiasi utente (o al passaggio del cron notturno) dopo quell'ora l'app
+esegue l'apertura. Non serve essere collegati. **Apri ora** serve per
+anticipare: apre subito e sposta l'orario di apertura ad adesso.
+
+Prima dell'orario:
 
 1. Assicurati che il listone sia aggiornato (§3): i prezzi dei cambi sono la
    Qt.A dell'ultimo import.
-2. Tocca **Apri ora** (nella tabella o nella pagina della sessione).
-3. Messaggio: "Sessione aperta: svincolati fotografati e budget extra
-   accreditato."
+2. Se vuoi aprire in anticipo tocca **Apri ora** (nella tabella o nella pagina
+   della sessione). Messaggio: "Sessione aperta: svincolati fotografati e
+   budget extra accreditato."
 
 In un'unica transazione l'app: **fotografa gli svincolati** (calciatori attivi
 non posseduti da nessuno in quel momento), **accredita il budget extra** a
 tutte le squadre (una riga "Crediti admin · Budget extra apertura sessione"
-per squadra, mai due volte per la stessa sessione), porta lo stato ad
-**Aperta** e, se l'orario di apertura era nel futuro, lo anticipa a adesso.
-Poi parte l'email "mercato aperto" (§9).
+per squadra, mai due volte per la stessa sessione) e porta lo stato ad
+**Aperta**. Poi parte l'email "mercato aperto" (§9). Nell'audit log
+l'apertura automatica è marcata `source: auto`.
 
-Errori: "C'è già una sessione aperta: chiudila prima.", "La data di chiusura è
-già passata: modificala prima di aprire.", "La sessione non è più
-programmata.".
+Se due sessioni sono programmate nello stesso momento si apre la prima; la
+seconda aspetta la chiusura della prima.
+
+Errori di **Apri ora**: "C'è già una sessione aperta: chiudila prima.", "La
+data di chiusura è già passata: modificala prima di aprire.", "La sessione
+non è più programmata.".
 
 ### 7.3 Durante la sessione
 
@@ -376,13 +382,12 @@ programmata.".
 
 ### 7.4 Chiusura automatica e chiusura manuale
 
-- **Allo scadere dell'orario di chiusura i cambi si bloccano da soli**: i
-  manager vedono la sessione come non più aperta, anche se lo stato nell'admin
-  è ancora "Aperta". Non c'è nessun automatismo che produca il report.
-- Per generare il report (e poter aprire la sessione successiva) devi chiudere
-  a mano: **Chiudi sessione** → **Chiudi davvero**. Se chiudi prima
-  dell'orario, la chiusura viene anticipata a adesso; i cambi già confermati
-  restano validi. Poi parte l'email "mercato chiuso".
+- **Allo scadere dell'orario di chiusura i cambi si bloccano** e, alla prima
+  visita successiva di un qualsiasi utente (o al cron notturno), la sessione
+  passa a **Chiusa** con il report di validazione e parte l'email "mercato
+  chiuso".
+- Per chiudere prima dell'orario: **Chiudi sessione** → **Chiudi davvero**. La
+  chiusura viene anticipata a adesso; i cambi già confermati restano validi.
 - Una sessione chiusa non si riapre. Se serve altro tempo, crea una nuova
   sessione con budget extra **0** (altrimenti tutti riceverebbero altri +5).
 

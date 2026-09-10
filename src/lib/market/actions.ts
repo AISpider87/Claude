@@ -56,7 +56,11 @@ function marketMessage(message: string | undefined, fallback: string) {
 
 const swapSchema = z.object({
   teamId: z.uuid(),
-  playerOut: z.coerce.number().int().positive(),
+  // out-of-list placeholders created by the rosters import have negative ids
+  playerOut: z.coerce
+    .number()
+    .int()
+    .refine((n) => n !== 0, { error: "Scegli il calciatore che esce." }),
   playerIn: z.coerce.number().int().positive({ error: "Scegli il calciatore che entra." }),
 });
 
