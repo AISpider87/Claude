@@ -105,3 +105,20 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* Procedural player avatars (PlayerAvatar): subtle idle bob, motion-gated. */
+@keyframes avatar-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-1.2px);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .avatar-idle {
+    animation: avatar-bob 3.2s ease-in-out infinite;
+  }
+}

@@ -1,0 +1,389 @@
+{
+  "133": {
+    "name": "Skorupski",
+    "skin": 1,
+    "hair": "short",
+    "hairColor": "brown",
+    "beard": "stubble",
+    "approximate": true
+  },
+  "254": {
+    "name": "Dimarco",
+    "skin": 2,
+    "hair": "short",
+    "hairColor": "brown",
+    "beard": "stubble",
+    "approximate": true
+  },
+  "309": {
+    "name": "Dybala",
+    "skin": 2,
+    "hair": "short",
+    "hairColor": "black",
+    "beard": "stubble",
+    "expression": "smile",
+    "approximate": true
+  },
+  "530": {
+    "name": "Pellegrini Lo.",
+    "skin": 2,
+    "hair": "short",
+    "hairColor": "brown",
+    "beard": "stubble",
+    "approximate": true
+  },
+  "531": {
+    "name": "Berardi",
+    "skin": 2,
+    "hair": "short",
+    "hairColor": "brown",
+    "beard": "stubble",
+    "approximate": true
+  },
+  "572": {
+    "name": "Meret",
+    "skin": 1,
+    "hair": "short",
+    "hairColor": "brown",
+    "beard": "none",
+    "approximate": true
+  },
+  "632": {
+    "name": "Zaccagni",
+    "skin": 2,
+    "hair": "short",
+    "hairColor": "brown",
+    "beard": "stubble",
+    "approximate": true
+  },
+  "779": {
+    "name": "Cristante",
+    "skin": 2,
+    "hair": "short",
+    "hairColor": "brown",
+    "beard": "stubble",
+    "approximate": true
+  },
+  "827": {
+    "name": "Locatelli",
+    "skin": 2,
+    "hair": "short",
+    "hairColor": "brown",
+    "beard": "stubble",
+    "approximate": true
+  },
+  "1870": {
+    "name": "Barella",
+    "skin": 2,
+    "hair": "short",
+    "hairColor": "brown",
+    "beard": "stubble",
+    "expression": "focus",
+    "approximate": true
+  },
+  "2061": {
+    "name": "Simeone",
+    "skin": 2,
+    "hair": "short",
+    "hairColor": "brown",
+    "beard": "stubble",
+    "approximate": true
+  },
+  "2077": {
+    "name": "Pasalic",
+    "skin": 1,
+    "hair": "short",
+    "hairColor": "brown",
+    "beard": "stubble",
+    "approximate": true
+  },
+  "2097": {
+    "name": "Kean",
+    "skin": 5,
+    "hair": "short",
+    "hairColor": "black",
+    "beard": "stubble",
+    "approximate": true
+  },
+  "2120": {
+    "name": "Bastoni",
+    "skin": 2,
+    "hair": "short",
+    "hairColor": "brown",
+    "beard": "stubble",
+    "approximate": true
+  },
+  "2137": {
+    "name": "Scamacca",
+    "skin": 2,
+    "hair": "short",
+    "hairColor": "brown",
+    "beard": "stubble",
+    "approximate": true
+  },
+  "2167": {
+    "name": "Orsolini",
+    "skin": 2,
+    "hair": "short",
+    "hairColor": "brown",
+    "beard": "stubble",
+    "approximate": true
+  },
+  "2194": {
+    "name": "Calhanoglu",
+    "skin": 2,
+    "hair": "short",
+    "hairColor": "black",
+    "beard": "full",
+    "approximate": true
+  },
+  "2296": {
+    "name": "Mancini",
+    "skin": 2,
+    "hair": "short",
+    "hairColor": "brown",
+    "beard": "full",
+    "approximate": true
+  },
+  "2379": {
+    "name": "Rabiot",
+    "skin": 2,
+    "hair": "long",
+    "hairColor": "brown",
+    "beard": "stubble",
+    "approximate": true
+  },
+  "2423": {
+    "name": "Pulisic",
+    "skin": 1,
+    "hair": "short",
+    "hairColor": "brown",
+    "beard": "none",
+    "approximate": true
+  },
+  "2517": {
+    "name": "De Bruyne",
+    "skin": 1,
+    "hair": "short",
+    "hairColor": "blond",
+    "beard": "stubble",
+    "approximate": true
+  },
+  "2521": {
+    "name": "De Gea",
+    "skin": 1,
+    "hair": "bun",
+    "hairColor": "brown",
+    "beard": "full",
+    "approximate": true
+  },
+  "2529": {
+    "name": "Mkhitaryan",
+    "skin": 2,
+    "hair": "short",
+    "hairColor": "black",
+    "beard": "stubble",
+    "approximate": true
+  },
+  "2606": {
+    "name": "Modric",
+    "skin": 1,
+    "hair": "short",
+    "hairColor": "brown",
+    "beard": "stubble",
+    "approximate": true
+  },
+  "2724": {
+    "name": "Buongiorno",
+    "skin": 2,
+    "hair": "short",
+    "hairColor": "brown",
+    "beard": "stubble",
+    "approximate": true
+  },
+  "2764": {
+    "name": "Martinez L.",
+    "skin": 3,
+    "hair": "short",
+    "hairColor": "black",
+    "beard": "stubble",
+    "approximate": true
+  },
+  "2788": {
+    "name": "Bremer",
+    "skin": 4,
+    "hair": "short",
+    "hairColor": "black",
+    "beard": "stubble",
+    "approximate": true
+  },
+  "2816": {
+    "name": "Di Lorenzo",
+    "skin": 2,
+    "hair": "short",
+    "hairColor": "brown",
+    "beard": "stubble",
+    "approximate": true
+  },
+  "4159": {
+    "name": "Akanji",
+    "skin": 5,
+    "hair": "short",
+    "hairColor": "black",
+    "beard": "stubble",
+    "approximate": true
+  },
+  "4177": {
+    "name": "Pavard",
+    "skin": 1,
+    "hair": "short",
+    "hairColor": "brown",
+    "beard": "stubble",
+    "approximate": true
+  },
+  "4220": {
+    "name": "Zambo Anguissa",
+    "skin": 5,
+    "hair": "short",
+    "hairColor": "black",
+    "beard": "stubble",
+    "approximate": true
+  },
+  "4287": {
+    "name": "Lobotka",
+    "skin": 1,
+    "hair": "short",
+    "hairColor": "brown",
+    "beard": "stubble",
+    "approximate": true
+  },
+  "4312": {
+    "name": "Maignan",
+    "skin": 5,
+    "hair": "buzz",
+    "hairColor": "black",
+    "beard": "full",
+    "approximate": true
+  },
+  "4371": {
+    "name": "Raspadori",
+    "skin": 2,
+    "hair": "short",
+    "hairColor": "brown",
+    "beard": "none",
+    "approximate": true
+  },
+  "4409": {
+    "name": "Rrahmani",
+    "skin": 2,
+    "hair": "short",
+    "hairColor": "black",
+    "beard": "stubble",
+    "approximate": true
+  },
+  "4431": {
+    "name": "Carnesecchi",
+    "skin": 1,
+    "hair": "short",
+    "hairColor": "brown",
+    "beard": "stubble",
+    "approximate": true
+  },
+  "4751": {
+    "name": "Tomori",
+    "skin": 5,
+    "hair": "short",
+    "hairColor": "black",
+    "beard": "stubble",
+    "approximate": true
+  },
+  "4777": {
+    "name": "McTominay",
+    "skin": 1,
+    "hair": "short",
+    "hairColor": "brown",
+    "beard": "stubble",
+    "approximate": true
+  },
+  "4871": {
+    "name": "Thuram",
+    "skin": 5,
+    "hair": "curly",
+    "hairColor": "black",
+    "beard": "stubble",
+    "expression": "smile",
+    "approximate": true
+  },
+  "4964": {
+    "name": "Vicario",
+    "skin": 2,
+    "hair": "short",
+    "hairColor": "brown",
+    "beard": "stubble",
+    "approximate": true
+  },
+  "5685": {
+    "name": "Koopmeiners",
+    "skin": 1,
+    "hair": "short",
+    "hairColor": "blond",
+    "beard": "stubble",
+    "approximate": true
+  },
+  "5841": {
+    "name": "Svilar",
+    "skin": 2,
+    "hair": "short",
+    "hairColor": "brown",
+    "beard": "stubble",
+    "approximate": true
+  },
+  "5951": {
+    "name": "Kolo Muani",
+    "skin": 5,
+    "hair": "short",
+    "hairColor": "black",
+    "beard": "stubble",
+    "approximate": true
+  },
+  "5995": {
+    "name": "De Ketelaere",
+    "skin": 1,
+    "hair": "short",
+    "hairColor": "blond",
+    "beard": "none",
+    "approximate": true
+  },
+  "6052": {
+    "name": "Hojlund",
+    "skin": 1,
+    "hair": "short",
+    "hairColor": "blond",
+    "beard": "none",
+    "approximate": true
+  },
+  "6397": {
+    "name": "Ramos G.",
+    "skin": 2,
+    "hair": "short",
+    "hairColor": "brown",
+    "beard": "stubble",
+    "approximate": true
+  },
+  "6434": {
+    "name": "Yildiz",
+    "skin": 2,
+    "hair": "short",
+    "hairColor": "black",
+    "beard": "none",
+    "approximate": true
+  },
+  "6675": {
+    "name": "Dovbyk",
+    "skin": 1,
+    "hair": "short",
+    "hairColor": "blond",
+    "beard": "stubble",
+    "approximate": true
+  }
+}

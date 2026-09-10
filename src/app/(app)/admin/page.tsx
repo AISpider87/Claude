@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   ArrowRight,
+  CircleUserRound,
   History,
   List,
   Repeat,
@@ -63,6 +64,13 @@ const SECTIONS = [
     icon: History,
     title: "Audit log",
     description: "Chi ha fatto cosa e quando, comprese le azioni degli admin.",
+    ready: true,
+  },
+  {
+    href: "/admin/anteprima-avatar",
+    icon: CircleUserRound,
+    title: "Anteprima avatar",
+    description: "Avatar SVG generati per i giocatori: stile da approvare prima dell'uso.",
     ready: true,
   },
 ];
