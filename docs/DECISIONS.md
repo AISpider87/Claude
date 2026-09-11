@@ -521,3 +521,21 @@ listone,operazioni}`) con exceljs, letture paginate (`fetchAll`) sotto la
   cumulativo non deve mai nominare una firma che una migrazione successiva
   sostituisce. Il pacchetto si rigenera con `scripts/build-deploy-update.sh`
   (prima era cucito a mano e poteva divergere dalle migrazioni).
+
+- 2026-09-11 — **L'intro del login dura e lo stemma pulsa.** Su richiesta
+  dell'admin ("troppo veloce, è un attimo e sparisce… il logo deve rimanere e
+  palpitare"): da 1,45 s a **4,2 s**, con la cometa che _cresce_ venendo verso
+  la camera su una griglia in prospettiva, scintille all'impatto e lo stemma
+  montato come **pila di 9 facce in `preserve-3d`** — così ha spessore vero e la
+  rotazione lo mostra. Dopo l'ingresso non se ne va: batte in loop (scala, lieve
+  oscillazione 3D, alone che respira, anello spinto fuori a ogni battito, riflesso
+  che attraversa lo scudo) finché la tendina non sale. I tempi stanno tutti in
+  `intro-timing.tsx` e un test blocca il contratto (il battito deve iniziare ben
+  prima della tendina). Restano invariati: si vede una volta per accesso, un
+  tocco la salta, `aria-hidden`, e con `prefers-reduced-motion` è una dissolvenza
+  ferma. Alzato anche il budget di caricamento del chunk da 1,2 s a 2,5 s: su
+  mobile lento saltarla del tutto era peggio che partire tardi.
+  **Higgsfield**: provato per generare un fondale 3D (piano gratuito, 0 €), ma
+  l'ambiente di build non può scaricare il CDN che ospita i render, quindi
+  l'animazione resta **tutta vettoriale/CSS** — nessun asset raster, niente peso
+  aggiunto e i colori seguono il tema chiaro/scuro.

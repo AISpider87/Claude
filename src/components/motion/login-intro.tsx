@@ -15,8 +15,10 @@ import { INTRO_END, INTRO_REDUCED_END, INTRO_WIPE } from "@/components/motion/in
  * it) and `prefers-reduced-motion` gets a still 200 ms fade instead.
  */
 
-/** If the stage chunk is not there in time, the intro is skipped altogether. */
-const STAGE_BUDGET_MS = 1200;
+/** If the stage chunk is not there in time, the intro is skipped altogether.
+ * Generous on purpose: on a cold mobile connection the chunk can take a
+ * second or more, and skipping the cinematic is worse than starting it late. */
+const STAGE_BUDGET_MS = 2500;
 
 type StageComponent = ComponentType<{ reduced?: boolean }>;
 

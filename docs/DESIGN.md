@@ -117,7 +117,12 @@ dipendenza, nessun colore fuori dai token.
   sotto l'ora, check disegnato nella conferma, skeleton con shimmer.
 - **Mercato come console**: rosa a sinistra, acquisto a destra da `lg`, con la
   striscia delle operazioni in sospeso fissata sopra le due colonne.
-- **Intro dopo il login** (`src/components/motion/login-intro.tsx`): 1,45 s,
-  cometa → impatto → stemma che si disegna → tendina diagonale. Una volta per
-  accesso (`?welcome=1` consumato subito), saltabile, `aria-hidden`, ferma con
-  `prefers-reduced-motion`. Accento caldo `--ember` usato solo qui.
+- **Intro dopo il login** (`src/components/motion/login-intro.tsx`): **4,2 s**,
+  griglia in prospettiva che corre verso la camera → cometa che cresce venendoci
+  incontro → impatto con onda d'urto e scintille → **stemma in 3D** (pila di
+  facce in `preserve-3d`, quindi con spessore vero) che ruota, si posa e
+  **resta**, pulsando con alone e anello a ogni battito fino alla tendina
+  diagonale. Tempi in `intro-timing.tsx`. Una volta per accesso (`?welcome=1`
+  consumato subito), saltabile con un tocco o un tasto, `aria-hidden`, ferma con
+  `prefers-reduced-motion`. Accento caldo `--ember` usato solo qui. Si rivede
+  quando si vuole da **Profilo → Rivedi l'animazione**.

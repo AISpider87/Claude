@@ -523,6 +523,126 @@ body::before {
     48px 48px;
 }
 
+/* Perspective floor of the cinematic: a grid laid flat under the camera that
+   rushes toward it. Pure CSS, one composited layer, no JavaScript. */
+.intro-floor {
+  position: absolute;
+  right: 0;
+  bottom: -8%;
+  left: 0;
+  height: 66%;
+  perspective: 300px;
+  perspective-origin: 50% 0%;
+  opacity: 0.7;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to top, transparent 0%, #000 26%, #000 60%, transparent 100%);
+  mask-image: linear-gradient(to top, transparent 0%, #000 26%, #000 60%, transparent 100%);
+}
+
+.intro-floor::before {
+  content: "";
+  position: absolute;
+  inset: -60% -40% 0 -40%;
+  transform: rotateX(74deg);
+  transform-origin: 50% 100%;
+  background-image:
+    repeating-linear-gradient(
+      to right,
+      color-mix(in srgb, var(--primary) 45%, transparent) 0 2px,
+      transparent 2px 88px
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--primary) 35%, transparent) 0 2px,
+      transparent 2px 88px
+    );
+  will-change: background-position;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .intro-floor::before {
+    animation: intro-floor-run 1.9s linear infinite;
+  }
+}
+
+@keyframes intro-floor-run {
+  from {
+    background-position:
+      0 0,
+      0 0;
+  }
+  to {
+    background-position:
+      0 0,
+      0 88px;
+  }
+}
+
+/* The emblem lives in its own 3D space: the stack of faces below has real
+   depth, so the turn and the beat read as a solid object, not a flat picture. */
+.intro-scene {
+  perspective: 900px;
+  perspective-origin: 50% 44%;
+}
+
+.intro-emblem-slot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: clamp(7rem, 34vw, 11rem);
+  aspect-ratio: 1;
+  transform-style: preserve-3d;
+}
+
+.intro-emblem-3d,
+.intro-emblem-beat {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.intro-emblem-face {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+.intro-emblem-svg {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.intro-beat-ring {
+  position: absolute;
+  inset: -14%;
+  display: block;
+  border: 2px solid color-mix(in srgb, var(--primary) 70%, transparent);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Halo that breathes with the beat, behind the shield. */
+.intro-halo-ring,
+.intro-halo-inner {
+  position: absolute;
+  inset: -18%;
+  display: block;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.intro-halo-inner {
+  inset: 0;
+  background: radial-gradient(
+    circle at 50% 50%,
+    color-mix(in srgb, var(--primary) 55%, transparent) 0%,
+    color-mix(in srgb, var(--ember) 22%, transparent) 38%,
+    transparent 68%
+  );
+}
+
 /* Login submit button: its glow expands while the sign-in is in flight, so the
    button visually becomes the overlay that follows. */
 @media (prefers-reduced-motion: no-preference) {
