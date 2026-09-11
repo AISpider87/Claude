@@ -22,6 +22,18 @@ Fuori scope v1, registrati per il futuro. Niente qui è promesso.
 - Asta live per il mercato precampionato (in lega esiste già un tool: `legacy/`).
 - Statistiche avanzate: andamento valore rosa, plusvalenze, confronto squadre.
 
+## Rinviati dall'admin (2026-09-11)
+
+- **Messaggi programmati alla lega** (es. "consegnare la formazione entro le
+  15"): WhatsApp non permette l'invio automatico nei gruppi (API ufficiale
+  senza gruppi, strumenti non ufficiali a rischio ban). Opzioni valutate e
+  proposte: bot Telegram (gratis, automatico, invio dal DB) oppure WhatsApp
+  semi-automatico (notifica all'admin con testo pronto e pulsante "Invia su
+  WhatsApp"). L'admin ha scelto di rinviare.
+- **Fonte automatica per gli indisponibili** (Fantacalcio.it o API-Football):
+  da verificare termini d'uso e piano gratuito dal computer dell'admin; oggi
+  gli stati si inseriscono a mano da _Admin → Indisponibili_.
+
 ## Esclusi per sempre (regolamento)
 
 - Scambi di calciatori tra squadre: **vietati**.
