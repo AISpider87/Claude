@@ -76,7 +76,7 @@ export function ListoneBrowser({ rows }: { rows: ListoneRow[] }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="bg-background/95 sticky top-14 z-10 -mx-4 flex flex-col gap-3 px-4 py-3 backdrop-blur lg:static lg:mx-0 lg:px-0">
+      <div className="bg-background/95 sticky top-[calc(3rem+env(safe-area-inset-top))] z-10 -mx-4 flex flex-col gap-2 px-4 py-2.5 backdrop-blur lg:static lg:mx-0 lg:px-0">
         <label className="relative block">
           <Search
             className="text-muted pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
@@ -103,8 +103,10 @@ export function ListoneBrowser({ rows }: { rows: ListoneRow[] }) {
               onClick={() => toggleRole(role)}
               aria-pressed={roles.has(role)}
               className={cn(
-                "border-line inline-flex min-h-11 items-center gap-1 rounded-full border px-3 text-sm",
-                roles.has(role) ? "border-primary bg-primary/10 text-primary" : "text-muted",
+                "border-line pressable inline-flex min-h-11 items-center gap-1 rounded-full border px-3 text-sm transition-colors",
+                roles.has(role)
+                  ? "border-primary bg-primary/10 text-primary shadow-[var(--glow-primary)]"
+                  : "text-muted",
               )}
             >
               <RoleBadge role={role} className="size-5 text-[10px]" /> {role}
@@ -196,7 +198,7 @@ export function ListoneBrowser({ rows }: { rows: ListoneRow[] }) {
           {visible.map((r) => (
             <TR key={r.id}>
               <TD>
-                <RoleBadge role={r.role} />
+                <RoleBadge role={r.role} className="size-5 text-[10px]" />
               </TD>
               <TD className="font-medium">
                 <Link href={`/listone/${r.id}`} className="hover:text-primary">
@@ -224,7 +226,7 @@ export function ListoneBrowser({ rows }: { rows: ListoneRow[] }) {
         <button
           type="button"
           onClick={() => setLimit((l) => l + PAGE)}
-          className="border-line hover:border-primary/60 min-h-11 rounded-[var(--radius-control)] border text-sm font-medium"
+          className="border-line hover:border-primary/60 glow-primary pressable min-h-11 rounded-[var(--radius-control)] border text-sm font-medium"
         >
           Mostra altri {formatInt(Math.min(PAGE, filtered.length - limit))}
         </button>

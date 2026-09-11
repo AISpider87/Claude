@@ -456,3 +456,31 @@ listone,operazioni}`) con exceljs, letture paginate (`fetchAll`) sotto la
   risposta illeggibile non cancella gli stati; testi d'errore del fornitore
   ripuliti dalle chiavi prima di finire nel database; "Aggiorna adesso"
   limitato per non bruciare la quota.
+- 2026-09-11 · **Passata grafica "broadcast futuristico" (design pass)**:
+  righe della rosa compattate del ~38% (98 → 61 px a 375 px) con avatar 40 px
+  (nuova taglia `xs` = 32 px per le tile di acquisto), quotazione in una
+  "stat capsule" tabulare, stato in un chip breve con fonte e data nel `title`
+  (il link alla fonte resta, `rel="noopener noreferrer"`), intestazione di
+  ruolo come barra sticky dentro la card. Effetti solo da token: bagliore
+  radiale sulle card (`.surface-lit`), bordo conico animato sulla sessione
+  aperta (`.edge-live`), micro-glow su badge e pallini, glow sui pulsanti
+  primari, grana/scanline a bassissima opacità sullo sfondo. **Motion**:
+  entrata a cascata delle liste in CSS (24 ms, max 280 ms) — non in
+  Framer Motion, così le righe renderizzate dal server non restano invisibili
+  se il JS tarda; Framer resta per `layout` (riga che cambia gruppo dopo un
+  cambio), transizione di pagina, contatori, check disegnato e sottolineatura
+  della tab attiva. Tutto dentro `prefers-reduced-motion: no-preference`.
+  Mercato riorganizzato come console: rosa a sinistra, acquisto a destra da
+  `lg`, striscia delle operazioni in sospeso fissata sopra le due colonne.
+- 2026-09-11 · **Animazione cinematica dopo il login** (`LoginIntro`, 1,45 s):
+  cometa su percorso curvo, impatto, onde d'urto e stemma che si disegna, poi
+  tendina in diagonale verso l'alto che scopre la pagina già renderizzata.
+  Solo SVG + CSS + Framer Motion (un solo `feGaussianBlur`), nessuna nuova
+  dipendenza. Si attiva **una volta per accesso**: `signIn` aggiunge
+  `?welcome=1` alla destinazione e il componente consuma subito il parametro
+  con `history.replaceState` (un refresh non la ripete). Uno script inline
+  dipinge lo sfondo prima del primo paint (niente lampo di pagina) e si
+  rimuove da solo dopo 2,2 s se il JS non parte. Sempre saltabile (tap, clic,
+  tasto), `aria-hidden`, non prende il focus; con `prefers-reduced-motion`
+  diventa una dissolvenza ferma di 200 ms. Accento caldo `--ember`
+  (`#ffb648` scuro / `#b45309` chiaro) usato **solo** qui, mai per stati.

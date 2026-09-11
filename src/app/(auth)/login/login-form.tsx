@@ -37,7 +37,12 @@ export function LoginForm({ next }: { next: string }) {
         <FieldError errors={state?.errors?.password} />
       </div>
       <FormMessage>{state?.message}</FormMessage>
-      <Button type="submit" disabled={pending} className="w-full">
+      <Button
+        type="submit"
+        disabled={pending}
+        data-pending={pending ? "true" : "false"}
+        className="btn-launch w-full"
+      >
         {pending ? "Accesso in corso…" : "Accedi"}
       </Button>
     </form>

@@ -4,6 +4,8 @@ import { useActionState, useId, useState } from "react";
 import { Check, Search, X } from "lucide-react";
 import { Reveal } from "@/components/motion/reveal";
 import { PlayerAvatar } from "@/components/players/player-avatar";
+import { AnimatedNumber } from "@/components/motion/animated-number";
+import { enterDelay } from "@/components/roster/roster-player-row";
 import { RoleBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FormMessage } from "@/components/ui/form-message";
@@ -29,7 +31,7 @@ export interface BuyCandidate {
 
 const MAX_OPTIONS = 150;
 const tileClass =
-  "avatar-host border-line flex min-h-12 w-full items-center gap-2.5 rounded-[var(--radius-control)] border py-1.5 pr-3 pl-2 text-left text-sm transition-colors";
+  "avatar-host row-lit pressable border-line flex min-h-11 w-full items-center gap-2 rounded-[var(--radius-control)] border py-1 pr-2 pl-1.5 text-left text-sm";
 
 /**
  * Free agents the team can buy right now: only the roles with a hole, searchable,
@@ -120,12 +122,13 @@ export function BuyPanel({
           <p className="text-muted text-sm">Nessuno svincolato corrisponde.</p>
         ) : (
           <>
-            <div className="grid max-h-96 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
-              {options.map((c) => {
+            <div className="grid max-h-[26rem] gap-1.5 overflow-y-auto pr-1 sm:grid-cols-2">
+              {options.map((c, i) => {
                 const affordable = credits - c.qtA >= 0 && !c.blocked;
                 return (
                   <button
                     key={c.id}
+                    style={enterDelay(i)}
                     type="button"
                     onClick={() => setInId(inId === c.id ? null : c.id)}
                     disabled={!affordable}
@@ -133,8 +136,8 @@ export function BuyPanel({
                     aria-describedby={affordable ? undefined : ids.why(c.id)}
                     className={cn(
                       tileClass,
-                      "disabled:opacity-50",
-                      inId === c.id ? "border-primary bg-primary/10" : "hover:border-primary/50",
+                      "enter-row min-w-0 disabled:opacity-50",
+                      inId === c.id && "border-primary bg-primary/10 shadow-[var(--glow-primary)]",
                     )}
                   >
                     <PlayerAvatar
@@ -142,14 +145,16 @@ export function BuyPanel({
                       name={c.name}
                       team={c.team}
                       role={c.role}
-                      size="sm"
+                      size="xs"
                       showRole={false}
                       idle={false}
                     />
-                    <RoleBadge role={c.role} className="size-5 shrink-0 text-[10px]" />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate font-medium">{c.name}</span>
-                      <span className="text-muted block text-xs">
+                      <span className="flex min-w-0 items-center gap-1.5 leading-tight">
+                        <span className="truncate font-medium">{c.name}</span>
+                        <RoleBadge role={c.role} className="size-4.5 shrink-0 text-[10px]" />
+                      </span>
+                      <span className="text-muted block truncate text-[11px] leading-tight">
                         {c.team}
                         {c.free && " · non conta nei cambi"}
                         {!affordable && (
@@ -160,7 +165,14 @@ export function BuyPanel({
                         )}
                       </span>
                     </span>
-                    <span className="tabular font-semibold">{formatInt(c.qtA)}</span>
+                    <span className="stat-capsule shrink-0">
+                      <span className="text-muted text-[9px] font-semibold tracking-wide uppercase">
+                        Qt.A
+                      </span>
+                      <span className="font-display tabular text-sm font-semibold">
+                        {formatInt(c.qtA)}
+                      </span>
+                    </span>
                   </button>
                 );
               })}
@@ -179,7 +191,7 @@ export function BuyPanel({
         <Reveal className="sticky bottom-[calc(3.5rem+1px+env(safe-area-inset-bottom)+0.5rem)] z-10 lg:static">
           <section
             aria-labelledby={ids.confirm}
-            className="border-primary/40 bg-surface rounded-[var(--radius-card)] border p-4 shadow-lg"
+            className="border-primary/40 bg-surface surface-lit edge-live rounded-[var(--radius-card)] border p-4 shadow-lg"
           >
             <h4 id={ids.confirm} className="text-muted mb-2 text-xs font-semibold uppercase">
               Conferma l&apos;acquisto
@@ -190,14 +202,13 @@ export function BuyPanel({
             </p>
             <p className="tabular mt-2 text-sm">
               Crediti: {formatInt(credits)} {formatDelta(-cost)} ={" "}
-              <span
+              <AnimatedNumber
+                value={after}
                 className={cn(
                   "font-display text-lg font-semibold",
                   after < 0 ? "text-danger" : "text-primary",
                 )}
-              >
-                {formatInt(after)}
-              </span>
+              />
             </p>
             <FormMessage className="mt-3">
               {state?.message ?? state?.errors?.playerId?.[0]}

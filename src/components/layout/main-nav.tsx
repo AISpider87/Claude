@@ -39,7 +39,7 @@ export function MainNav({
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex min-h-14 items-center gap-1 text-xs font-medium transition-colors",
+                "pressable relative flex min-h-14 items-center gap-1 text-xs font-medium transition-colors",
                 orientation === "horizontal"
                   ? "flex-col justify-center py-2"
                   : "min-h-11 flex-row gap-3 rounded-[var(--radius-control)] px-3 text-sm",
@@ -49,6 +49,17 @@ export function MainNav({
             >
               <Icon className="size-5" aria-hidden />
               <span>{item.label}</span>
+              {/* Active indicator: it grows into place when the tab becomes
+                  current (CSS transition, still under reduced motion). */}
+              <span
+                aria-hidden
+                className={cn(
+                  "bg-primary nav-indicator absolute rounded-full",
+                  orientation === "horizontal"
+                    ? "inset-x-5 bottom-1 h-0.5 shadow-[0_0_10px_-1px_var(--primary)]"
+                    : "inset-y-1.5 left-0 w-0.5",
+                )}
+              />
             </Link>
           </li>
         );

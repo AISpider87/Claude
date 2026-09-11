@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CalendarClock, Repeat } from "lucide-react";
 import { Countdown } from "@/components/market/countdown";
+import { AnimatedNumber } from "@/components/motion/animated-number";
 import { LedgerTable } from "@/components/market/ledger-table";
 import { SwapDone } from "@/components/market/swap-done";
 import {
@@ -133,7 +134,7 @@ export default async function MercatoPage({
         {done && Object.hasOwn(DONE_MESSAGE, done) && <SwapDone message={DONE_MESSAGE[done]!} />}
 
         {session ? (
-          <Card className="border-primary/50">
+          <Card className="edge-live border-primary/50">
             <CardHeader>
               <CardTitle className="flex flex-wrap items-center gap-2">
                 <Repeat className="text-primary size-5" aria-hidden /> {session.name}
@@ -151,7 +152,11 @@ export default async function MercatoPage({
             </CardHeader>
             {team && (
               <CardContent className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                <Stat label="Crediti" value={formatInt(team.credits)} tone="primary" />
+                <Stat
+                  label="Crediti"
+                  value={<AnimatedNumber value={team.credits} />}
+                  tone="primary"
+                />
                 <Stat
                   label="Cambi usati"
                   value={
@@ -197,78 +202,83 @@ export default async function MercatoPage({
         )}
 
         {team && (
-          <Card>
-            <CardHeader>
-              <CardTitle>La tua rosa</CardTitle>
-              <CardDescription>
-                {session
-                  ? `Svincola chi vuoi cedere: incassi la quotazione attuale. Poi prendi uno svincolato dello stesso ruolo. Ti restano ${Math.max(0, settings.swapLimit - team.swaps_used)} cambi (ogni acquisto ne usa uno).`
-                  : "Fuori sessione puoi solo svincolare gratis chi è uscito dalla Serie A e prendere il suo sostituto."}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <MarketRoster
-                teamId={team.id}
-                credits={team.credits}
-                roster={rosterOptions}
-                statuses={statuses}
-                composition={composition}
-                slots={slots}
-                sessionOpen={Boolean(session)}
-                refundRule={settings.saleRule}
-                sellAction={sellPlayer}
-                releaseAction={releaseOutOfList}
-              />
-            </CardContent>
-          </Card>
-        )}
-
-        {team && session && pending.length > 0 && (
-          <Card className="border-role-p/40">
-            <CardHeader>
-              <CardTitle>Operazioni di questa sessione</CardTitle>
-              <CardDescription>
-                Finché la sessione è aperta puoi annullarle. Alla chiusura diventano definitive e
-                ogni acquisto conta un cambio.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <PendingOperations rows={pending} />
-            </CardContent>
-          </Card>
-        )}
-
-        {team && (holes > 0 || (session && candidates.length > 0)) && (
-          <Card className="border-primary/50">
-            <CardHeader>
-              <CardTitle>Acquista</CardTitle>
-              <CardDescription>
-                {session
-                  ? "Tutti gli svincolati della sessione. Puoi prendere solo chi copre un posto libero: chi esce difensore rientra difensore."
-                  : openRoles.length > 0
-                    ? "Sostituti dei fuori lista, tra gli svincolati liberi adesso."
-                    : "Il mercato è chiuso: potrai riempire i posti liberi alla prossima sessione."}
-              </CardDescription>
-            </CardHeader>
-            {candidates.length > 0 && (
+          <section
+            aria-label="Console di mercato"
+            className="grid items-start gap-4 lg:grid-cols-2"
+          >
+            <Card className="order-1 lg:order-2">
+              <CardHeader>
+                <CardTitle>La tua rosa</CardTitle>
+                <CardDescription>
+                  {session
+                    ? `Svincola chi vuoi cedere: incassi la quotazione attuale. Poi prendi uno svincolato dello stesso ruolo. Ti restano ${Math.max(0, settings.swapLimit - team.swaps_used)} cambi (ogni acquisto ne usa uno).`
+                    : "Fuori sessione puoi solo svincolare gratis chi è uscito dalla Serie A e prendere il suo sostituto."}
+                </CardDescription>
+              </CardHeader>
               <CardContent>
-                {limitReached && freeRoles.length === 0 ? (
-                  <FormMessage tone="info">
-                    Hai usato tutti i {settings.swapLimit} cambi della stagione
-                    {pendingSwaps > 0 ? " (compresi quelli in sospeso)" : ""}.
-                  </FormMessage>
-                ) : (
-                  <BuyPanel
-                    teamId={team.id}
-                    credits={team.credits}
-                    candidates={candidates}
-                    openRoles={openRoles}
-                    action={buyPlayer}
-                  />
-                )}
+                <MarketRoster
+                  teamId={team.id}
+                  credits={team.credits}
+                  roster={rosterOptions}
+                  statuses={statuses}
+                  composition={composition}
+                  slots={slots}
+                  sessionOpen={Boolean(session)}
+                  refundRule={settings.saleRule}
+                  sellAction={sellPlayer}
+                  releaseAction={releaseOutOfList}
+                />
               </CardContent>
+            </Card>
+
+            {session && pending.length > 0 && (
+              <Card className="border-role-p/40 order-2 self-start lg:order-1 lg:col-span-2">
+                <CardHeader className="pb-0">
+                  <CardTitle className="text-base">Operazioni di questa sessione</CardTitle>
+                  <CardDescription>
+                    Finché la sessione è aperta puoi annullarle. Alla chiusura diventano definitive
+                    e ogni acquisto conta un cambio.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-3">
+                  <PendingOperations rows={pending} />
+                </CardContent>
+              </Card>
             )}
-          </Card>
+
+            {(holes > 0 || (session && candidates.length > 0)) && (
+              <Card className="border-primary/50 order-3">
+                <CardHeader>
+                  <CardTitle>Acquista</CardTitle>
+                  <CardDescription>
+                    {session
+                      ? "Tutti gli svincolati della sessione. Puoi prendere solo chi copre un posto libero: chi esce difensore rientra difensore."
+                      : openRoles.length > 0
+                        ? "Sostituti dei fuori lista, tra gli svincolati liberi adesso."
+                        : "Il mercato è chiuso: potrai riempire i posti liberi alla prossima sessione."}
+                  </CardDescription>
+                </CardHeader>
+                {candidates.length > 0 && (
+                  <CardContent>
+                    {limitReached && freeRoles.length === 0 ? (
+                      <FormMessage tone="info">
+                        Hai usato tutti i {settings.swapLimit} cambi della stagione
+                        {pendingSwaps > 0 ? " (compresi quelli in sospeso)" : ""}.
+                      </FormMessage>
+                    ) : (
+                      <BuyPanel
+                        teamId={team.id}
+                        credits={team.credits}
+                        candidates={candidates}
+                        openRoles={openRoles}
+                        action={buyPlayer}
+                      />
+                    )}
+                  </CardContent>
+                )}
+              </Card>
+            )}
+          </section>
         )}
 
         <Card>

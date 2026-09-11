@@ -18,7 +18,23 @@
   --role-d: #34d399;
   --role-c: #38bdf8;
   --role-a: #f87171;
+  /* Ember: warm accent of the login intro only (never UI state). */
+  --ember: #ffb648;
   color-scheme: dark;
+}
+
+/* Depth/light of the dark theme: glows, grain and edge lights. */
+:root {
+  --lift: 0 18px 40px -28px rgb(0 0 0 / 0.9);
+  --glow-primary:
+    0 0 0 1px color-mix(in srgb, var(--primary) 45%, transparent),
+    0 10px 30px -12px color-mix(in srgb, var(--primary) 55%, transparent);
+  --card-sheen: 0.1;
+  --grain-opacity: 0.5;
+  /* Login intro: ground and the hot core of the comet. */
+  --intro-ground: var(--bg);
+  --intro-core: #ffffff;
+  --intro-halo: 16%;
 }
 
 :root.light {
@@ -36,7 +52,22 @@
   --role-d: #065f46;
   --role-c: #0369a1;
   --role-a: #b91c1c;
+  --ember: #b45309;
   color-scheme: light;
+}
+
+/* Light theme: the glow becomes a shadow, the grain almost disappears. */
+:root.light {
+  --lift: 0 14px 32px -26px rgb(15 31 61 / 0.35);
+  --glow-primary:
+    0 0 0 1px color-mix(in srgb, var(--primary) 35%, transparent),
+    0 10px 24px -14px color-mix(in srgb, var(--primary) 45%, transparent);
+  --card-sheen: 0.5;
+  --grain-opacity: 0.16;
+  /* Light theme: a brighter ground, and a deep blue core so the comet reads. */
+  --intro-ground: #d8e7f5;
+  --intro-core: #075985;
+  --intro-halo: 38%;
 }
 
 @theme inline {
@@ -72,11 +103,48 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  /* Subtle tactical grid, kept faint so text contrast is unaffected. */
+  /* Subtle tactical grid + one diagonal run, faint so text contrast is unaffected. */
   background-image:
+    linear-gradient(
+      115deg,
+      transparent 0 42%,
+      color-mix(in srgb, var(--primary) 7%, transparent) 42% 42.25%,
+      transparent 42.25% 58%,
+      color-mix(in srgb, var(--primary) 5%, transparent) 58% 58.2%,
+      transparent 58.2%
+    ),
     linear-gradient(color-mix(in srgb, var(--primary) 5%, transparent) 1px, transparent 1px),
     linear-gradient(90deg, color-mix(in srgb, var(--primary) 5%, transparent) 1px, transparent 1px);
-  background-size: 48px 48px;
+  background-size:
+    100% 100%,
+    48px 48px,
+    48px 48px;
+  background-attachment: fixed, scroll, scroll;
+}
+
+/*
+ * Broadcast atmosphere: one fixed layer with a stadium-light bloom at the top
+ * and very low-opacity scanlines. Decorative only (z-index -1, no pointer
+ * events), so it never touches text contrast or hit areas.
+ */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: var(--grain-opacity);
+  background-image:
+    radial-gradient(
+      120% 60% at 50% -10%,
+      color-mix(in srgb, var(--primary) 22%, transparent) 0%,
+      transparent 60%
+    ),
+    repeating-linear-gradient(
+      0deg,
+      color-mix(in srgb, var(--text) 5%, transparent) 0 1px,
+      transparent 1px 3px
+    );
 }
 
 .font-display {
@@ -152,5 +220,360 @@ body {
     .avatar-host:hover .avatar-tilt {
       transform: perspective(300px) rotateY(-3deg) rotateX(1.5deg);
     }
+  }
+}
+
+/* ============================================================
+   Broadcast layer: depth, light and motion (docs/DESIGN.md).
+   Every animation lives inside `prefers-reduced-motion: no-preference`,
+   so a reduced-motion viewer gets the same, completely still, layout.
+   ============================================================ */
+
+/* Card/panel: base surface + faint top-left bloom + edge that lights up. */
+.surface-lit {
+  position: relative;
+  background-image: radial-gradient(
+    120% 90% at 0% 0%,
+    color-mix(in srgb, var(--primary) calc(6% * var(--card-sheen) * 2), transparent) 0%,
+    transparent 55%
+  );
+  box-shadow: var(--lift);
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+.surface-lit:focus-within {
+  border-color: color-mix(in srgb, var(--primary) 55%, var(--line));
+}
+@media (hover: hover) {
+  .surface-lit:hover {
+    border-color: color-mix(in srgb, var(--primary) 40%, var(--line));
+  }
+}
+
+/* Row: same language, cheaper (no shadow), used on every list item. */
+.row-lit {
+  position: relative;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    transform 0.18s ease;
+}
+.row-lit:focus-within {
+  border-color: color-mix(in srgb, var(--primary) 55%, var(--line));
+}
+@media (hover: hover) {
+  .row-lit:hover {
+    border-color: color-mix(in srgb, var(--primary) 45%, var(--line));
+    background-color: color-mix(in srgb, var(--primary) 4%, var(--surface));
+  }
+}
+
+/* Live edge: a light running around the border of the open-session card. */
+@property --edge-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.edge-live {
+  position: relative;
+  isolation: isolate;
+}
+.edge-live::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: conic-gradient(
+    from var(--edge-angle),
+    transparent 0deg 200deg,
+    color-mix(in srgb, var(--primary) 70%, white) 300deg,
+    color-mix(in srgb, var(--primary) 90%, transparent) 330deg,
+    transparent 360deg
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: 0.9;
+}
+
+/* Compact quotation capsule (Qt.A), tabular and right-aligned. */
+.stat-capsule {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  padding: 0.125rem 0.3125rem;
+  border-radius: 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--primary) 22%, var(--line));
+  background: color-mix(in srgb, var(--primary) 7%, transparent);
+  line-height: 1.05;
+}
+
+/* Micro-glow: role badges and status dots read as lit, never colour-only. */
+.lit-dot {
+  box-shadow: 0 0 0 2px color-mix(in srgb, currentColor 16%, transparent);
+}
+.lit-badge {
+  box-shadow: inset 0 0 8px -4px currentColor;
+}
+
+/* Primary action: soft outer glow on hover/focus (shadow on light theme). */
+.glow-primary {
+  transition:
+    box-shadow 0.25s ease,
+    background-color 0.2s ease,
+    transform 0.15s ease;
+}
+.glow-primary:focus-visible {
+  box-shadow: var(--glow-primary);
+}
+@media (hover: hover) {
+  .glow-primary:hover {
+    box-shadow: var(--glow-primary);
+  }
+}
+
+/* Tiny link/icon controls: visual size stays small, hit area reaches 44px. */
+.tap-expand {
+  position: relative;
+}
+.tap-expand::after {
+  content: "";
+  position: absolute;
+  inset: -12px;
+}
+
+/* Slim role bar that stays put while its rows scroll inside the card. */
+.sticky-group {
+  position: sticky;
+  top: calc(3rem + env(safe-area-inset-top));
+  z-index: 5;
+  backdrop-filter: blur(8px);
+  background-color: color-mix(in srgb, var(--surface) 82%, transparent);
+}
+@media (min-width: 1024px) {
+  .sticky-group {
+    top: 0;
+  }
+}
+
+/* Skeletons: flat blocks by default, sweeping light when motion is allowed. */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--surface-2);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--primary) 16%, transparent),
+      transparent
+    );
+    animation: shimmer 1.6s ease-in-out infinite;
+  }
+
+  /* List entrance: rows lift into place, staggered by --i (capped by the caller). */
+  .enter-row {
+    animation: enter-row 0.42s cubic-bezier(0.22, 0.72, 0.3, 1) both;
+    animation-delay: var(--enter-delay, 0ms);
+  }
+
+  /* Press feedback on rows, tiles and buttons. */
+  .pressable:active {
+    transform: scale(0.98);
+  }
+
+  /* Countdown close to zero: a light sweeps across the remaining time. */
+  .countdown-urgent {
+    background-image: linear-gradient(
+      100deg,
+      currentColor 0 42%,
+      color-mix(in srgb, var(--primary) 70%, white) 50%,
+      currentColor 58% 100%
+    );
+    background-size: 300% 100%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    animation: sweep 2.4s ease-in-out infinite;
+  }
+
+  .edge-live::before {
+    animation: edge-spin 7s linear infinite;
+  }
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes enter-row {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sweep {
+  0% {
+    background-position: 140% 0;
+  }
+  100% {
+    background-position: -40% 0;
+  }
+}
+
+@keyframes edge-spin {
+  to {
+    --edge-angle: 360deg;
+  }
+}
+
+/* Header that lifts off the page as soon as the content scrolls under it. */
+.app-header {
+  transition:
+    box-shadow 0.25s ease,
+    background-color 0.25s ease,
+    border-color 0.25s ease;
+}
+.app-header[data-scrolled="true"] {
+  box-shadow: 0 10px 30px -24px rgb(0 0 0 / 0.9);
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--line));
+  background-color: color-mix(in srgb, var(--bg) 92%, transparent);
+}
+
+/* ---------- Login intro (src/components/motion/login-intro.tsx) ---------- */
+
+/* Pre-paint ground of the sign-in cinematic (see IntroScript). */
+.intro-pending::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  background-color: var(--intro-ground);
+}
+
+/* Above everything, but transparent: only the curtain carries the ground, so
+   the wipe really reveals the page underneath. Never holds focus, always
+   skippable. */
+.intro-overlay {
+  background-color: transparent;
+}
+
+/* The curtain is taller than the viewport so its diagonal edge stays hidden
+   until it wipes upward, revealing the page that is already rendered below. */
+.intro-curtain {
+  position: absolute;
+  top: -12%;
+  right: 0;
+  left: 0;
+  height: 124%;
+  clip-path: polygon(0 0, 100% 0, 100% 86%, 0 100%);
+  will-change: transform;
+}
+
+/* The comet stage: a square a bit larger than the short side of the screen. */
+.intro-stage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: calc(min(100vw, 100dvh) * 1.25);
+  height: calc(min(100vw, 100dvh) * 1.25);
+  transform: translate(-50%, -50%);
+  overflow: visible;
+}
+
+.intro-ground {
+  background-color: var(--intro-ground);
+  background-image:
+    radial-gradient(
+      100% 70% at 50% 55%,
+      color-mix(in srgb, var(--primary) var(--intro-halo), transparent) 0%,
+      transparent 70%
+    ),
+    linear-gradient(color-mix(in srgb, var(--primary) 8%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--primary) 8%, transparent) 1px, transparent 1px);
+  background-size:
+    100% 100%,
+    48px 48px,
+    48px 48px;
+}
+
+/* Login submit button: its glow expands while the sign-in is in flight, so the
+   button visually becomes the overlay that follows. */
+@media (prefers-reduced-motion: no-preference) {
+  .btn-launch[data-pending="true"] {
+    animation: launch-glow 1.1s ease-out infinite;
+  }
+}
+
+@keyframes launch-glow {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 55%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 14px color-mix(in srgb, var(--primary) 0%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 0%, transparent);
+  }
+}
+
+/* Active tab indicator: hidden by default, grows in on the current page. */
+.nav-indicator {
+  opacity: 0;
+  transform: scaleX(0);
+  transform-origin: center;
+}
+[aria-current="page"] > .nav-indicator {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .nav-indicator {
+    transition:
+      transform 0.28s cubic-bezier(0.22, 0.72, 0.3, 1),
+      opacity 0.2s ease;
+  }
+
+  /* Page-level transition between the main tabs (PageTransition). */
+  .page-enter {
+    animation: page-enter 0.28s cubic-bezier(0.22, 0.72, 0.3, 1) both;
+  }
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }

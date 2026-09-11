@@ -6,6 +6,10 @@ import { cn } from "@/lib/utils";
  * monogram, monochrome on the primary colour. Original artwork (no club or
  * federation marks); the same shapes feed public/icons via scripts/make-icons.mjs.
  */
+/** Emblem geometry, shared with the login intro so the two never drift apart. */
+export const EMBLEM_SHIELD = "32,4 56,18 56,46 32,60 8,46 8,18";
+export const EMBLEM_RUN = "M14 47 L28 33 L36 39 L50 19";
+
 export function Emblem({ className }: { className?: string }) {
   const gradientId = `${useId()}-shield`;
   return (
@@ -18,14 +22,14 @@ export function Emblem({ className }: { className?: string }) {
           </linearGradient>
         </defs>
         <polygon
-          points="32,4 56,18 56,46 32,60 8,46 8,18"
+          points={EMBLEM_SHIELD}
           fill={`url(#${gradientId})`}
           stroke="currentColor"
           strokeWidth="3.5"
           strokeLinejoin="round"
         />
         <path
-          d="M14 47 L28 33 L36 39 L50 19"
+          d={EMBLEM_RUN}
           fill="none"
           stroke="currentColor"
           strokeWidth="3"

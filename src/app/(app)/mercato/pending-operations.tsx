@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { Undo2 } from "lucide-react";
+import { enterDelay } from "@/components/roster/roster-player-row";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FormMessage } from "@/components/ui/form-message";
@@ -43,16 +44,20 @@ function UndoButton({ txId, label }: { txId: string; label: string }) {
 export function PendingOperations({ rows }: { rows: PendingRow[] }) {
   if (rows.length === 0) return null;
   return (
-    <ul className="flex flex-col gap-2">
-      {rows.map((r) => (
+    <ul className="grid gap-1.5 sm:grid-cols-2 xl:grid-cols-3">
+      {rows.map((r, i) => (
         <li
           key={r.id}
-          className="border-line flex min-h-12 items-center gap-3 rounded-[var(--radius-control)] border px-3 text-sm"
+          style={enterDelay(i)}
+          className="row-lit border-line enter-row flex min-h-11 min-w-0 items-center gap-2 rounded-[var(--radius-control)] border px-2 text-sm"
         >
-          <Badge variant={r.kind === "buy" ? "primary" : "neutral"}>
+          <Badge
+            variant={r.kind === "buy" ? "primary" : "neutral"}
+            className="shrink-0 px-1.5 text-[10px]"
+          >
             {r.kind === "buy" ? "Acquisto" : "Svincolo"}
           </Badge>
-          <span className="min-w-0 flex-1 truncate">
+          <span className="min-w-0 flex-1 truncate text-[13px]">
             {r.label}
             {r.kind === "buy" && r.counts && (
               <span className="text-muted"> · conterà 1 cambio</span>

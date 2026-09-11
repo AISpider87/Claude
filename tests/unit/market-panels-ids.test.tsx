@@ -84,8 +84,8 @@ describe("market panels", () => {
         releaseAction={noop}
       />,
     );
-    // Avatar (48 px) and Qt.A of the row
-    expect(html).toContain('<svg viewBox="0 0 100 100" width="48"');
+    // Avatar (40 px, compact row) and Qt.A of the row
+    expect(html).toContain('<svg viewBox="0 0 100 100" width="40"');
     expect(html).toMatch(/Qt\.A.*10/);
     // Status chip with its source, only for the active player
     expect(html).toContain("Infortunato");

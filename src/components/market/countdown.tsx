@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
 
 function format(ms: number) {
   if (ms <= 0) return "chiusa";
@@ -13,6 +14,9 @@ function format(ms: number) {
   const seconds = Math.floor((ms % 60_000) / 1000);
   return `${minutes}m ${String(seconds).padStart(2, "0")}s`;
 }
+
+/** Under one hour the countdown is "urgent": a light sweeps across the digits. */
+const URGENT_MS = 60 * 60_000;
 
 /** Time left until `until` (ISO UTC), refreshed every second; renders "—" until hydrated. */
 export function Countdown({ until, className }: { until: string; className?: string }) {
@@ -28,9 +32,15 @@ export function Countdown({ until, className }: { until: string; className?: str
     };
   }, []);
   const target = new Date(until).getTime();
+  const left = now === null ? null : target - now;
+  const urgent = left !== null && left > 0 && left <= URGENT_MS;
   return (
-    <span className={className} aria-live="polite">
-      {now === null ? "—" : format(target - now)}
+    <span
+      className={cn(className, urgent && "countdown-urgent")}
+      aria-live="polite"
+      data-urgent={urgent ? "true" : undefined}
+    >
+      {left === null ? "—" : format(left)}
     </span>
   );
 }

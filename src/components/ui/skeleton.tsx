@@ -5,7 +5,7 @@ export function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivEl
   return (
     <div
       aria-hidden
-      className={cn("bg-surface-2 animate-pulse rounded-[var(--radius-control)]", className)}
+      className={cn("skeleton rounded-[var(--radius-control)]", className)}
       {...props}
     />
   );
@@ -36,10 +36,10 @@ export function PageSkeleton({
           ))}
         </div>
       )}
-      <div className="border-line bg-surface/90 flex flex-col gap-3 rounded-[var(--radius-card)] border p-5">
+      <div className="surface-lit border-line bg-surface/85 flex flex-col gap-2 rounded-[var(--radius-card)] border p-4 sm:p-5">
         {Array.from({ length: rows }, (_, i) => (
           <div key={i} className="flex items-center gap-3">
-            <Skeleton className="size-7 rounded-full" />
+            <Skeleton className="size-10 rounded-xl" />
             <Skeleton className="h-4 flex-1" />
             <Skeleton className="h-4 w-10" />
           </div>

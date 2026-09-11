@@ -90,3 +90,34 @@ conferme.
   Performance 96–97 · Accessibility 100 · Best Practices 100 · SEO 91.
   Le pagine autenticate si misurano in produzione (Fase 3) con
   `scripts/lighthouse.sh`.
+
+## Passata grafica 2026-09 (broadcast futuristico)
+
+Direzione confermata dall'admin: "più futuristica, più motion, meno statica",
+riquadri dei giocatori **più stretti e meglio organizzati**. Nessuna nuova
+dipendenza, nessun colore fuori dai token.
+
+- **Densità**: `RosterPlayerRow` 61 px a 375 px (prima 98, −38%): avatar 40 px,
+  due righe di testo, `Qt.A` in una capsula tabulare, azioni a destra
+  (icona sola sotto `sm`, con etichetta da `sm` in su; area di tocco 44 px).
+  Lo stato "Disponibile" è un pallino con etichetta per screen reader; solo
+  infortuni, dubbi, squalifiche e formazioni pubblicate meritano un chip
+  (fonte e data nel `title`, link alla fonte sempre presente). Liste a
+  2 colonne da `lg` e 3 da `2xl`; intestazione di ruolo sticky dentro la card.
+- **Profondità e luce**: `.surface-lit` (bagliore radiale + bordo che si
+  accende su hover/focus), `.edge-live` (bordo conico animato, sessione
+  aperta), `.lit-dot`/`.lit-badge`, `.glow-primary` sui pulsanti, griglia
+  tattica + diagonale + scanline sullo sfondo. Nel tema chiaro il bagliore
+  diventa ombra (`--lift`, `--glow-primary`, `--grain-opacity`).
+- **Motion** (tutto sotto `prefers-reduced-motion: no-preference`): entrata a
+  cascata delle righe (CSS, 24 ms, max 280 ms), `layout` di Framer quando una
+  riga cambia gruppo, transizione di pagina fra le tab, `scale(0.98)` alla
+  pressione, contatori animati (crediti prima/dopo), sottolineatura scorrevole
+  della tab attiva, header che si stacca allo scroll, countdown che "sfarfalla"
+  sotto l'ora, check disegnato nella conferma, skeleton con shimmer.
+- **Mercato come console**: rosa a sinistra, acquisto a destra da `lg`, con la
+  striscia delle operazioni in sospeso fissata sopra le due colonne.
+- **Intro dopo il login** (`src/components/motion/login-intro.tsx`): 1,45 s,
+  cometa → impatto → stemma che si disegna → tendina diagonale. Una volta per
+  accesso (`?welcome=1` consumato subito), saltabile, `aria-hidden`, ferma con
+  `prefers-reduced-motion`. Accento caldo `--ember` usato solo qui.

@@ -117,9 +117,11 @@ export function toPlayerStatus(
 export interface RosterPlayerRowProps {
   player: RosterPlayer;
   status?: PlayerStatus;
-  /** Buttons for the operations (Svincola / Acquista…), rendered bottom-right. */
+  /** Buttons for the operations (Svincola / Acquista…), rendered on the right. */
   actions?: React.ReactNode;
   className?: string;
+  /** Inline style, used by the lists to carry the `--enter-delay` of the stagger. */
+  style?: React.CSSProperties;
 }
 
 /* Dot colours reuse the role tokens so the palette stays within docs/DESIGN.md. */
@@ -131,6 +133,14 @@ const STATUS_DOT: Record<PlayerStatusKind, string> = {
   unavailable: "bg-muted",
 };
 
+/* Thin lit rail on the left edge of a row: the role colour, next to the letter. */
+const ROLE_RAIL: Record<RoleClassic, string> = {
+  P: "bg-role-p",
+  D: "bg-role-d",
+  C: "bg-role-c",
+  A: "bg-role-a",
+};
+
 const STATUS_TEXT: Record<PlayerStatusKind, string> = {
   ok: "text-foreground",
   injured: "text-danger",
@@ -138,6 +148,21 @@ const STATUS_TEXT: Record<PlayerStatusKind, string> = {
   suspended: "text-muted",
   unavailable: "text-muted",
 };
+
+/** Source name and last update: behind the chip's tooltip, never a third line. */
+function statusTooltip(status: PlayerStatus): string | undefined {
+  const parts = [
+    status.source ? `fonte: ${status.source.name}` : null,
+    status.updatedAt ? `aggiornato il ${formatDate(status.updatedAt)}` : null,
+    status.lineup ? `${status.lineup.sourceName} · ore ${formatTime(status.lineup.kickoff)}` : null,
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join(" · ") : undefined;
+}
+
+/** A status worth a chip: everything except "available with nothing to add". */
+export function isNotableStatus(status: PlayerStatus): boolean {
+  return status.kind !== "ok" || Boolean(status.lineup);
+}
 
 export function PlayerStatusChip({
   status,
@@ -147,41 +172,51 @@ export function PlayerStatusChip({
   className?: string;
 }) {
   return (
-    <span className={cn("flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs", className)}>
+    <span
+      className={cn("inline-flex items-center gap-1.5 text-[11px]", className)}
+      title={statusTooltip(status)}
+    >
       <span
         className={cn(
-          "inline-flex items-center gap-1.5 font-medium whitespace-nowrap",
+          "inline-flex items-center gap-1 font-medium whitespace-nowrap",
           STATUS_TEXT[status.kind],
         )}
       >
-        <span className={cn("size-2 shrink-0 rounded-full", STATUS_DOT[status.kind])} aria-hidden />
+        <span
+          className={cn("lit-dot size-1.5 shrink-0 rounded-full", STATUS_DOT[status.kind])}
+          aria-hidden
+        />
         {status.label}
       </span>
+      {status.lineup && (
+        <Badge
+          variant={status.lineup.state === "starting" ? "primary" : "muted"}
+          className="px-1.5 py-0 text-[10px]"
+        >
+          {LINEUP_LABEL[status.lineup.state]}
+        </Badge>
+      )}
       {status.source && (
         <a
           href={status.source.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-primary inline-flex items-center gap-0.5 whitespace-nowrap underline-offset-2 hover:underline focus-visible:underline focus-visible:outline-none"
+          className="text-primary tap-expand focus-visible:ring-primary inline-flex shrink-0 items-center rounded-full focus-visible:ring-2 focus-visible:outline-none"
           aria-label={`Fonte: ${status.source.name} (si apre in una nuova scheda)`}
         >
-          fonte: {status.source.name}
           <ExternalLink className="size-3" aria-hidden />
         </a>
       )}
-      {status.updatedAt && (
-        <span className="text-muted">aggiornato il {formatDate(status.updatedAt)}</span>
-      )}
-      {status.lineup && (
-        <span className="flex flex-wrap items-center gap-x-1.5">
-          <Badge variant={status.lineup.state === "starting" ? "primary" : "muted"}>
-            {LINEUP_LABEL[status.lineup.state]}
-          </Badge>
-          <span className="text-muted whitespace-nowrap">
-            {status.lineup.sourceName} · ore {formatTime(status.lineup.kickoff)}
-          </span>
-        </span>
-      )}
+    </span>
+  );
+}
+
+/** "Disponibile" with nothing else to say: a lit dot, label for screen readers. */
+function AvailableDot({ label }: { label: string }) {
+  return (
+    <span className="inline-flex shrink-0 items-center" title={label}>
+      <span className="lit-dot bg-role-d size-1.5 rounded-full" aria-hidden />
+      <span className="sr-only">{label}</span>
     </span>
   );
 }
@@ -191,58 +226,82 @@ function Delta({ value }: { value: number }) {
   const tone = value > 0 ? "text-role-d" : value < 0 ? "text-danger" : "text-muted";
   return (
     <span
-      className={cn("tabular inline-flex items-center gap-0.5 font-medium", tone)}
+      className={cn("tabular inline-flex shrink-0 items-center gap-0.5 font-medium", tone)}
       aria-label={`Quotazione ${formatDelta(value)} rispetto al prezzo pagato`}
     >
-      <Icon className="size-3.5" aria-hidden />
+      <Icon className="size-3" aria-hidden />
       {formatDelta(value)}
     </span>
   );
 }
 
-export function RosterPlayerRow({ player, status, actions, className }: RosterPlayerRowProps) {
+/**
+ * Compact row: avatar 40, two lines of text, the Qt.A in a stat capsule on the
+ * right and the operations next to it. A real status (injury, doubt, published
+ * line-up) adds a discreet chip on the second line; "available" is just a dot.
+ */
+export function RosterPlayerRow({
+  player,
+  status,
+  actions,
+  className,
+  style,
+}: RosterPlayerRowProps) {
   const delta = player.qtA - player.pricePaid;
+  const notable = status ? isNotableStatus(status) : false;
   return (
     <div
+      style={style}
       className={cn(
-        "avatar-host border-line bg-surface/60 flex flex-wrap items-start gap-x-3 gap-y-2 rounded-[var(--radius-control)] border p-3",
+        "avatar-host row-lit pressable border-line bg-surface/60 flex items-center gap-2 overflow-hidden rounded-[var(--radius-control)] border py-2 pr-1.5 pl-2.5",
         className,
       )}
     >
+      <span
+        aria-hidden
+        className={cn("absolute inset-y-1.5 left-0 w-[3px] rounded-r-full", ROLE_RAIL[player.role])}
+      />
       <PlayerAvatar
         id={player.id}
         name={player.name}
         team={player.team}
         role={player.role}
         outOfList={player.outOfList}
-        size="md"
+        size="sm"
         showRole={false}
       />
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <p className="flex min-w-0 items-center gap-2 text-sm leading-tight">
+      <div className="flex min-w-0 flex-1 flex-col">
+        <p className="flex min-w-0 items-center gap-1.5 text-sm leading-tight">
           <span className="truncate font-semibold">{player.name}</span>
-          <RoleBadge role={player.role} className="size-5 text-[10px]" />
-          {player.outOfList && <Badge variant="danger">fuori lista</Badge>}
+          <RoleBadge role={player.role} className="size-4.5 shrink-0 text-[10px]" />
+          {player.outOfList && (
+            <Badge variant="danger" className="shrink-0 px-1.5 py-0 text-[10px]">
+              fuori lista
+            </Badge>
+          )}
+          {status && !notable && <AvailableDot label={status.label} />}
         </p>
-        <p className="text-muted flex flex-wrap items-center gap-x-1.5 text-xs">
-          <span className="truncate">{player.team}</span>
+        {/* One line, always: club · price paid · delta. The club truncates. */}
+        <p className="text-muted mt-0.5 flex min-w-0 items-center gap-x-1.5 text-[11px] leading-tight">
+          <span className="truncate" title={player.team}>
+            {player.team}
+          </span>
           <span aria-hidden>·</span>
-          <span className="tabular whitespace-nowrap">pagato {formatInt(player.pricePaid)}</span>
-          <span aria-hidden>·</span>
+          <span className="tabular shrink-0 whitespace-nowrap">
+            pagato {formatInt(player.pricePaid)}
+          </span>
           <Delta value={delta} />
         </p>
+        {/* A real status (injury, doubt, published line-up) earns a third line. */}
+        {status && notable && (
+          <PlayerStatusChip status={status} className="mt-0.5 min-w-0 self-start" />
+        )}
       </div>
-      <p className="flex shrink-0 flex-col items-end leading-none">
-        <span className="text-muted text-[10px] font-semibold tracking-wide uppercase">Qt.A</span>
-        <span className="font-display tabular text-2xl font-semibold">{formatInt(player.qtA)}</span>
+      <p className="stat-capsule shrink-0">
+        <span className="text-muted text-[9px] font-semibold tracking-wide uppercase">Qt.A</span>
+        <span className="font-display tabular text-lg font-semibold">{formatInt(player.qtA)}</span>
       </p>
-      {(status || actions) && (
-        // Bottom line, indented under the name: status on the left, operations on the right.
-        <div className="flex basis-full items-center justify-between gap-3 pl-15">
-          {status && <PlayerStatusChip status={status} className="min-w-0 flex-1" />}
-          {actions && <div className="ml-auto flex shrink-0 gap-2">{actions}</div>}
-        </div>
-      )}
+      {actions && <div className="flex shrink-0 items-center gap-1">{actions}</div>}
     </div>
   );
 }
@@ -272,9 +331,9 @@ export function RosterGroupHeading({
   return (
     <h4
       id={id}
-      className="text-muted mb-2 flex flex-wrap items-center gap-2 text-xs font-semibold uppercase"
+      className="sticky-group text-muted border-line/70 mb-2 flex flex-wrap items-center gap-2 rounded-[var(--radius-control)] border-b px-1 py-1.5 text-[11px] font-semibold uppercase"
     >
-      <RoleBadge role={role} className="size-5 text-[10px]" />
+      <RoleBadge role={role} className="lit-badge size-4.5 text-[10px]" />
       {ROLE_LABEL[role]}
       <span className="tabular">
         {formatInt(count)}/{formatInt(target)}
@@ -297,6 +356,14 @@ export function EmptyRoleNote({ role }: { role: RoleClassic }) {
   );
 }
 
+/**
+ * Entrance delay of a row: 24 ms apart, capped so a full 23-player roster is
+ * completely on screen in under a third of a second. Read by `.enter-row`.
+ */
+export function enterDelay(index: number): React.CSSProperties {
+  return { "--enter-delay": `${Math.min(index * 24, 280)}ms` } as React.CSSProperties;
+}
+
 /** Roster sections per role with the "Difensori 6/7 · 1 posto da riempire" header. */
 export function RosterPlayerList({
   groups,
@@ -306,8 +373,9 @@ export function RosterPlayerList({
   className?: string;
 }) {
   const uid = useId();
+  let index = 0;
   return (
-    <div className={cn("flex flex-col gap-5", className)}>
+    <div className={cn("flex flex-col gap-4", className)}>
       {groups.map(({ role, target, items }) => {
         const headingId = `${uid}-${role}`;
         return (
@@ -316,9 +384,13 @@ export function RosterPlayerList({
             {items.length === 0 ? (
               <EmptyRoleNote role={role} />
             ) : (
-              <ul className="grid gap-2 lg:grid-cols-2">
+              <ul className="grid gap-1.5 lg:grid-cols-2 2xl:grid-cols-3">
                 {items.map((item) => (
-                  <li key={item.player.id}>
+                  <li
+                    key={item.player.id}
+                    className="enter-row min-w-0"
+                    style={enterDelay(index++)}
+                  >
                     <RosterPlayerRow {...item} />
                   </li>
                 ))}

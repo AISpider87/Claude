@@ -5,6 +5,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { publicEnv } from "@/lib/env";
 import { safeNext } from "@/lib/auth/redirect";
+import { withWelcome } from "@/lib/auth/welcome";
 import { throttleAnonymous } from "@/lib/auth/throttle";
 import {
   resetRequestSchema,
@@ -103,7 +104,8 @@ export async function signIn(_prev: FormState, formData: FormData): Promise<Form
     return { status: "error", message: "Email o password non corretti." };
   }
 
-  redirect(safeNext(formData.get("next")));
+  // The destination plays the sign-in cinematic once (LoginIntro clears the flag).
+  redirect(withWelcome(safeNext(formData.get("next"))));
 }
 
 export async function signOut() {

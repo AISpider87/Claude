@@ -130,7 +130,7 @@ describe("PlayerAvatar", () => {
     expect(real).not.toContain("<filter");
 
     const placeholder = renderToStaticMarkup(
-      <PlayerAvatar id={-3} name="Partito" team="Fuori Serie A" role="A" size="sm" />,
+      <PlayerAvatar id={-3} name="Partito" team="Fuori Serie A" role="A" size="xs" />,
     );
     expect(placeholder).toContain('width="32"');
     expect(placeholder).toContain("fill-danger");

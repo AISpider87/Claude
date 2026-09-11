@@ -25,7 +25,7 @@ describe("RosterPlayerRow", () => {
     expect(html).toContain("pagato 12");
     expect(html).toMatch(/Qt\.A.*17/);
     expect(html).toContain('aria-label="Ruolo C"');
-    expect(html).toContain('<svg viewBox="0 0 100 100" width="48"');
+    expect(html).toContain('<svg viewBox="0 0 100 100" width="40"');
   });
 
   it("shows the delta sign against the price paid", () => {
@@ -58,8 +58,10 @@ describe("RosterPlayerRow", () => {
     expect(html).toMatch(
       /<a href="https:\/\/example\.com\/x" target="_blank" rel="noopener noreferrer"/,
     );
+    // Source and date moved into the chip tooltip; the link itself stays.
     expect(html).toContain("fonte: Fantacalcio.it");
     expect(html).toContain("aggiornato il 11/09/2026");
+    expect(html).toContain('aria-label="Fonte: Fantacalcio.it (si apre in una nuova scheda)"');
     expect(html).toContain("bg-danger");
 
     const ok = renderToStaticMarkup(

@@ -18,9 +18,10 @@ import { cn } from "@/lib/utils";
  * a floor shadow and an inner vignette on the frame.
  */
 
-export type AvatarSize = "sm" | "md" | "lg" | "xl";
+export type AvatarSize = "xs" | "sm" | "md" | "lg" | "xl";
 
-const SIZE_PX: Record<AvatarSize, number> = { sm: 32, md: 48, lg: 72, xl: 120 };
+/* Row lists use `sm` (40 px, the compact roster row), tiles `xs`. */
+const SIZE_PX: Record<AvatarSize, number> = { xs: 32, sm: 40, md: 48, lg: 72, xl: 120 };
 
 const SKIN_HEX: Record<PlayerTraits["skin"], string> = {
   1: "#F8E1CF",

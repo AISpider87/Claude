@@ -36,7 +36,7 @@ export function RoleBadge({ role, className }: { role: string; className?: strin
   return (
     <span
       className={cn(
-        "font-display inline-flex size-6 items-center justify-center rounded-md border text-xs font-bold",
+        "font-display lit-badge inline-flex size-6 items-center justify-center rounded-md border text-xs font-bold",
         ROLE_STYLES[role] ?? "border-line text-muted",
         className,
       )}
