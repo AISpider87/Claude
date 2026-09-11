@@ -219,3 +219,41 @@ begin
   end;
   perform auth.test_logout();
 end $$;
+
+-- the scheduler token: admin reads and rotates it, the service role verifies it,
+-- managers can do neither (the token never reaches league_settings readers).
+do $$
+declare
+  v_admin uuid; v_mario uuid; v_token text; v_rotated text;
+begin
+  select user_id into v_admin from public.profiles where role = 'admin' limit 1;
+  select user_id into v_mario from public.profiles where role = 'manager' limit 1;
+
+  perform auth.test_login(v_mario, 'authenticated');
+  begin
+    perform public.admin_cron_token();
+    raise exception 'manager read the cron token';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    perform public.verify_cron_token('x');
+    raise exception 'manager verified a token';
+  exception when insufficient_privilege then null;
+  end;
+  perform auth.test_logout();
+
+  perform auth.test_login(v_admin, 'authenticated');
+  v_token := public.admin_cron_token();
+  if v_token is null or length(v_token) < 32 then raise exception 'token too short: %', v_token; end if;
+  if public.admin_cron_token() <> v_token then raise exception 'token should be stable'; end if;
+  v_rotated := public.admin_rotate_cron_token();
+  if v_rotated = v_token then raise exception 'rotation should change the token'; end if;
+  perform auth.test_logout();
+
+  perform set_config('request.jwt.claim.role', 'service_role', true);
+  if not public.verify_cron_token(v_rotated) then raise exception 'service role should accept the current token'; end if;
+  if public.verify_cron_token(v_token) then raise exception 'the old token must stop working'; end if;
+  if public.verify_cron_token('short') then raise exception 'a short token must be refused'; end if;
+  if public.verify_cron_token(null) then raise exception 'a null token must be refused'; end if;
+  perform set_config('request.jwt.claim.role', '', true);
+end $$;

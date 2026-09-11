@@ -11,7 +11,8 @@ import { formatDateTime, formatInt } from "@/lib/format";
 import { listPlayerStatuses, STATUS_LABEL } from "@/lib/players/status";
 import { fetchAll } from "@/lib/supabase/fetch-all";
 import { createClient } from "@/lib/supabase/server";
-import { MapRowForm, RunFeedButton, type UnmatchedRow } from "./feed-panel";
+import { publicEnv } from "@/lib/env";
+import { CronSql, MapRowForm, RunFeedButton, type UnmatchedRow } from "./feed-panel";
 import { ClearStatusButton, StatusForm } from "./status-form";
 
 export const metadata = { title: "Indisponibili" };
@@ -32,7 +33,8 @@ const RUN_LABEL: Record<string, string> = {
 export default async function AdminPlayerStatusPage() {
   await requireAdmin();
   const supabase = await createClient();
-  const [statuses, players, feed] = await Promise.all([
+  const [{ data: cronToken }, statuses, players, feed] = await Promise.all([
+    supabase.rpc("admin_cron_token"),
     listPlayerStatuses(),
     fetchAll(() =>
       supabase
@@ -141,6 +143,44 @@ export default async function AdminPlayerStatusPage() {
               </div>
             )}
             <RunFeedButton disabled={!feed.configured} />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Aggiornamento ogni 15 minuti</CardTitle>
+            <CardDescription>
+              Da fare una volta sola: apri il progetto su supabase.com, vai in{" "}
+              <strong>SQL Editor → New query</strong>, incolla il comando qui sotto e premi{" "}
+              <strong>Run</strong>. Da quel momento il feed si aggiorna da solo, anche quando
+              nessuno apre l&apos;app. Il comando contiene già la chiave generata dal database: non
+              serve copiarla da Vercel. Per fermarlo:{" "}
+              <code>select cron.unschedule(&apos;superlega-availability&apos;);</code>
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {cronToken ? (
+              <CronSql
+                sql={`create extension if not exists pg_cron;
+create extension if not exists pg_net;
+select cron.schedule(
+  'superlega-availability',
+  '*/15 * * * *',
+  $$
+  select net.http_get(
+    url := '${publicEnv.NEXT_PUBLIC_SITE_URL}/api/cron/sync-availability',
+    headers := jsonb_build_object('Authorization', 'Bearer ${cronToken}'),
+    timeout_milliseconds := 55000
+  );
+  $$
+);`}
+              />
+            ) : (
+              <FormMessage>
+                Chiave del programmatore non disponibile: esegui l&apos;ultimo aggiornamento SQL e
+                ricarica la pagina.
+              </FormMessage>
+            )}
           </CardContent>
         </Card>
 

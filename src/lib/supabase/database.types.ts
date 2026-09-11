@@ -395,6 +395,9 @@ export type Database = {
         Returns: { email: string; display_name: string }[];
       };
       admin_audit_log: { Args: { p_limit?: number }; Returns: AuditEntryRow[] };
+      admin_cron_token: { Args: Record<string, never>; Returns: string };
+      admin_rotate_cron_token: { Args: Record<string, never>; Returns: string };
+      verify_cron_token: { Args: { p_token: string }; Returns: boolean };
       admin_set_player_status: {
         Args: {
           p_player_id: number;

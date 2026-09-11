@@ -125,7 +125,7 @@ Tutte le chiavi vanno **solo** nelle impostazioni di Vercel/Supabase, mai nel re
        '*/15 * * * *',
        $$select net.http_get(
           url := '<SITO>/api/cron/sync-availability',
-          headers := jsonb_build_object('Authorization', 'Bearer <CRON_SECRET>')
+          headers := jsonb_build_object('Authorization', 'Bearer <token di Admin → Indisponibili>')
         );$$
      );
      ```

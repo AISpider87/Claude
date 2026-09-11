@@ -359,3 +359,12 @@ listone,operazioni}`) con exceljs, letture paginate (`fetchAll`) sotto la
   sviluppo: parsing tollerante, errori del fornitore riportati alla lettera nel
   pannello admin, fixture scritte a mano per i test e checklist di verifica in
   produzione in docs/SYNC.md. Migrazione `20260909270000`.
+- 2026-09-11 · **Token del programmatore generato dal database**: su Vercel
+  `CRON_SECRET` è salvato come valore protetto e non è più leggibile, quindi
+  non si poteva incollare nella pianificazione pg_cron. Il DB genera e
+  conserva `league_settings.cron_token` (solo admin lo legge, via
+  `admin_cron_token`, rigenerabile con `admin_rotate_cron_token`); la rotta
+  `/api/cron/sync-availability` accetta `CRON_SECRET` **oppure** quel token,
+  verificato con `verify_cron_token` (solo service role). La pagina Admin →
+  Indisponibili mostra il comando SQL completo con il token, da copiare.
+  Migrazione `20260909280000`.

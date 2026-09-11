@@ -1,7 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
-import { Link2, RefreshCw } from "lucide-react";
+import { useActionState, useState } from "react";
+import { Check, Copy, Link2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FormMessage } from "@/components/ui/form-message";
 import { Label } from "@/components/ui/label";
@@ -26,6 +26,43 @@ export function RunFeedButton({ disabled }: { disabled?: boolean }) {
         </FormMessage>
       )}
     </form>
+  );
+}
+
+/**
+ * The statement the admin pastes in the Supabase SQL Editor to start the
+ * 15-minute schedule. It carries the token the database itself generated, so
+ * nothing has to be read back from Vercel.
+ */
+export function CronSql({ sql }: { sql: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <div className="flex flex-col gap-2">
+      <pre className="border-line bg-surface-2 max-h-64 overflow-auto rounded-[var(--radius-control)] border p-3 text-xs leading-relaxed">
+        <code>{sql}</code>
+      </pre>
+      <Button
+        type="button"
+        variant="secondary"
+        className="self-start"
+        onClick={() => {
+          void navigator.clipboard
+            .writeText(sql)
+            .then(() => {
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2500);
+            })
+            .catch(() => setCopied(false));
+        }}
+      >
+        {copied ? (
+          <Check className="size-4" aria-hidden />
+        ) : (
+          <Copy className="size-4" aria-hidden />
+        )}
+        {copied ? "Copiato" : "Copia il comando"}
+      </Button>
+    </div>
   );
 }
 

@@ -16,16 +16,28 @@ export const maxDuration = 60;
  * At most 3 API requests per run: injuries, next fixtures, and the lineups of
  * the fixture about to kick off (skipped when none is).
  */
-export async function GET(request: NextRequest) {
+/**
+ * Two ways in: the Vercel CRON_SECRET, or the token the database generates for
+ * the pg_cron schedule (Admin → Indisponibili shows it). The second exists
+ * because a protected Vercel value cannot be read back to paste it into SQL.
+ */
+async function authorised(request: NextRequest, supabase: ReturnType<typeof createServiceClient>) {
+  const header = request.headers.get("authorization") ?? "";
+  const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
+  if (!token) return false;
   const secret = process.env.CRON_SECRET;
-  const auth = request.headers.get("authorization");
-  if (!secret || auth !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+  if (secret && token === secret) return true;
+  const { data, error } = await supabase.rpc("verify_cron_token", { p_token: token });
+  return !error && data === true;
+}
 
+export async function GET(request: NextRequest) {
   const logs: string[] = [];
   try {
     const supabase = createServiceClient();
+    if (!(await authorised(request, supabase))) {
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
     const outcome = await runAvailabilitySync(
       availabilityProviderFromEnv(),
       supabaseAvailabilityDb(supabase),
