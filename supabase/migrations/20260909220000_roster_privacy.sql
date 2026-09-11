@@ -4,16 +4,19 @@
 -- league_teams(); the free-agent list is still computed over every roster (it
 -- reveals that a player is owned by someone, never by whom).
 
-drop policy "teams: members read" on public.teams;
+drop policy if exists "teams: members read" on public.teams;
+drop policy if exists "teams: own team or admin" on public.teams;
 create policy "teams: own team or admin" on public.teams for select to authenticated
   using (private.is_admin() or owner_id = auth.uid());
 
-drop policy "roster_players: members read" on public.roster_players;
+drop policy if exists "roster_players: members read" on public.roster_players;
+drop policy if exists "roster_players: own team or admin" on public.roster_players;
 create policy "roster_players: own team or admin" on public.roster_players for select to authenticated
   using (private.is_admin()
          or exists (select 1 from public.teams t where t.id = team_id and t.owner_id = auth.uid()));
 
-drop policy "transactions: members read" on public.transactions;
+drop policy if exists "transactions: members read" on public.transactions;
+drop policy if exists "transactions: own team or admin" on public.transactions;
 create policy "transactions: own team or admin" on public.transactions for select to authenticated
   using (private.is_admin()
          or exists (select 1 from public.teams t where t.id = team_id and t.owner_id = auth.uid()));

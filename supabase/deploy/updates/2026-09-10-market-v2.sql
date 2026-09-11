@@ -1,5 +1,6 @@
 -- SuperLega — aggiornamento del 2026-09-10/11 (sessioni automatiche, mercato v2, privacy rose, indisponibili).
--- Per chi ha già eseguito schema.sql e la migrazione 20260909190000: incollare nello SQL Editor e premere Run UNA volta.
+-- Per chi ha già eseguito schema.sql e la migrazione 20260909190000: incollare nello SQL Editor e premere Run.
+-- Rieseguibile senza danni: ogni istruzione è idempotente.
 
 -- ===== 20260909200000_session_autopilot.sql =====
 -- Market sessions open and close by themselves at the scheduled times.
@@ -323,13 +324,13 @@ $$;
 -- time without counting. The closing report still flags rosters with holes.
 -- swap_player / free_swap_player stay valid (a swap is a release + a purchase).
 
-alter table public.transactions drop constraint transactions_kind_check;
+alter table public.transactions drop constraint if exists transactions_kind_check;
 alter table public.transactions add constraint transactions_kind_check
   check (kind in ('swap', 'free_swap', 'sell', 'buy', 'free_release', 'admin_assign', 'admin_remove', 'admin_credits', 'reversal'));
-alter table public.roster_players drop constraint roster_players_acquired_via_check;
+alter table public.roster_players drop constraint if exists roster_players_acquired_via_check;
 alter table public.roster_players add constraint roster_players_acquired_via_check
   check (acquired_via in ('initial_import', 'admin', 'swap', 'free_swap', 'buy', 'reversal'));
-alter table public.roster_players drop constraint roster_players_released_via_check;
+alter table public.roster_players drop constraint if exists roster_players_released_via_check;
 alter table public.roster_players add constraint roster_players_released_via_check
   check (released_via in ('swap', 'free_swap', 'sell', 'free_release', 'admin', 'reversal'));
 
@@ -597,16 +598,19 @@ grant execute on function public.buy_player(uuid, integer) to authenticated;
 -- league_teams(); the free-agent list is still computed over every roster (it
 -- reveals that a player is owned by someone, never by whom).
 
-drop policy "teams: members read" on public.teams;
+drop policy if exists "teams: members read" on public.teams;
+drop policy if exists "teams: own team or admin" on public.teams;
 create policy "teams: own team or admin" on public.teams for select to authenticated
   using (private.is_admin() or owner_id = auth.uid());
 
-drop policy "roster_players: members read" on public.roster_players;
+drop policy if exists "roster_players: members read" on public.roster_players;
+drop policy if exists "roster_players: own team or admin" on public.roster_players;
 create policy "roster_players: own team or admin" on public.roster_players for select to authenticated
   using (private.is_admin()
          or exists (select 1 from public.teams t where t.id = team_id and t.owner_id = auth.uid()));
 
-drop policy "transactions: members read" on public.transactions;
+drop policy if exists "transactions: members read" on public.transactions;
+drop policy if exists "transactions: own team or admin" on public.transactions;
 create policy "transactions: own team or admin" on public.transactions for select to authenticated
   using (private.is_admin()
          or exists (select 1 from public.teams t where t.id = team_id and t.owner_id = auth.uid()));
@@ -667,7 +671,7 @@ $$;
 -- Written by the admin by hand today; a sync job may fill it later through the
 -- same private function. Only non-"ok" rows are stored: clearing = delete.
 
-create table public.player_status (
+create table if not exists public.player_status (
   player_id integer primary key references public.players (id) on delete cascade,
   kind text not null check (kind in ('injured', 'doubtful', 'suspended', 'unavailable')),
   note text,
@@ -679,6 +683,7 @@ create table public.player_status (
 alter table public.player_status enable row level security;
 revoke all on public.player_status from anon, authenticated;
 grant select on public.player_status to authenticated;
+drop policy if exists "player_status: members read" on public.player_status;
 create policy "player_status: members read" on public.player_status for select to authenticated
   using (private.is_league_member());
 

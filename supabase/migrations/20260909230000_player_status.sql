@@ -2,7 +2,7 @@
 -- Written by the admin by hand today; a sync job may fill it later through the
 -- same private function. Only non-"ok" rows are stored: clearing = delete.
 
-create table public.player_status (
+create table if not exists public.player_status (
   player_id integer primary key references public.players (id) on delete cascade,
   kind text not null check (kind in ('injured', 'doubtful', 'suspended', 'unavailable')),
   note text,
@@ -14,6 +14,7 @@ create table public.player_status (
 alter table public.player_status enable row level security;
 revoke all on public.player_status from anon, authenticated;
 grant select on public.player_status to authenticated;
+drop policy if exists "player_status: members read" on public.player_status;
 create policy "player_status: members read" on public.player_status for select to authenticated
   using (private.is_league_member());
 

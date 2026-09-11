@@ -7,13 +7,13 @@
 -- time without counting. The closing report still flags rosters with holes.
 -- swap_player / free_swap_player stay valid (a swap is a release + a purchase).
 
-alter table public.transactions drop constraint transactions_kind_check;
+alter table public.transactions drop constraint if exists transactions_kind_check;
 alter table public.transactions add constraint transactions_kind_check
   check (kind in ('swap', 'free_swap', 'sell', 'buy', 'free_release', 'admin_assign', 'admin_remove', 'admin_credits', 'reversal'));
-alter table public.roster_players drop constraint roster_players_acquired_via_check;
+alter table public.roster_players drop constraint if exists roster_players_acquired_via_check;
 alter table public.roster_players add constraint roster_players_acquired_via_check
   check (acquired_via in ('initial_import', 'admin', 'swap', 'free_swap', 'buy', 'reversal'));
-alter table public.roster_players drop constraint roster_players_released_via_check;
+alter table public.roster_players drop constraint if exists roster_players_released_via_check;
 alter table public.roster_players add constraint roster_players_released_via_check
   check (released_via in ('swap', 'free_swap', 'sell', 'free_release', 'admin', 'reversal'));
 
