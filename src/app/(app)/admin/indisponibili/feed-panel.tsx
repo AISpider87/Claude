@@ -66,6 +66,7 @@ export function MapRowForm({
       </div>
       <input type="hidden" name="provider" value={provider} />
       <input type="hidden" name="externalName" value={row.name} />
+      <input type="hidden" name="externalId" value={row.externalId ?? ""} />
       <div className="flex flex-wrap items-end gap-2">
         <div className="min-w-0 flex-1">
           <Label htmlFor={selectId}>Abbina a</Label>
@@ -93,8 +94,6 @@ export function MapRowForm({
           {state.message}
         </FormMessage>
       )}
-      {/* The provider is fixed per input; the select above carries the choice. */}
-      <input type="hidden" name="externalId" value={row.externalId ?? ""} />
     </form>
   );
 }
