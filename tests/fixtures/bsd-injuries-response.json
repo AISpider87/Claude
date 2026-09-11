@@ -1,0 +1,7 @@
+{
+  "_comment": "Shape hypothesis C: rows under `response`, player as a bare string, status in `type`.",
+  "response": [
+    { "player": "Romelu Lukaku", "team": "Napoli", "type": "knock" },
+    { "player": "Alessandro Bastoni", "team": "Inter", "type": "ban" }
+  ]
+}

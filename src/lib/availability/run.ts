@@ -9,15 +9,15 @@
  */
 
 import {
-  SOURCE_NAME,
-  SOURCE_URL,
   type AvailabilityProvider,
   type ProviderFixture,
+  type ProviderSample,
+  type StatusKind,
 } from "@/lib/availability/provider";
 import { AvailabilityMatcher, type ExternalMapping } from "@/lib/availability/match";
 import type { ListonePlayer } from "@/lib/import/name-matching";
 
-export type StatusKind = "injured" | "doubtful" | "suspended" | "unavailable";
+export type { StatusKind };
 
 export interface FeedStatus {
   player_id: number;
@@ -40,6 +40,14 @@ export interface FeedMapping {
   external_name: string;
 }
 
+export interface AvailabilityDiagnostics {
+  provider: string;
+  /** The candidate paths that answered, to be reused by the next run. */
+  endpoints: Record<string, string> | null;
+  /** The raw answers, redacted and capped: only saved when asked or on failure. */
+  samples: ProviderSample[];
+}
+
 export interface AvailabilityPayload {
   provider: string;
   statuses: FeedStatus[];
@@ -54,6 +62,12 @@ export interface AvailabilityDb {
   loadPlayers(): Promise<ListonePlayer[]>;
   loadMappings(provider: string): Promise<ExternalMapping[]>;
   applyFeed(payload: AvailabilityPayload): Promise<Record<string, unknown>>;
+  /**
+   * Stores the discovered paths and — on a failure, or when the admin asked for
+   * it — the raw answers, so the provider can be wired without a second guess.
+   * Optional: a caller that cannot write settings simply loses the diagnostics.
+   */
+  saveDiagnostics?(diagnostics: AvailabilityDiagnostics): Promise<void>;
 }
 
 export interface UnmatchedName {
@@ -75,6 +89,10 @@ export interface AvailabilityOutcome {
   unmatched: UnmatchedName[];
   errors: string[];
   requests: number;
+  /** The run's hard cap, so the panel can show "3/12". */
+  requests_max: number;
+  /** Rows the provider sent that nobody could read (wrong shape). */
+  unparsed: number;
   rate_limit_remaining: number | null;
   fixture: { id: number; kickoff: string; label: string } | null;
   applied: Record<string, unknown> | null;
@@ -117,6 +135,8 @@ function emptyOutcome(status: AvailabilityOutcome["status"]): AvailabilityOutcom
     unmatched: [],
     errors: [],
     requests: 0,
+    requests_max: 0,
+    unparsed: 0,
     rate_limit_remaining: null,
     fixture: null,
     applied: null,
@@ -142,18 +162,45 @@ export function imminentFixture(
   return upcoming[0]?.f ?? null;
 }
 
+export interface RunOptions {
+  /**
+   * "Modalità diagnostica": keep the raw answers even when the run succeeds, so
+   * the admin can check the shape while wiring a provider. A failed run always
+   * keeps them.
+   */
+  diagnostics?: boolean;
+}
+
 export async function runAvailabilitySync(
   provider: AvailabilityProvider | null,
   db: AvailabilityDb,
   log: (msg: string) => void = () => {},
   now: Date = new Date(),
+  opts: RunOptions = {},
 ): Promise<AvailabilityOutcome> {
   if (!provider) {
-    log("no API_FOOTBALL_KEY: availability feed off");
+    log("no availability key configured: feed off");
     return { ...emptyOutcome("skipped"), reason: "no_provider" };
   }
   const out = emptyOutcome("ok");
   out.season = provider.season;
+  out.requests_max = provider.budget.max;
+
+  // Whatever happens below, the admin must be able to see what came back.
+  const saveDiagnostics = async (failed: boolean) => {
+    const endpoints = provider.resolvedEndpoints();
+    const keep = failed || opts.diagnostics === true;
+    if (!db.saveDiagnostics || (!endpoints && !keep)) return;
+    try {
+      await db.saveDiagnostics({
+        provider: provider.name,
+        endpoints,
+        samples: keep ? provider.lastSamples() : [],
+      });
+    } catch (e) {
+      log(`diagnostics not saved: ${message(e)}`);
+    }
+  };
 
   let players: ListonePlayer[];
   let mappings: ExternalMapping[];
@@ -161,6 +208,7 @@ export async function runAvailabilitySync(
     [players, mappings] = await Promise.all([db.loadPlayers(), db.loadMappings(provider.name)]);
   } catch (e) {
     out.errors.push(`listone: ${message(e)}`);
+    await saveDiagnostics(true);
     return { ...out, status: "failed", reason: "db_error", requests: provider.budget.used };
   }
   if (players.length === 0) {
@@ -216,7 +264,9 @@ export async function runAvailabilitySync(
           external_name: inj.playerName,
         });
       }
-      const kind = mapReason(inj.type, inj.reason);
+      // BSD decides the kind itself (its status vocabulary is explicit);
+      // API-Football only sends free text, mapped here.
+      const kind = inj.kind ?? mapReason(inj.type, inj.reason);
       const previous = statuses.get(found.player.id);
       if (previous && previous.severity >= SEVERITY[kind]) continue;
       const note = [inj.reason, inj.type].filter((s) => s && s.trim()).join(" · ");
@@ -224,8 +274,8 @@ export async function runAvailabilitySync(
         player_id: found.player.id,
         kind,
         note: note || null,
-        source_name: SOURCE_NAME,
-        source_url: SOURCE_URL,
+        source_name: provider.label,
+        source_url: provider.docsUrl,
         severity: SEVERITY[kind],
       });
     }
@@ -288,6 +338,7 @@ export async function runAvailabilitySync(
   }
 
   out.requests = provider.budget.used;
+  out.unparsed = provider.unparsed;
   out.rate_limit_remaining = provider.rateLimitRemaining;
   out.statuses = statuses.size;
   out.lineups = lineups.length;
@@ -309,8 +360,12 @@ export async function runAvailabilitySync(
     clear_missing: injuriesOk,
     run: {
       status: injuriesOk ? (out.errors.length > 0 ? "partial" : "ok") : "failed",
+      provider_label: provider.label,
       season: out.season,
       requests: out.requests,
+      requests_max: out.requests_max,
+      unparsed: out.unparsed,
+      diagnostics: opts.diagnostics === true,
       rate_limit_remaining: out.rate_limit_remaining,
       errors: out.errors,
       unmatched: out.unmatched,
@@ -318,6 +373,8 @@ export async function runAvailabilitySync(
       finished_at: out.finished_at,
     },
   };
+
+  await saveDiagnostics(!injuriesOk || out.errors.length > 0);
 
   try {
     out.applied = await db.applyFeed(payload);

@@ -2,8 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { supabaseAvailabilityDb } from "@/lib/availability/db";
-import { API_FOOTBALL_PROVIDER, availabilityProviderFromEnv } from "@/lib/availability/provider";
+import { availabilityProviderWithEndpoints, supabaseAvailabilityDb } from "@/lib/availability/db";
+import {
+  API_FOOTBALL_PROVIDER,
+  PROVIDER_KEY_VAR,
+  PROVIDER_LABEL,
+  selectedProviderName,
+} from "@/lib/availability/provider";
 import { runAvailabilitySync } from "@/lib/availability/run";
 import { requireAdmin } from "@/lib/auth/dal";
 import type { FormState } from "@/lib/auth/schemas";
@@ -22,15 +27,9 @@ function revalidateAll() {
  */
 export async function runAvailabilityNow(_prev: FormState, formData: FormData): Promise<FormState> {
   await requireAdmin();
-  void formData;
-  const provider = availabilityProviderFromEnv();
-  if (!provider) {
-    return {
-      status: "error",
-      message:
-        "Nessuna chiave API-Football configurata (API_FOOTBALL_KEY): il feed automatico è spento, restano gli stati manuali.",
-    };
-  }
+  // "Modalità diagnostica": keep the raw answers even when the run succeeds.
+  const diagnostics = formData.get("diagnostics") === "on";
+  const name = selectedProviderName();
   let service: ReturnType<typeof createServiceClient>;
   try {
     service = createServiceClient();
@@ -40,14 +39,30 @@ export async function runAvailabilityNow(_prev: FormState, formData: FormData): 
       message: "Chiave service-role mancante sul server: il feed non può scrivere.",
     };
   }
+  const provider = await availabilityProviderWithEndpoints(service);
+  if (!provider) {
+    const keyVar = name ? PROVIDER_KEY_VAR[name] : null;
+    return {
+      status: "error",
+      message: name
+        ? `Nessuna chiave ${PROVIDER_LABEL[name] ?? name} configurata (${keyVar}): il feed automatico è spento, restano gli stati manuali.`
+        : "Nessun fornitore configurato (AVAILABILITY_PROVIDER / BSD_API_KEY): il feed automatico è spento, restano gli stati manuali.",
+    };
+  }
 
-  const outcome = await runAvailabilitySync(provider, supabaseAvailabilityDb(service));
+  const outcome = await runAvailabilitySync(
+    provider,
+    supabaseAvailabilityDb(service),
+    () => {},
+    new Date(),
+    { diagnostics },
+  );
   revalidateAll();
   const detail = `${outcome.statuses} indisponibili, ${outcome.lineups} in formazione, ${outcome.requests} richieste API`;
   if (outcome.status === "failed") {
     return {
       status: "error",
-      message: `Aggiornamento non riuscito (${detail}): ${outcome.errors.join(" · ") || "errore sconosciuto"}`,
+      message: `Aggiornamento non riuscito (${detail}): ${outcome.errors.join(" · ") || "errore sconosciuto"}. Apri "Mostra risposta grezza" qui sotto per vedere cosa ha risposto il fornitore.`,
     };
   }
   if (outcome.status === "skipped") {
@@ -59,6 +74,7 @@ export async function runAvailabilityNow(_prev: FormState, formData: FormData): 
   const warnings = [
     outcome.errors.length > 0 ? `avvisi: ${outcome.errors.join(" · ")}` : "",
     outcome.unmatched.length > 0 ? `${outcome.unmatched.length} nomi da abbinare` : "",
+    outcome.unparsed > 0 ? `${outcome.unparsed} righe non leggibili (vedi risposta grezza)` : "",
   ].filter(Boolean);
   return {
     status: "success",
@@ -70,7 +86,12 @@ const mapSchema = z.object({
   playerId: z.coerce.number().int().positive(),
   externalId: z.coerce.number().int().positive(),
   externalName: z.string().trim().max(80).optional(),
-  provider: z.string().trim().min(1).max(40).default(API_FOOTBALL_PROVIDER),
+  provider: z
+    .string()
+    .trim()
+    .min(1)
+    .max(40)
+    .default(selectedProviderName() ?? API_FOOTBALL_PROVIDER),
 });
 
 /** Admin: bind an API name to the right listone player once and for all. */
@@ -80,7 +101,7 @@ export async function confirmPlayerMap(_prev: FormState, formData: FormData): Pr
     playerId: formData.get("playerId"),
     externalId: formData.get("externalId"),
     externalName: formData.get("externalName") ?? undefined,
-    provider: formData.get("provider") ?? API_FOOTBALL_PROVIDER,
+    provider: formData.get("provider") ?? undefined,
   });
   if (!parsed.success) return { status: "error", message: "Abbinamento non valido." };
 

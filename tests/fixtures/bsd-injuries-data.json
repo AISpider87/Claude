@@ -1,0 +1,12 @@
+{
+  "_comment": "Shape hypothesis B: rows under `data`, flat fields, Italian status texts, plus one row nobody can read (empty status) and one with a name but no club.",
+  "meta": { "league": "serie-a", "count": 7 },
+  "data": [
+    { "playerName": "Romelu Lukaku", "club": "Napoli", "injuryStatus": "Infortunato al ginocchio" },
+    { "playerName": "Alessandro Bastoni", "club": "Inter", "availability": "Squalificato" },
+    { "playerName": "Nicolo Barella", "club": "Inter", "availability": "In dubbio" },
+    { "playerName": "Paulo Dybala", "club": "Roma", "reason": "Scelta tecnica" },
+    { "playerName": "Josep Martinez", "club": "Inter", "status": "" },
+    { "name": "Giovanni Sconosciuto", "team": "Pisa", "status": "Doubtful" }
+  ]
+}

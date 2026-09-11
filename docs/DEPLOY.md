@@ -81,18 +81,28 @@ Tutte le chiavi vanno **solo** nelle impostazioni di Vercel/Supabase, mai nel re
    (branch principale). Framework: Next.js (rilevato). Piano Hobby.
 2. **Environment Variables** (Production; le `NEXT_PUBLIC_*` anche in Preview):
 
-   | Variabile                       | Valore                                                        |
-   | ------------------------------- | ------------------------------------------------------------- |
-   | `NEXT_PUBLIC_SUPABASE_URL`      | Project URL di Supabase                                       |
-   | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | anon public key                                               |
-   | `NEXT_PUBLIC_SITE_URL`          | `https://<app>.vercel.app` (o il dominio)                     |
-   | `SUPABASE_SERVICE_ROLE_KEY`     | service_role key (solo server)                                |
-   | `CRON_SECRET`                   | stringa casuale lunga (`openssl rand -hex 32`)                |
-   | `RESEND_API_KEY`                | chiave Resend (vuota = email saltate)                         |
-   | `EMAIL_FROM`                    | mittente, es. `SuperLega <lega@tuodominio.it>`                |
-   | `QUOTATIONS_SOURCE_URL`         | **vuota** finché non verifichi Fantacalcio.it (docs/SYNC.md)  |
-   | `API_FOOTBALL_KEY`              | chiave di api-sports.io, piano gratuito (vuota = feed spento) |
-   | `API_FOOTBALL_SEASON`           | **facoltativa**: solo se il piano gratuito non copre il 2026  |
+   | Variabile                       | Valore                                                                                                 |
+   | ------------------------------- | ------------------------------------------------------------------------------------------------------ |
+   | `NEXT_PUBLIC_SUPABASE_URL`      | Project URL di Supabase                                                                                |
+   | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | anon public key                                                                                        |
+   | `NEXT_PUBLIC_SITE_URL`          | `https://<app>.vercel.app` (o il dominio)                                                              |
+   | `SUPABASE_SERVICE_ROLE_KEY`     | service_role key (solo server)                                                                         |
+   | `CRON_SECRET`                   | stringa casuale lunga (`openssl rand -hex 32`)                                                         |
+   | `RESEND_API_KEY`                | chiave Resend (vuota = email saltate)                                                                  |
+   | `EMAIL_FROM`                    | mittente, es. `SuperLega <lega@tuodominio.it>`                                                         |
+   | `QUOTATIONS_SOURCE_URL`         | **vuota** finché non verifichi Fantacalcio.it (docs/SYNC.md)                                           |
+   | `AVAILABILITY_PROVIDER`         | `bsd` (consigliato) oppure `api-football`                                                              |
+   | `BSD_API_KEY`                   | chiave di bigballsdata.com, piano gratuito (vuota = feed spento)                                       |
+   | `BSD_BASE_URL`                  | **facoltativa**: altro indirizzo base, default `https://api.bigballsdata.com`                          |
+   | `BSD_LEAGUE`                    | **facoltativa**: come il fornitore chiama la Serie A, default `serie-a` (accetta anche un id numerico) |
+   | `API_FOOTBALL_KEY`              | solo se usi `api-football`: chiave di api-sports.io                                                    |
+   | `API_FOOTBALL_SEASON`           | **facoltativa**: solo con `api-football`, per forzare la stagione                                      |
+
+   Il piano **gratuito di API-Football non copre la stagione in corso**
+   ("Free plans do not have access to this season, try from 2022 to 2024"):
+   per questo il fornitore predefinito è **`bsd`** (Big Balls Sports Data,
+   gratuito, senza carta, ~1000 richieste al giorno). Dettagli e procedura di
+   verifica in docs/SYNC.md.
 
 3. **Branch di produzione**: se il repository ha come branch predefinito uno
    diverso da `main`, in Vercel vai su _Settings → Environments → Production →
@@ -132,8 +142,8 @@ Tutte le chiavi vanno **solo** nelle impostazioni di Vercel/Supabase, mai nel re
 
    - Per annullare: `select cron.unschedule('superlega-availability');`
    - Verifica: `select * from cron.job;`, poi in _Admin → Indisponibili_ che
-     "Ultimo aggiornamento" si muova. Senza `API_FOOTBALL_KEY` il job gira ma
-     non fa nulla (nessun errore).
+     "Ultimo aggiornamento" si muova. Senza la chiave del fornitore
+     (`BSD_API_KEY`) il job gira ma non fa nulla (nessun errore).
    - Anche senza pianificazione il feed si aggiorna da solo quando qualcuno
      apre l'app e sono passati più di 15 minuti dall'ultima volta: la
      pianificazione serve perché le formazioni siano pronte anche se nessuno

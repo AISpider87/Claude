@@ -1,5 +1,12 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  BSD_PROVIDER,
+  availabilityProviderFromEnv,
+  selectedProviderName,
+  type AvailabilityProvider,
+} from "@/lib/availability/provider";
+import { capSamples } from "@/lib/availability/shared";
 import type { AvailabilityDb, AvailabilityPayload } from "@/lib/availability/run";
 import type { Database, Json } from "@/lib/supabase/database.types";
 import { fetchAll } from "@/lib/supabase/fetch-all";
@@ -33,5 +40,28 @@ export function supabaseAvailabilityDb(supabase: SupabaseClient<Database>): Avai
       if (error) throw new Error(error.message);
       return (data ?? {}) as Record<string, unknown>;
     },
+    async saveDiagnostics({ provider, endpoints, samples }) {
+      const { error } = await supabase.rpc("save_availability_diagnostics", {
+        p_provider: provider,
+        p_endpoints: (endpoints ?? null) as unknown as Json,
+        p_samples: capSamples(samples) as unknown as Json,
+      });
+      if (error) throw new Error(error.message);
+    },
   };
+}
+
+/**
+ * The configured provider, with the endpoint paths a previous run discovered
+ * (BSD only — API-Football's paths are fixed). One settings read per run.
+ */
+export async function availabilityProviderWithEndpoints(
+  supabase: SupabaseClient<Database>,
+): Promise<AvailabilityProvider | null> {
+  let endpoints: unknown = null;
+  if (selectedProviderName() === BSD_PROVIDER) {
+    const { data } = await supabase.rpc("availability_endpoints");
+    endpoints = data ?? null;
+  }
+  return availabilityProviderFromEnv(process.env, { endpoints });
 }

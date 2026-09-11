@@ -1,0 +1,14 @@
+[
+  {
+    "player": { "id": 30411, "name": "Romelu Lukaku" },
+    "team": { "id": 492, "name": "Napoli" },
+    "status": "Injured",
+    "description": "Knee injury",
+    "expectedReturn": "2026-10-05"
+  },
+  {
+    "player": { "id": 2867, "name": "Alessandro Bastoni" },
+    "team": { "name": "Internazionale" },
+    "status": "Suspended"
+  }
+]

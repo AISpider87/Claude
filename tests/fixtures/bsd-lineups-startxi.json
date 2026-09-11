@@ -1,0 +1,15 @@
+{
+  "_comment": "Lineups, shape A: one row per team with startXI/substitutes, entries as objects or bare names.",
+  "data": [
+    {
+      "team": { "id": 505, "name": "Inter" },
+      "startXI": [{ "player": { "id": 2870, "name": "Nicolo Barella" } }, "Alessandro Bastoni"],
+      "substitutes": [{ "player": { "id": 1100, "name": "Josep Martinez" } }]
+    },
+    {
+      "team": { "name": "Napoli" },
+      "startXI": [{ "name": "Romelu Lukaku" }],
+      "bench": []
+    }
+  ]
+}

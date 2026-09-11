@@ -16,16 +16,101 @@ export function RunFeedButton({ disabled }: { disabled?: boolean }) {
   const [state, action, pending] = useActionState(runAvailabilityNow, undefined);
   return (
     <form action={action} className="flex flex-col gap-2">
-      <Button type="submit" disabled={pending || disabled}>
-        <RefreshCw className={pending ? "size-4 animate-spin" : "size-4"} aria-hidden />
-        {pending ? "Aggiornamento…" : "Aggiorna adesso"}
-      </Button>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <Button type="submit" disabled={pending || disabled}>
+          <RefreshCw className={pending ? "size-4 animate-spin" : "size-4"} aria-hidden />
+          {pending ? "Aggiornamento…" : "Aggiorna adesso"}
+        </Button>
+        <label className="flex min-h-11 items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            name="diagnostics"
+            className="accent-primary size-5"
+            disabled={pending || disabled}
+          />
+          Modalità diagnostica
+        </label>
+      </div>
+      <p className="text-muted text-sm">
+        Con la <strong>modalità diagnostica</strong> la risposta grezza del fornitore viene salvata
+        anche quando l&apos;aggiornamento riesce: serve solo la prima volta, per controllare che i
+        dati arrivino nel formato giusto. Dopo un errore viene salvata comunque.
+      </p>
       {state?.message && (
         <FormMessage tone={state.status === "success" ? "success" : "error"}>
           {state.message}
         </FormMessage>
       )}
     </form>
+  );
+}
+
+export interface RawSample {
+  endpoint: string;
+  url: string;
+  status: number;
+  body: string;
+}
+
+/**
+ * The raw answers of the last diagnosed run. The only way to correct a wrong
+ * assumption about the provider's payload without reaching it from here: the
+ * dev network blocks both bigballsdata.com and api-sports.io.
+ */
+export function RawSamples({
+  samples,
+  savedAt,
+  endpoints,
+}: {
+  samples: RawSample[];
+  savedAt: string | null;
+  endpoints: Record<string, string>;
+}) {
+  const paths = Object.entries(endpoints);
+  return (
+    <details className="border-line rounded-[var(--radius-control)] border p-3">
+      <summary className="min-h-11 cursor-pointer text-sm font-semibold">
+        Mostra risposta grezza {samples.length > 0 ? `(${samples.length} chiamate)` : ""}
+      </summary>
+      <div className="mt-3 flex flex-col gap-3">
+        <p className="text-muted text-sm">
+          Serve per <strong>configurare il fornitore</strong>: qui sotto c&apos;è l&apos;inizio di
+          quello che ha risposto l&apos;API (chiave nascosta). Se i calciatori non arrivano, copia
+          questo testo e correggi i percorsi o i nomi dei campi.
+          {savedAt ? ` Salvata il ${savedAt}.` : ""}
+        </p>
+        {paths.length > 0 && (
+          <div className="text-sm">
+            <p className="font-semibold">Percorsi che hanno risposto</p>
+            <ul className="text-muted list-disc pl-5">
+              {paths.map(([what, path]) => (
+                <li key={what} className="break-all">
+                  {what}: <code>{path}</code>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {samples.length === 0 ? (
+          <p className="text-muted text-sm">
+            Nessuna risposta salvata: spunta &quot;Modalità diagnostica&quot; e premi &quot;Aggiorna
+            adesso&quot;.
+          </p>
+        ) : (
+          samples.map((sample, i) => (
+            <div key={`${sample.endpoint}-${i}`} className="flex flex-col gap-1">
+              <p className="text-sm font-semibold">
+                {sample.endpoint} · HTTP {sample.status || "—"}
+              </p>
+              <p className="text-muted text-xs break-all">{sample.url}</p>
+              <pre className="border-line bg-surface-2 max-h-64 overflow-auto rounded-[var(--radius-control)] border p-3 text-xs leading-relaxed">
+                <code>{sample.body || "(vuota)"}</code>
+              </pre>
+            </div>
+          ))
+        )}
+      </div>
+    </details>
   );
 }
 

@@ -368,3 +368,26 @@ listone,operazioni}`) con exceljs, letture paginate (`fetchAll`) sotto la
   verificato con `verify_cron_token` (solo service role). La pagina Admin →
   Indisponibili mostra il comando SQL completo con il token, da copiare.
   Migrazione `20260909280000`.
+- 2026-09-11 · **Big Balls Sports Data come fornitore predefinito del feed
+  indisponibili, API-Football come alternativa**: il piano gratuito di
+  API-Football risponde _"Free plans do not have access to this season, try from
+  2022 to 2024"_ per la Serie A 2026/27, quindi a costo zero non copre la
+  stagione in corso. Scelta dell'admin: passare a **bigballsdata.com** (piano
+  gratuito, senza carta, ~1000 richieste al giorno). Il fornitore resta
+  **intercambiabile**: stessa interfaccia `AvailabilityProvider`, scelta con
+  `AVAILABILITY_PROVIDER` (`bsd` predefinito quando c'è `BSD_API_KEY`, altrimenti
+  `api-football` quando c'è `API_FOOTBALL_KEY`, altrimenti feed spento);
+  API-Football resta nel codice perché funziona a pagamento e sulle stagioni
+  passate. Dall'ambiente di sviluppo **non si raggiunge né bigballsdata.com né
+  api-sports.io**, quindi né i percorsi né la forma del payload sono verificati:
+  per chiudere la configurazione in un solo giro con l'admin il provider BSD
+  prova una **lista di candidati** per ogni capacità (si ferma al primo `200`
+  JSON e memorizza il vincente in `league_settings.availability_endpoints`),
+  legge i campi da una lista di nomi plausibili saltando — e contando — le righe
+  illeggibili, e salva le **risposte grezze** (primi 1500 caratteri per chiamata,
+  max 4 KB, chiave sempre rimossa) in `league_settings.availability_last_samples`,
+  che l'admin apre in Admin → Indisponibili → "Mostra risposta grezza"
+  (spunta "Modalità diagnostica" per salvarle anche quando l'aggiornamento
+  riesce). Budget 12 richieste per esecuzione con BSD (2-3 a regime), 3 con
+  API-Football. Migrazione `20260909290000`; ipotesi da verificare in produzione
+  elencate in docs/SYNC.md.

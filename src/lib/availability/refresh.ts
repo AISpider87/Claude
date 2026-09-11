@@ -1,7 +1,7 @@
 import "server-only";
 import { after } from "next/server";
-import { supabaseAvailabilityDb } from "@/lib/availability/db";
-import { availabilityProviderFromEnv } from "@/lib/availability/provider";
+import { availabilityProviderWithEndpoints, supabaseAvailabilityDb } from "@/lib/availability/db";
+import { PROVIDER_KEY_VAR, selectedProviderName } from "@/lib/availability/provider";
 import { runAvailabilitySync } from "@/lib/availability/run";
 import { createServiceClient } from "@/lib/supabase/service";
 
@@ -16,7 +16,9 @@ const STALE_SECONDS = 15 * 60;
  * arriving together can never both start a run.
  */
 export function refreshAvailabilityIfStale() {
-  if (!process.env.API_FOOTBALL_KEY?.trim()) return;
+  const provider = selectedProviderName();
+  const keyVar = provider ? PROVIDER_KEY_VAR[provider] : null;
+  if (!keyVar || !process.env[keyVar]?.trim()) return;
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return;
   after(async () => {
     try {
@@ -25,7 +27,10 @@ export function refreshAvailabilityIfStale() {
         p_max_age_seconds: STALE_SECONDS,
       });
       if (error || data !== true) return; // somebody else has it
-      await runAvailabilitySync(availabilityProviderFromEnv(), supabaseAvailabilityDb(service));
+      await runAvailabilitySync(
+        await availabilityProviderWithEndpoints(service),
+        supabaseAvailabilityDb(service),
+      );
     } catch {
       // ignore: the next page load (or the cron) retries
     }

@@ -1,0 +1,9 @@
+{
+  "_comment": "Lineups, shape B: one row per player with a starting flag; the last row has no flag at all and must be skipped, not guessed.",
+  "data": [
+    { "player": { "id": 2870, "name": "Nicolo Barella" }, "team": "Inter", "isStarter": true },
+    { "player": { "id": 1100, "name": "Josep Martinez" }, "team": "Inter", "isStarter": false },
+    { "playerName": "Romelu Lukaku", "teamName": "Napoli", "lineup": "start" },
+    { "playerName": "Paulo Dybala", "teamName": "Roma" }
+  ]
+}

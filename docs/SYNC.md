@@ -48,28 +48,138 @@ pannello e può caricare il file a mano.
 
 # Indisponibili e titolarità (feed automatico)
 
-## Fornitore e contratto
+## Due fornitori, un solo contratto
 
-- **API-Football** (api-sports.io), host diretto `https://v3.football.api-sports.io`,
-  header `x-apisports-key`. **Non** la variante RapidAPI. Piano **gratuito**
-  (0 €): 100 richieste al giorno.
-- Lega Serie A = `league=135`. La stagione è l'**anno d'inizio** (2026/27 →
-  `2026`): non è scritta nel codice, si ricava dalla data (mese ≥ 7 → anno
-  corrente, altrimenti anno − 1) e si può forzare con `API_FOOTBALL_SEASON`.
-- Endpoint usati (`src/lib/availability/provider.ts`):
-  | Chiamata                                             | Quando                                     | Cosa se ne ricava                                 |
-  | ---------------------------------------------------- | ------------------------------------------ | ------------------------------------------------- |
-  | `GET /injuries?league=135&season=<stagione>`         | ogni esecuzione                            | indisponibili con `player.type` e `player.reason` |
-  | `GET /fixtures?league=135&season=<stagione>&next=10` | ogni esecuzione                            | prossime partite con orario e stato               |
-  | `GET /fixtures/lineups?fixture=<id>`                 | **solo** se una partita inizia entro 3 ore | titolari e panchinari                             |
-- **Budget: 3 richieste per esecuzione**, imposto da `RequestBudget` (il
-  provider rifiuta la quarta chiamata invece di farla). Senza partite imminenti
-  le richieste sono 2 e la chiamata formazioni non parte affatto.
-- Ogni risposta ha un campo `errors`: se non è vuoto la chiamata è considerata
-  fallita e il messaggio del fornitore viene riportato **alla lettera** in
-  Admin → Indisponibili (casi tipici: chiave sbagliata, limiti di piano,
-  stagione non coperta dal piano gratuito). Si legge anche
-  `x-ratelimit-requests-remaining` per mostrare la quota residua.
+Il feed è **pluggable**: `AvailabilityProvider`
+(`src/lib/availability/shared.ts`) è l'unica interfaccia che il job conosce, e
+`availabilityProviderFromEnv()` sceglie l'implementazione in base a
+`AVAILABILITY_PROVIDER`:
+
+| Valore                  | Fornitore                                      | Piano gratuito                           |
+| ----------------------- | ---------------------------------------------- | ---------------------------------------- |
+| `bsd` (**predefinito**) | Big Balls Sports Data (`api.bigballsdata.com`) | senza carta, ~1000 richieste/giorno      |
+| `api-football`          | API-Football (`v3.football.api-sports.io`)     | 100 richieste/giorno, **solo 2022-2024** |
+
+Senza `AVAILABILITY_PROVIDER` vince `bsd` se c'è `BSD_API_KEY`, altrimenti
+`api-football` se c'è `API_FOOTBALL_KEY`, altrimenti **il feed è spento** e
+restano gli stati manuali.
+
+**Perché non API-Football**: il suo piano gratuito risponde _"Free plans do not
+have access to this season, try from 2022 to 2024"_ per la Serie A 2026/27.
+Resta nel codice (funziona a pagamento e sulle stagioni passate), ma non è più
+il predefinito. Vedi docs/DECISIONS.md.
+
+Variabili d'ambiente:
+
+| Variabile               | A cosa serve                                                 |
+| ----------------------- | ------------------------------------------------------------ |
+| `AVAILABILITY_PROVIDER` | `bsd` o `api-football`                                       |
+| `BSD_API_KEY`           | chiave BSD (vuota = feed spento)                             |
+| `BSD_BASE_URL`          | facoltativa, default `https://api.bigballsdata.com`          |
+| `BSD_LEAGUE`            | facoltativa, default `serie-a`; accetta anche un id numerico |
+| `API_FOOTBALL_KEY`      | chiave api-sports.io (solo con `api-football`)               |
+| `API_FOOTBALL_SEASON`   | facoltativa, forza la stagione                               |
+
+La chiave **non compare mai** in un URL, in un log, in un errore o nella
+risposta grezza mostrata all'admin: viaggia solo negli header
+(`Authorization: Bearer …` **e** `x-api-key` per BSD — quale dei due voglia il
+fornitore non è verificato, mandarli entrambi è innocuo;
+`x-apisports-key` per API-Football).
+
+## BSD: ricerca del percorso (candidati)
+
+I percorsi esatti dell'API BSD **non sono verificati** (il dominio non è
+raggiungibile dall'ambiente di sviluppo). Il provider prova quindi una piccola
+lista di candidati, **in ordine**, e si ferma al primo che risponde `200` con
+un JSON valido:
+
+| Capacità      | Candidati provati in ordine                                                                                              |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| indisponibili | `/v1/football/injuries?league=…` · `/football/injuries?league=…` · `/v1/soccer/injuries?league=…` · `/injuries?league=…` |
+| calendario    | `/v1/football/fixtures?league=…&status=upcoming` · `/football/fixtures?league=…` · `/v1/soccer/fixtures?league=…`        |
+| formazioni    | `/v1/football/lineups?fixture=<id>` · `/football/fixtures/<id>/lineups` · `/v1/soccer/lineups?fixture=<id>`              |
+
+- Il candidato vincente viene scritto in `league_settings.availability_endpoints`
+  (`save_availability_diagnostics`, riservata al service role): **dalla
+  esecuzione successiva si va dritti a quello**, una richiesta per capacità.
+  Una sola lettura e al massimo una scrittura di impostazioni per esecuzione.
+- Se il percorso memorizzato smette di rispondere, gli altri candidati vengono
+  riprovati e il nuovo vincente sostituisce il vecchio.
+- Se **nessun** candidato risponde, l'esecuzione fallisce con
+  `endpoint non trovato` seguito dagli stati provati
+  (`/v1/football/injuries → HTTP 404 · …`), non viene cancellato nessuno stato
+  e le risposte grezze restano a disposizione dell'admin.
+- Budget: **12 richieste** per esecuzione con BSD (basta a provare tutti i
+  candidati la prima volta; a regime sono 2-3), **3** con API-Football.
+
+## BSD: lettura tollerante del payload
+
+Neanche la forma del payload è verificata, quindi il parser accetta molte
+varianti e **salta** (contandola) qualunque riga che non riesce a leggere —
+meglio uno stato mancante che uno stato sbagliato sulla rosa di qualcuno.
+
+- **Dove sono le righe**: alla radice, oppure sotto `data`, `response`,
+  `results`, `items`, `rows`, `records` (anche annidati di un livello).
+- **Nome del calciatore**: `player.name` | `player` (stringa) | `name` |
+  `playerName` | `athlete.name`.
+- **Club**: `team.name` | `team` (stringa) | `club` | `teamName`.
+- **Stato**: `status` | `type` | `injuryStatus` | `availability` | `reason` |
+  `description`.
+- **Rientro previsto**: `expectedReturn` | `returnDate` | `until` (finisce nella
+  nota, non nella logica).
+- **Formazioni**: una riga per squadra con `startXI`/`starters`/`lineup` e
+  `substitutes`/`bench` (le voci possono essere oggetti o nomi nudi), **oppure**
+  una riga per calciatore con `isStarter` / `starting` / `startXI` /
+  `lineup: "start"`. Una riga senza nessuna delle due cose viene saltata: non si
+  dà del titolare a nessuno per esclusione.
+
+### Parole chiave → stato salvato (BSD)
+
+| Il testo dello stato contiene…                                        | Stato salvato                    |
+| --------------------------------------------------------------------- | -------------------------------- |
+| `squalif`, `suspen`, `sospen`, `ban`                                  | `suspended` (Squalificato)       |
+| `infort`, `injur`, `knock`, `strain`, `sprain`, `fracture`, `surgery` | `injured` (Infortunato)          |
+| `dubbio`, `doubt`, `question`, `probable`, `50-50`, `game-time`       | `doubtful` (In dubbio)           |
+| qualunque altro testo non vuoto                                       | `unavailable` (Indisponibile)    |
+| vuoto o illeggibile                                                   | **riga saltata** (non applicata) |
+
+L'ordine conta: una squalifica non è un infortunio anche se il testo cita
+entrambi. Fonte mostrata al manager: "Big Balls Sports Data".
+
+### Mappatura degli stati (API-Football)
+
+| Testo dell'API                                            | Stato salvato                 |
+| --------------------------------------------------------- | ----------------------------- |
+| `reason` contiene "Suspended", "Red Card", "Yellow Cards" | `suspended` (Squalificato)    |
+| `type` = "Questionable"                                   | `doubtful` (In dubbio)        |
+| `reason` contiene "Coach Decision", "National…"           | `unavailable` (Indisponibile) |
+| tutto il resto                                            | `injured` (Infortunato)       |
+
+Se lo stesso calciatore compare più volte (più partite), vince il più grave.
+
+## Diagnostica: "Mostra risposta grezza"
+
+Siccome dall'ambiente di sviluppo **non si raggiunge né bigballsdata.com né
+api-sports.io**, la forma vera del payload si scopre in produzione. Per farlo in
+un giro solo, in _Admin → Indisponibili_:
+
+1. spunta **"Modalità diagnostica"** accanto a **"Aggiorna adesso"** e premi il
+   pulsante: le risposte grezze vengono salvate anche se l'aggiornamento
+   riesce (dopo un errore vengono salvate comunque);
+2. apri **"Mostra risposta grezza"**: per ogni chiamata compaiono la capacità
+   (`injuries`/`fixtures`/`lineups`), l'URL, il codice HTTP e i **primi 1500
+   caratteri** del corpo, più l'elenco dei percorsi che hanno risposto;
+3. se i dati non arrivano, quel testo dice esattamente cosa correggere: i
+   candidati in `BSD_CANDIDATES` o i nomi dei campi in
+   `src/lib/availability/bsd.ts` (e le fixture in `tests/fixtures/bsd-*.json`).
+
+Dove finiscono: `league_settings.availability_last_samples`, **leggibile solo
+dall'admin** (la tabella ha una policy admin-only dalla M1) e scrivibile solo
+dal service role. Sono **al massimo 4 KB** in tutto e la chiave viene tolta
+prima del salvataggio (sostituzione esatta della chiave configurata, più una
+regex su `key=`, `token:`, `Bearer …` e su qualunque stringa opaca lunga).
+Il pannello mostra anche quante righe sono arrivate ma **non sono state
+leggibili**: se quel numero è alto, i nomi dei campi sono sbagliati.
 
 ## Cadenza
 
@@ -86,10 +196,11 @@ pannello e può caricare il file a mano.
 
 ## Abbinamento dei nomi
 
-L'API e il listone non hanno un id in comune: l'API dice "Lautaro Martinez ·
-Internazionale", il listone dice "Martinez Lau. · Inter".
+Nessun fornitore ha un id in comune con il listone: l'API dice "Lautaro
+Martinez · Internazionale", il listone dice "Martinez Lau. · Inter".
 
-1. Si guarda prima `external_player_map` (l'abbinamento già noto): se c'è, si usa.
+1. Si guarda prima `external_player_map` (l'abbinamento già noto, per fornitore):
+   se c'è, si usa.
 2. Altrimenti si prova il nome esatto (`NameMatcher`, normalizzato senza accenti
    né maiuscole), **verificando il club**; i nomi di club dell'API sono
    ricondotti a quelli del listone (Internazionale→Inter, AC Milan→Milan,
@@ -103,18 +214,8 @@ Internazionale", il listone dice "Martinez Lau. · Inter".
    `confirmed`: il feed non la tocca più).
 
 Meglio uno stato mancante che uno stato sbagliato sulla rosa di qualcuno.
-
-## Mappatura degli stati
-
-| Testo dell'API                                            | Stato salvato                 |
-| --------------------------------------------------------- | ----------------------------- |
-| `reason` contiene "Suspended", "Red Card", "Yellow Cards" | `suspended` (Squalificato)    |
-| `type` = "Questionable"                                   | `doubtful` (In dubbio)        |
-| `reason` contiene "Coach Decision", "National…"           | `unavailable` (Indisponibile) |
-| tutto il resto                                            | `injured` (Infortunato)       |
-
-Se lo stesso calciatore compare più volte (più partite), vince il più grave.
-La nota mostrata è il `reason` originale. Fonte: "API-Football".
+Nota: gli abbinamenti sono **per fornitore**, quindi cambiando fornitore
+l'elenco "Nomi da abbinare" riparte da zero.
 
 ## Il manuale batte il feed
 
@@ -125,33 +226,51 @@ spariscono quando l'API smette di segnalarle — ma **solo se la chiamata è
 riuscita**: dopo un errore non si cancella niente, altrimenti un guasto del
 fornitore si leggerebbe come "sono guariti tutti".
 
-## Senza chiave (o con chiave sbagliata)
+## Senza chiave, o quando il fornitore non risponde (fallback garantito)
 
-- **`API_FOOTBALL_KEY` assente**: il feed è semplicemente spento. Nessuna
-  chiamata di rete, nessun errore, il pulsante "Aggiorna adesso" lo dice e
-  restano gli stati manuali, che funzionano esattamente come prima.
-- **Chiave sbagliata, quota finita, stagione non coperta**: la chiamata
-  fallisce, il messaggio dell'API compare **alla lettera** nel pannello admin,
-  nessuna riga viene toccata (niente cancellazioni) e l'esecuzione successiva
+- **Nessuna chiave configurata**: il feed è semplicemente spento. Nessuna
+  chiamata di rete, nessun errore; il pannello lo dice indicando **quale**
+  variabile manca e restano gli stati manuali, che funzionano esattamente come
+  prima. Questo è il percorso garantito: la lega può vivere tutta la stagione di
+  soli stati manuali.
+- **Chiave sbagliata, quota finita, endpoint sbagliato**: la chiamata fallisce,
+  il messaggio del fornitore compare **alla lettera** nel pannello, la risposta
+  grezza viene salvata, nessuna riga viene toccata e l'esecuzione successiva
   riprova.
 - **`SUPABASE_SERVICE_ROLE_KEY` assente**: `sync_availability` è riservata al
   service role, quindi il feed non scrive; il pannello lo segnala.
 
-## Da verificare in produzione
+## Da verificare in produzione (BSD)
 
-Dall'ambiente di sviluppo `api-sports.io` **non è raggiungibile** (proxy di
-rete): il codice è stato scritto e testato su fixture scritte a mano seguendo la
-documentazione v3 (`tests/fixtures/api-football-*.json`). Alla prima esecuzione
-vera, in Admin → Indisponibili, l'admin deve controllare:
+Nessuna di queste cose ha potuto essere verificata: **tutto quanto segue è una
+ipotesi** scritta leggendo l'interfaccia tipica di questi servizi, e il codice è
+stato testato su fixture scritte a mano (`tests/fixtures/bsd-*.json`).
+Al primo aggiornamento vero, con la **modalità diagnostica** accesa, l'admin
+deve controllare:
 
-1. che `errors` sia vuoto (altrimenti il messaggio dice cosa manca: chiave,
-   piano, stagione);
-2. che la stagione **2026** sia coperta dal piano gratuito (alcuni piani
-   gratuiti coprono solo stagioni passate: in quel caso si imposta
-   `API_FOOTBALL_SEASON`);
-3. che i nomi dei club dell'API siano quelli previsti (l'elenco "Nomi da
-   abbinare" pieno di giocatori di un solo club = alias di club mancante);
-4. che `/injuries` restituisca davvero righe per la Serie A (su alcuni piani
-   l'endpoint è vuoto: in quel caso restano le formazioni e gli stati manuali);
-5. che `x-ratelimit-requests-remaining` scenda come previsto e non si avvicini
-   a zero (in quel caso allungare l'intervallo del job).
+1. **l'indirizzo base** `https://api.bigballsdata.com` (altrimenti `BSD_BASE_URL`);
+2. **come si autentica**: `Authorization: Bearer` oppure `x-api-key` (ne mandiamo
+   due, ma se il servizio vuole la chiave in query string va cambiato il codice);
+3. **il percorso giusto** fra i candidati: se nessuno risponde, l'errore elenca
+   gli stati provati e il percorso vero si legge dalla documentazione del
+   fornitore;
+4. **come si chiama la Serie A** (`BSD_LEAGUE`: slug `serie-a`, altro slug, o un
+   id numerico) e se serve anche la stagione;
+5. **i nomi dei campi** di ogni riga (calciatore, club, stato, rientro) e il
+   punto in cui stanno le righe nel payload;
+6. **il vocabolario degli stati**: le parole vere vanno aggiunte alla tabella
+   qui sopra, altrimenti tutto finisce in `unavailable`;
+7. **l'id esterno**: se le righe non hanno un id numerico per calciatore
+   l'abbinamento manuale non è possibile (il pannello lo dice riga per riga) e
+   restano solo i nomi;
+8. **le formazioni**: se l'endpoint non esiste sul piano gratuito, restano gli
+   indisponibili e gli stati manuali;
+9. **la quota**: quale header dichiara le richieste residue e che non si
+   avvicini a zero (in quel caso allungare l'intervallo del job).
+
+## Da verificare in produzione (API-Football)
+
+Da usare solo se si passa a un piano a pagamento: il piano gratuito risponde
+"Free plans do not have access to this season". In quel caso valgono i controlli
+di sempre: `errors` vuoto, stagione coperta, nomi dei club previsti, `/injuries`
+non vuoto, `x-ratelimit-requests-remaining` che scende come previsto.

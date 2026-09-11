@@ -1,6 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { supabaseAvailabilityDb } from "@/lib/availability/db";
-import { availabilityProviderFromEnv } from "@/lib/availability/provider";
+import { availabilityProviderWithEndpoints, supabaseAvailabilityDb } from "@/lib/availability/db";
 import { runAvailabilitySync } from "@/lib/availability/run";
 import { createServiceClient } from "@/lib/supabase/service";
 
@@ -13,8 +12,9 @@ export const maxDuration = 60;
  * supabase/deploy/updates/2026-09-11-availability-cron.sql); the app's own
  * page loads are the fallback (src/lib/availability/refresh.ts).
  *
- * At most 3 API requests per run: injuries, next fixtures, and the lineups of
- * the fixture about to kick off (skipped when none is).
+ * Three calls per run: injuries, next fixtures, and the lineups of the fixture
+ * about to kick off (skipped when none is). The BSD provider may spend a few
+ * more the first time, while it looks for the right paths (docs/SYNC.md).
  */
 /**
  * Two ways in: the Vercel CRON_SECRET, or the token the database generates for
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
     const outcome = await runAvailabilitySync(
-      availabilityProviderFromEnv(),
+      await availabilityProviderWithEndpoints(supabase),
       supabaseAvailabilityDb(supabase),
       (m) => logs.push(m),
     );

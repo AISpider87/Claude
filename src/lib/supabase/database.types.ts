@@ -410,6 +410,11 @@ export type Database = {
       };
       sync_availability: { Args: { p_payload: Json }; Returns: Json };
       claim_availability_refresh: { Args: { p_max_age_seconds?: number }; Returns: boolean };
+      availability_endpoints: { Args: Record<string, never>; Returns: Json };
+      save_availability_diagnostics: {
+        Args: { p_provider: string; p_endpoints?: Json; p_samples?: Json };
+        Returns: undefined;
+      };
       admin_external_map: { Args: { p_provider?: string }; Returns: ExternalMapEntry[] };
       admin_confirm_player_map: {
         Args: {

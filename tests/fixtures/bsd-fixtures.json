@@ -1,0 +1,20 @@
+{
+  "_comment": "Upcoming fixtures. `items` wrapper, ISO kick-offs, status as free text.",
+  "items": [
+    {
+      "id": 1208002,
+      "kickoff": "2026-09-12T16:00:00+00:00",
+      "status": "NS",
+      "home": { "name": "Inter" },
+      "away": { "name": "Napoli" }
+    },
+    {
+      "id": 1208003,
+      "kickoff": "2026-09-12T18:45:00+00:00",
+      "status": "NS",
+      "home": { "name": "Roma" },
+      "away": { "name": "Milan" }
+    },
+    { "id": null, "kickoff": "boh", "home": { "name": "?" }, "away": { "name": "?" } }
+  ]
+}

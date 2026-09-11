@@ -12,7 +12,7 @@ import { listPlayerStatuses, STATUS_LABEL } from "@/lib/players/status";
 import { fetchAll } from "@/lib/supabase/fetch-all";
 import { createClient } from "@/lib/supabase/server";
 import { publicEnv } from "@/lib/env";
-import { CronSql, MapRowForm, RunFeedButton, type UnmatchedRow } from "./feed-panel";
+import { CronSql, MapRowForm, RawSamples, RunFeedButton, type UnmatchedRow } from "./feed-panel";
 import { ClearStatusButton, StatusForm } from "./status-form";
 
 export const metadata = { title: "Indisponibili" };
@@ -80,7 +80,7 @@ export default async function AdminPlayerStatusPage() {
       <div className="flex flex-col gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Feed automatico (API-Football)</CardTitle>
+            <CardTitle>Feed automatico ({feed.providerLabel})</CardTitle>
             <CardDescription>
               Ogni 15 minuti il feed aggiorna indisponibili e formazioni ufficiali. Gli stati che
               scrivi tu a mano non vengono mai sovrascritti:{" "}
@@ -92,8 +92,17 @@ export default async function AdminPlayerStatusPage() {
           <CardContent className="flex flex-col gap-4">
             {!feed.configured && (
               <FormMessage tone="info">
-                Nessuna chiave <code>API_FOOTBALL_KEY</code> configurata su questo ambiente: il feed
-                è spento e restano solo gli stati manuali.
+                {feed.keyVar ? (
+                  <>
+                    Nessuna chiave <code>{feed.keyVar}</code> configurata su questo ambiente: il
+                    feed è spento e restano solo gli stati manuali.
+                  </>
+                ) : (
+                  <>
+                    Nessun fornitore configurato (<code>AVAILABILITY_PROVIDER</code>,{" "}
+                    <code>BSD_API_KEY</code>): il feed è spento e restano solo gli stati manuali.
+                  </>
+                )}
               </FormMessage>
             )}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -107,7 +116,10 @@ export default async function AdminPlayerStatusPage() {
                 value={runStatus ? (RUN_LABEL[runStatus] ?? runStatus) : "—"}
                 tone={runStatus === "ok" ? "primary" : runStatus ? "danger" : "neutral"}
               />
-              <Stat label="Richieste API" value={`${formatInt(run?.requests ?? 0)}/3`} />
+              <Stat
+                label="Richieste API"
+                value={`${formatInt(run?.requests ?? 0)}/${formatInt(run?.requests_max ?? 3)}`}
+              />
               <Stat label="Stati dal feed" value={formatInt(run?.statuses_applied ?? 0)} />
               <Stat
                 label="Stati manuali tenuti"
@@ -128,6 +140,12 @@ export default async function AdminPlayerStatusPage() {
                 {formatInt(run.rate_limit_remaining)}.
               </p>
             )}
+            {(run?.unparsed ?? 0) > 0 && (
+              <p className="text-muted text-sm">
+                {formatInt(run?.unparsed ?? 0)} righe ricevute ma non leggibili (nome o stato in un
+                campo che non conosciamo): guarda la risposta grezza qui sotto.
+              </p>
+            )}
             {errors.length > 0 && (
               <div className="flex flex-col gap-1">
                 <p className="text-danger text-sm font-semibold">
@@ -143,6 +161,11 @@ export default async function AdminPlayerStatusPage() {
               </div>
             )}
             <RunFeedButton disabled={!feed.configured} />
+            <RawSamples
+              samples={feed.samples?.samples ?? []}
+              savedAt={feed.samples?.savedAt ? formatDateTime(feed.samples.savedAt) : null}
+              endpoints={feed.endpoints}
+            />
           </CardContent>
         </Card>
 
@@ -199,7 +222,7 @@ select cron.schedule(
                   key={`${row.externalId ?? "?"}-${row.name}`}
                   row={row}
                   players={playerOptions}
-                  provider={API_FOOTBALL_PROVIDER}
+                  provider={feed.provider ?? API_FOOTBALL_PROVIDER}
                 />
               ))}
             </CardContent>
