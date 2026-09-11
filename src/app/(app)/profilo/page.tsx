@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { requireUser } from "@/lib/auth/dal";
 import { SignOutButton } from "./sign-out-button";
 import { InstallHint } from "./install-hint";
+import { ReplayIntroButton } from "./replay-intro";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 export const metadata = { title: "Profilo" };
@@ -28,6 +29,7 @@ export default async function ProfiloPage() {
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <SignOutButton />
               <ThemeToggle showLabel className="border-line border" />
+              <ReplayIntroButton />
             </div>
           </CardContent>
         </Card>

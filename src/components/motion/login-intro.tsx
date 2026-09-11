@@ -61,6 +61,16 @@ function disarm() {
   for (const listener of listeners) listener();
 }
 
+/**
+ * Plays the cinematic on demand — the "rivedi" button in Profilo. Useful to
+ * show it to someone without signing out, and to check it after a deploy.
+ */
+export function replayIntro() {
+  armed = true;
+  document.documentElement.classList.add(INTRO_CLASS);
+  for (const listener of listeners) listener();
+}
+
 /** `prefers-reduced-motion`, without pulling a motion library into the shell. */
 function usePrefersReducedMotion(): boolean {
   const [reduced, setReduced] = useState(false);
