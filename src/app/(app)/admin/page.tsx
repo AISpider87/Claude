@@ -7,6 +7,7 @@ import {
   Repeat,
   ScrollText,
   Settings,
+  Stethoscope,
   UserCog,
   Users,
 } from "lucide-react";
@@ -43,6 +44,13 @@ const SECTIONS = [
     icon: ScrollText,
     title: "Registro operazioni",
     description: "Tutte le operazioni della lega; annullamento con motivazione.",
+    ready: true,
+  },
+  {
+    href: "/admin/indisponibili",
+    icon: Stethoscope,
+    title: "Indisponibili",
+    description: "Infortunati, squalificati e in dubbio, con la fonte della notizia.",
     ready: true,
   },
   {

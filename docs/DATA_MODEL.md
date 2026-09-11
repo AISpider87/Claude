@@ -83,6 +83,14 @@ un trigger `forbid_change` che blocca anche le funzioni security definer.
 (20), `session_extra_budget` (5), `sale_price_rule` ("current_quotation"),
 `free_swap_refund_rule` ("price_paid"), `sync_enabled`, `sync_hour`.
 
+### player_status
+
+`player_id int PK → players`, `kind check (injured|doubtful|suspended|unavailable)`,
+`note`, `source_name`, `source_url` (solo `http(s)://`), `updated_by`, `updated_at`.
+Solo righe "non disponibile": lo stato "ok" cancella la riga. Lettura per tutti i
+membri; scrittura via `admin_set_player_status(player, kind, note, source_name,
+source_url)` (admin, audit) o `private.set_player_status(...)` per un futuro sync.
+
 ### audit_log
 
 `id`, `user_id null`, `action`, `entity`, `entity_id`, `payload jsonb`,

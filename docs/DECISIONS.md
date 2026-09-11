@@ -283,3 +283,16 @@ listone,operazioni}`) con exceljs, letture paginate (`fetchAll`) sotto la
   aperta" dopo il lock delle squadre; email di chiusura conta le operazioni v2;
   scelte "fuori lista" dell'import validate riga per riga. Migrazione
   `20260909230000`.
+- 2026-09-11 · **Stato di disponibilità dei calciatori con fonte** (richiesta
+  dell'admin: "infortunato, con la notizia e la fonte"): tabella
+  `player_status` scritta a mano dall'admin da _Admin → Indisponibili_, letta
+  da tutti, mostrata nella rosa con link alla fonte e data. Fonte automatica
+  rinviata: Fantacalcio.it (pagina indisponibili) richiede la verifica di
+  robots/termini d'uso dal computer dell'admin (la rete di sviluppo blocca il
+  dominio); API-Football ha un piano gratuito con endpoint `injuries` ma
+  richiede un account e va verificata la copertura della stagione corrente.
+  Entrambe passeranno da `private.set_player_status` come sorgente pluggable.
+  Migrazione `20260909230000`.
+- 2026-09-11 · **Avatar v1 rivisti su feedback dell'admin**: mezzo busto senza
+  pallone, più dettaglio; mostrati solo nella rosa del manager (dove si fanno
+  svincoli e acquisti), non nel listone. In corso.

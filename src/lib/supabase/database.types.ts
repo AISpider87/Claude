@@ -41,6 +41,17 @@ type ProfileRow = {
   updated_at: string;
 };
 
+export type PlayerStatusKind = "injured" | "doubtful" | "suspended" | "unavailable";
+type PlayerStatusRow = {
+  player_id: number;
+  kind: PlayerStatusKind;
+  note: string | null;
+  source_name: string | null;
+  source_url: string | null;
+  updated_by: string | null;
+  updated_at: string;
+};
+
 type NotificationRow = {
   id: string;
   kind: string;
@@ -225,6 +236,7 @@ export type Database = {
       transactions: ReadOnlyTable<TransactionRow>;
       audit_log: ReadOnlyTable<AuditLogRow>;
       notifications: ReadOnlyTable<NotificationRow>;
+      player_status: ReadOnlyTable<PlayerStatusRow>;
     };
     Views: {
       free_agents: { Row: PlayerRow; Relationships: [] };
@@ -344,6 +356,16 @@ export type Database = {
         Returns: { email: string; display_name: string }[];
       };
       admin_audit_log: { Args: { p_limit?: number }; Returns: AuditEntryRow[] };
+      admin_set_player_status: {
+        Args: {
+          p_player_id: number;
+          p_kind: PlayerStatusKind | "ok";
+          p_note?: string | null;
+          p_source_name?: string | null;
+          p_source_url?: string | null;
+        };
+        Returns: undefined;
+      };
       log_notification: {
         Args: {
           p_kind: string;
@@ -371,5 +393,6 @@ export type MarketSession = Tables<"market_sessions">;
 export type RosterPlayer = Tables<"roster_players">;
 export type Transaction = Tables<"transactions">;
 export type Notification = Tables<"notifications">;
+export type PlayerAvailability = Tables<"player_status">;
 export type AdminUser = AdminUserRow;
 export type AuditEntry = AuditEntryRow;

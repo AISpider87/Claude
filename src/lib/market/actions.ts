@@ -245,7 +245,11 @@ export async function openSession(_prev: FormState, formData: FormData): Promise
   const supabase = await createClient();
   const { error } = await supabase.rpc("open_market_session", { p_id: parsed.data.id });
   if (error)
-    return { status: "error", message: marketMessage(error.message, "Apertura non riuscita.") };
+    return {
+      status: "error",
+      // admin-only action: the raw database code helps diagnose an unexpected failure
+      message: marketMessage(error.message, `Apertura non riuscita (${error.message}).`),
+    };
   after(() => notifySessionOpened(parsed.data.id));
   revalidatePath("/admin/sessioni");
   revalidatePath("/mercato");
@@ -263,7 +267,10 @@ export async function closeSession(_prev: FormState, formData: FormData): Promis
   const supabase = await createClient();
   const { error } = await supabase.rpc("close_market_session", { p_id: parsed.data.id });
   if (error)
-    return { status: "error", message: marketMessage(error.message, "Chiusura non riuscita.") };
+    return {
+      status: "error",
+      message: marketMessage(error.message, `Chiusura non riuscita (${error.message}).`),
+    };
   after(() => notifySessionClosed(parsed.data.id));
   revalidatePath("/admin/sessioni");
   revalidatePath("/mercato");

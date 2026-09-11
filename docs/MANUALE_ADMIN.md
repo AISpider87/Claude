@@ -162,6 +162,26 @@ per leggere l'errore):
 3. Se fallisce per più giorni, disattiva il sync per non riempire il log e
    resta sul manuale; il keep-alive del database continua comunque.
 
+### 3.5 Indisponibili (infortunati, squalificati, in dubbio)
+
+Dove: **Admin → Indisponibili**. Serve a mostrare nella rosa di ogni manager
+lo stato dei suoi calciatori, con la fonte della notizia.
+
+1. **Segna un calciatore**: scegli il nome dal listone, lo **Stato**
+   (Infortunato, In dubbio, Squalificato, Indisponibile), una **Nota**
+   facoltativa (es. "rientro a ottobre"), la **Fonte** (es. Fantacalcio.it) e
+   il **Link alla fonte** (deve iniziare con `https://`). **Salva stato**.
+2. Nella tabella **Stati attivi** vedi tutti i segnati; **Disponibile** toglie
+   lo stato. Gli stati **non scadono da soli**: aggiornali quando il
+   calciatore rientra.
+3. I manager vedono lo stato accanto al calciatore nella propria rosa e nel
+   mercato, con "fonte: … ↗" e la data dell'aggiornamento. Ogni modifica è
+   nell'audit log (`player.status`).
+
+Fonte automatica: prevista come sorgente collegabile (stesso schema del sync
+quotazioni), da attivare solo dopo aver verificato termini d'uso o piano
+gratuito del fornitore; finché non c'è, l'aggiornamento è manuale.
+
 ## 4. Import delle rose (export "Rose" di Leghe Fantacalcio)
 
 Dove: **Admin → Squadre e rose → Importa le rose**.

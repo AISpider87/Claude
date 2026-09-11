@@ -1,4 +1,4 @@
--- SuperLega — aggiornamento del 2026-09-10 (sessioni automatiche, mercato v2, privacy rose, correzioni della security review).
+-- SuperLega — aggiornamento del 2026-09-10/11 (sessioni automatiche, mercato v2, privacy rose, indisponibili).
 -- Per chi ha già eseguito schema.sql e la migrazione 20260909190000: incollare nello SQL Editor e premere Run UNA volta.
 
 -- ===== 20260909200000_session_autopilot.sql =====
@@ -662,124 +662,67 @@ as $$
   end;
 $$;
 
--- ===== 20260909230000_market_v2_fixes.sql =====
--- Security review of market v2 / session autopilot (2026-09-10):
--- H1 the DB-side market throttle must count the v2 operation kinds;
--- M1 automatic transitions are attributed to nobody (user_id null, source 'auto'),
---    not to the manager whose page load triggered them;
--- L1 re-check the single-open rule after taking the teams lock.
+-- ===== 20260909230000_player_status.sql =====
+-- Player availability (injured, doubtful, suspended, unavailable) with its source.
+-- Written by the admin by hand today; a sync job may fill it later through the
+-- same private function. Only non-"ok" rows are stored: clearing = delete.
 
-create or replace function private.check_market_throttle(p_team_id uuid)
-returns void
-language plpgsql
-set search_path = public, pg_temp
-as $$
-declare
-  v_max integer := private.setting_int('market_ops_per_minute', 5);
-begin
-  if (select count(*) from public.transactions
-      where team_id = p_team_id
-        and kind in ('swap', 'free_swap', 'sell', 'buy', 'free_release')
-        and created_at > now() - interval '1 minute') >= v_max then
-    raise exception 'RATE_LIMITED' using errcode = '54000';
-  end if;
-end;
-$$;
-revoke all on function private.check_market_throttle(uuid) from public;
+create table public.player_status (
+  player_id integer primary key references public.players (id) on delete cascade,
+  kind text not null check (kind in ('injured', 'doubtful', 'suspended', 'unavailable')),
+  note text,
+  source_name text,
+  source_url text check (source_url is null or source_url ~ '^https?://'),
+  updated_by uuid references auth.users (id) on delete set null,
+  updated_at timestamptz not null default now()
+);
+alter table public.player_status enable row level security;
+revoke all on public.player_status from anon, authenticated;
+grant select on public.player_status to authenticated;
+create policy "player_status: members read" on public.player_status for select to authenticated
+  using (private.is_league_member());
 
--- audit with an explicit actor (null = the system)
-create or replace function private.audit_as(
-  p_user uuid, p_action text, p_entity text default null, p_entity_id text default null, p_payload jsonb default null
+create or replace function private.set_player_status(
+  p_player_id integer, p_kind text, p_note text, p_source_name text, p_source_url text
 ) returns void
-language sql security definer
-set search_path = public, pg_temp
-as $$
-  insert into public.audit_log (user_id, action, entity, entity_id, payload)
-  values (p_user, p_action, p_entity, p_entity_id, p_payload);
-$$;
-revoke all on function private.audit_as(uuid, text, text, text, jsonb) from public;
-
-create or replace function private.open_session(p_id uuid, p_source text)
-returns void
 language plpgsql
 set search_path = public, pg_temp
 as $$
-declare
-  v_session public.market_sessions%rowtype;
-  v_free integer;
-  v_actor uuid := case when p_source = 'auto' then null else auth.uid() end;
 begin
-  select * into v_session from public.market_sessions where id = p_id for update;
-  if not found then
-    raise exception 'SESSION_NOT_FOUND' using errcode = 'P0002';
+  if not exists (select 1 from public.players where id = p_player_id) then
+    raise exception 'PLAYER_NOT_FOUND' using errcode = 'P0002';
   end if;
-  if v_session.status <> 'scheduled' then
-    raise exception 'SESSION_NOT_SCHEDULED' using errcode = '55000';
+  if p_kind = 'ok' then
+    delete from public.player_status where player_id = p_player_id;
+    return;
   end if;
-  if exists (select 1 from public.market_sessions where status = 'open') then
-    raise exception 'ANOTHER_SESSION_OPEN' using errcode = '55000';
+  if p_kind not in ('injured', 'doubtful', 'suspended', 'unavailable') then
+    raise exception 'INVALID_STATUS' using errcode = '22023';
   end if;
-  if v_session.closes_at <= now() then
-    raise exception 'SESSION_ALREADY_EXPIRED' using errcode = '55000';
-  end if;
-
-  -- lock every team so the +5 and the snapshot happen against a quiet ledger,
-  -- then re-check: a concurrent open may have won the race meanwhile
-  perform 1 from public.teams for update;
-  if exists (select 1 from public.market_sessions where status = 'open') then
-    raise exception 'ANOTHER_SESSION_OPEN' using errcode = '55000';
-  end if;
-
-  insert into public.session_free_agents (session_id, player_id)
-  select p_id, id from public.free_agents
-  on conflict do nothing;
-  select count(*) into v_free from public.session_free_agents where session_id = p_id;
-
-  if not v_session.extra_budget_applied and v_session.extra_budget > 0 then
-    update public.teams set credits = credits + v_session.extra_budget;
-    insert into public.transactions (team_id, session_id, kind, credits_delta, note, created_by)
-    select id, p_id, 'admin_credits', v_session.extra_budget, 'Budget extra apertura sessione', v_actor
-    from public.teams;
-  end if;
-
-  update public.market_sessions
-  set status = 'open', opened_at = now(), extra_budget_applied = true,
-      opens_at = least(opens_at, now())
-  where id = p_id;
-
-  perform private.audit_as(v_actor, 'session.open', 'market_sessions', p_id::text,
-    jsonb_build_object('free_agents', v_free, 'extra_budget', v_session.extra_budget, 'source', p_source));
+  insert into public.player_status (player_id, kind, note, source_name, source_url, updated_by, updated_at)
+  values (p_player_id, p_kind, left(nullif(trim(p_note), ''), 200), left(nullif(trim(p_source_name), ''), 60),
+          nullif(trim(p_source_url), ''), auth.uid(), now())
+  on conflict (player_id) do update
+    set kind = excluded.kind, note = excluded.note, source_name = excluded.source_name,
+        source_url = excluded.source_url, updated_by = excluded.updated_by, updated_at = now();
 end;
 $$;
-revoke all on function private.open_session(uuid, text) from public;
+revoke all on function private.set_player_status(integer, text, text, text, text) from public;
 
-create or replace function private.close_session(p_id uuid, p_source text)
-returns jsonb
-language plpgsql
+create or replace function public.admin_set_player_status(
+  p_player_id integer, p_kind text, p_note text default null,
+  p_source_name text default null, p_source_url text default null
+) returns void
+language plpgsql security definer
 set search_path = public, pg_temp
 as $$
-declare
-  v_status text;
-  v_report jsonb;
-  v_actor uuid := case when p_source = 'auto' then null else auth.uid() end;
 begin
-  select status into v_status from public.market_sessions where id = p_id for update;
-  if not found then
-    raise exception 'SESSION_NOT_FOUND' using errcode = 'P0002';
-  end if;
-  if v_status <> 'open' then
-    raise exception 'SESSION_NOT_OPEN' using errcode = '55000';
-  end if;
-  v_report := private.rosters_report();
-  update public.market_sessions
-  set status = 'closed', closed_at = now(),
-      closes_at = greatest(least(closes_at, now()), opens_at + interval '1 second'),
-      validation_report = v_report
-  where id = p_id;
-  perform private.audit_as(v_actor, 'session.close', 'market_sessions', p_id::text,
-    jsonb_build_object('invalid', v_report -> 'invalid', 'source', p_source));
-  return v_report;
+  perform private.require_admin();
+  perform private.set_player_status(p_player_id, p_kind, p_note, p_source_name, p_source_url);
+  perform private.audit('player.status', 'players', p_player_id::text,
+    jsonb_build_object('kind', p_kind, 'source', p_source_name));
 end;
 $$;
-revoke all on function private.close_session(uuid, text) from public;
+revoke all on function public.admin_set_player_status(integer, text, text, text, text) from public, anon;
+grant execute on function public.admin_set_player_status(integer, text, text, text, text) to authenticated;
 

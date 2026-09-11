@@ -16,6 +16,8 @@ const ADMIN_MESSAGES: Record<string, string> = {
   USER_NOT_FOUND: "Utente non trovato.",
   INVALID_ROLE: "Ruolo non valido.",
   INVALID_SETTING: "Valore non valido per questa impostazione.",
+  INVALID_STATUS: "Stato non valido.",
+  PLAYER_NOT_FOUND: "Calciatore non trovato nel listone.",
   UNKNOWN_SETTING: "Impostazione sconosciuta.",
   RATE_LIMITED: "Troppe modifiche in poco tempo: riprova tra un minuto.",
   FORBIDDEN: "Operazione riservata all'admin.",
@@ -188,4 +190,52 @@ export async function setLeagueCode(_prev: FormState, formData: FormData): Promi
     return { status: "error", message: adminMessage(error.message, "Salvataggio non riuscito.") };
   revalidatePath("/admin/impostazioni");
   return { status: "success", message: "Codice lega aggiornato: comunicalo ai nuovi iscritti." };
+}
+
+// ---------------------------------------------------------------------------
+// player availability (injured, doubtful, suspended, unavailable)
+// ---------------------------------------------------------------------------
+const playerStatusSchema = z.object({
+  playerId: z.coerce
+    .number()
+    .int()
+    .refine((n) => n !== 0, { error: "Scegli un calciatore dal listone." }),
+  kind: z.enum(["injured", "doubtful", "suspended", "unavailable", "ok"]),
+  note: z.string().trim().max(200, { error: "Massimo 200 caratteri." }).optional(),
+  sourceName: z.string().trim().max(60, { error: "Massimo 60 caratteri." }).optional(),
+  sourceUrl: z
+    .union([z.literal(""), z.url({ error: "Indirizzo non valido (deve iniziare con https://)." })])
+    .optional(),
+});
+
+export async function setPlayerStatus(_prev: FormState, formData: FormData): Promise<FormState> {
+  await requireAdmin();
+  const limited = await throttle();
+  if (limited) return { status: "error", message: limited };
+  const parsed = playerStatusSchema.safeParse({
+    playerId: formData.get("playerId"),
+    kind: formData.get("kind"),
+    note: formData.get("note") ?? "",
+    sourceName: formData.get("sourceName") ?? "",
+    sourceUrl: formData.get("sourceUrl") ?? "",
+  });
+  if (!parsed.success) return { status: "error", errors: fieldErrors(parsed.error) };
+  const d = parsed.data;
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("admin_set_player_status", {
+    p_player_id: d.playerId,
+    p_kind: d.kind,
+    p_note: d.note || null,
+    p_source_name: d.sourceName || null,
+    p_source_url: d.sourceUrl || null,
+  });
+  if (error)
+    return { status: "error", message: adminMessage(error.message, "Salvataggio non riuscito.") };
+  revalidatePath("/admin/indisponibili");
+  revalidatePath("/rosa");
+  revalidatePath("/mercato");
+  return {
+    status: "success",
+    message: d.kind === "ok" ? "Stato rimosso: il calciatore torna disponibile." : "Stato salvato.",
+  };
 }

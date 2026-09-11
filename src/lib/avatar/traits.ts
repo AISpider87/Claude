@@ -21,12 +21,20 @@ export const HAIR_STYLES = [
 export const HAIR_COLORS = ["black", "brown", "blond", "red", "grey", "white"] as const;
 export const BEARDS = ["none", "stubble", "full", "goatee"] as const;
 export const EXPRESSIONS = ["neutral", "smile", "focus"] as const;
+export const EYEBROWS = ["thin", "thick"] as const;
+/** Volume of the hair on top: how far the cap rises above the head. */
+export const HAIR_LENGTHS = ["short", "medium", "long"] as const;
+/** Undertone of the skin, a subtle hue shift over the base tone. */
+export const SKIN_SHADES = ["warm", "neutral", "cool"] as const;
 
 export type SkinTone = (typeof SKIN_TONES)[number];
 export type HairStyle = (typeof HAIR_STYLES)[number];
 export type HairColor = (typeof HAIR_COLORS)[number];
 export type Beard = (typeof BEARDS)[number];
 export type Expression = (typeof EXPRESSIONS)[number];
+export type Eyebrows = (typeof EYEBROWS)[number];
+export type HairLength = (typeof HAIR_LENGTHS)[number];
+export type SkinShade = (typeof SKIN_SHADES)[number];
 
 export interface PlayerTraits {
   skin: SkinTone;
@@ -36,6 +44,9 @@ export interface PlayerTraits {
   glasses?: boolean;
   headband?: boolean;
   expression: Expression;
+  eyebrows: Eyebrows;
+  hairLength: HairLength;
+  skinShade: SkinShade;
 }
 
 const traitsPartialSchema = z.object({
@@ -53,6 +64,9 @@ const traitsPartialSchema = z.object({
   glasses: z.boolean(),
   headband: z.boolean(),
   expression: z.enum(EXPRESSIONS),
+  eyebrows: z.enum(EYEBROWS),
+  hairLength: z.enum(HAIR_LENGTHS),
+  skinShade: z.enum(SKIN_SHADES),
 });
 
 /** One entry of `player-traits.json`, keyed by Fantacalcio id. */
@@ -137,6 +151,16 @@ const EXPRESSION_WEIGHTS: readonly (readonly [Expression, number])[] = [
   ["smile", 35],
   ["focus", 25],
 ];
+const HAIR_LENGTH_WEIGHTS: readonly (readonly [HairLength, number])[] = [
+  ["short", 50],
+  ["medium", 38],
+  ["long", 12],
+];
+const SKIN_SHADE_WEIGHTS: readonly (readonly [SkinShade, number])[] = [
+  ["warm", 40],
+  ["neutral", 40],
+  ["cool", 20],
+];
 
 /** Deterministic default face for a player: same id + name → same traits. */
 export function defaultTraits(playerId: number, name: string): PlayerTraits {
@@ -150,7 +174,20 @@ export function defaultTraits(playerId: number, name: string): PlayerTraits {
   const glasses = next() < 0.03;
   const headband = next() < 0.05;
   const expression = weighted(next, EXPRESSION_WEIGHTS);
-  const traits: PlayerTraits = { skin, hair, hairColor, beard, expression };
+  // New draws stay after the v1 ones so v1 faces are unchanged.
+  const eyebrows: Eyebrows = next() < 0.45 ? "thick" : "thin";
+  const hairLength = weighted(next, HAIR_LENGTH_WEIGHTS);
+  const skinShade = weighted(next, SKIN_SHADE_WEIGHTS);
+  const traits: PlayerTraits = {
+    skin,
+    hair,
+    hairColor,
+    beard,
+    expression,
+    eyebrows,
+    hairLength,
+    skinShade,
+  };
   if (glasses) traits.glasses = true;
   if (headband) traits.headband = true;
   return traits;
@@ -167,6 +204,9 @@ export function traitsFor(playerId: number, name: string): PlayerTraits {
     hairColor: o.hairColor ?? base.hairColor,
     beard: o.beard ?? base.beard,
     expression: o.expression ?? base.expression,
+    eyebrows: o.eyebrows ?? base.eyebrows,
+    hairLength: o.hairLength ?? base.hairLength,
+    skinShade: o.skinShade ?? base.skinShade,
     ...((o.glasses ?? base.glasses) ? { glasses: true } : {}),
     ...((o.headband ?? base.headband) ? { headband: true } : {}),
   };
