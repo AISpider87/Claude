@@ -391,3 +391,24 @@ listone,operazioni}`) con exceljs, letture paginate (`fetchAll`) sotto la
   riesce). Budget 12 richieste per esecuzione con BSD (2-3 a regime), 3 con
   API-Football. Migrazione `20260909290000`; ipotesi da verificare in produzione
   elencate in docs/SYNC.md.
+- 2026-09-11 · **Il feed BSD si configura da solo leggendo le rotte del
+  fornitore**: alla prima esecuzione vera la chiave funziona (93 richieste
+  residue dichiarate) ma **tutti i percorsi indovinati rispondono 404**, con un
+  corpo che dice dove guardare: _"Browse every endpoint at GET /v1/ or the
+  OpenAPI spec at GET /openapi.json"_. Invece di continuare a tirare a indovinare
+  (e di aspettare un altro giro di messaggi con l'admin), il provider legge quel
+  documento — OpenAPI o semplice elenco, in qualunque forma —, sceglie la rotta
+  di ogni capacità **per parole chiave** (`injur`, `fixture`/`match`/`schedule`,
+  `lineup`/`formation`…) e prende i **nomi dei parametri dal documento stesso**
+  (`league_id` invece di `league`, la stagione solo se dichiarata, il segnaposto
+  `{fixtureId}` riempito); se l'enum delle leghe non contiene il valore
+  configurato usa la voce che somiglia a "serie a" e lo scrive nel pannello.
+  Tutto viene messo in cache in `league_settings.availability_endpoints`
+  (chiave `routes`, retrocompatibile con i candidati già salvati): la scoperta
+  costa una richiesta la prima volta e zero dopo, e riparte da sola se una rotta
+  memorizzata comincia a rispondere 404. Budget per esecuzione 12 → **16**.
+  I candidati statici restano come rete di sicurezza se non c'è nessun elenco da
+  leggere. Il pannello admin mostra la riga "Rotte del fornitore" (quante
+  trovate, quali scelte, quali parole cercate invano) e le risposte grezze della
+  scoperta. Nessuna migrazione nuova: cambia solo il contenuto della chiave già
+  esistente.

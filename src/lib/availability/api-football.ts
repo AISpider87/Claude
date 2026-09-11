@@ -164,6 +164,8 @@ export function apiFootballProvider(key: string, opts: ApiFootballOptions = {}) 
       return unparsed;
     },
     lastSamples: () => samples.all(),
+    // Fixed paths, documented and stable: nothing to discover or to report.
+    notes: [],
     resolvedEndpoints: () => null,
 
     async injuries(): Promise<ProviderInjury[]> {

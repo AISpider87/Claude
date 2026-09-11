@@ -86,12 +86,37 @@ risposta grezza mostrata all'admin: viaggia solo negli header
 fornitore non è verificato, mandarli entrambi è innocuo;
 `x-apisports-key` per API-Football).
 
-## BSD: ricerca del percorso (candidati)
+## BSD: come si trova la rotta giusta
 
-I percorsi esatti dell'API BSD **non sono verificati** (il dominio non è
-raggiungibile dall'ambiente di sviluppo). Il provider prova quindi una piccola
-lista di candidati, **in ordine**, e si ferma al primo che risponde `200` con
-un JSON valido:
+I percorsi esatti dell'API BSD **non erano verificati** (il dominio non è
+raggiungibile dall'ambiente di sviluppo) e la prima esecuzione vera ha infatti
+risposto `404` a tutti i candidati — ma con un corpo utilissimo:
+
+```json
+{
+  "error": {
+    "code": "route_not_found",
+    "message": "No route: GET /v1/football/injuries?league=serie-a."
+  },
+  "suggested_fix": "No such route. Browse every endpoint at GET /v1/ or the OpenAPI spec at GET /openapi.json."
+}
+```
+
+È il fornitore stesso a dire dove sta l'elenco delle sue rotte. L'ordine dei
+tentativi, per ogni capacità, è quindi:
+
+1. **la rotta memorizzata** dall'ultima volta (`league_settings.availability_endpoints`);
+2. il **primo candidato statico** della lista qui sotto;
+3. **l'elenco delle rotte del fornitore**: `GET /openapi.json`, e se non
+   risponde `GET /v1/` (una sola volta per esecuzione, qualunque sia il numero
+   di capacità);
+4. la **rotta scelta** in quell'elenco per questa capacità;
+5. i **candidati statici rimanenti**, per il caso in cui non ci sia nessun
+   elenco da leggere.
+
+Al primo `200` con JSON valido ci si ferma.
+
+### Candidati statici
 
 | Capacità      | Candidati provati in ordine                                                                                              |
 | ------------- | ------------------------------------------------------------------------------------------------------------------------ |
@@ -99,18 +124,59 @@ un JSON valido:
 | calendario    | `/v1/football/fixtures?league=…&status=upcoming` · `/football/fixtures?league=…` · `/v1/soccer/fixtures?league=…`        |
 | formazioni    | `/v1/football/lineups?fixture=<id>` · `/football/fixtures/<id>/lineups` · `/v1/soccer/lineups?fixture=<id>`              |
 
-- Il candidato vincente viene scritto in `league_settings.availability_endpoints`
-  (`save_availability_diagnostics`, riservata al service role): **dalla
-  esecuzione successiva si va dritti a quello**, una richiesta per capacità.
-  Una sola lettura e al massimo una scrittura di impostazioni per esecuzione.
-- Se il percorso memorizzato smette di rispondere, gli altri candidati vengono
-  riprovati e il nuovo vincente sostituisce il vecchio.
-- Se **nessun** candidato risponde, l'esecuzione fallisce con
-  `endpoint non trovato` seguito dagli stati provati
-  (`/v1/football/injuries → HTTP 404 · …`), non viene cancellato nessuno stato
-  e le risposte grezze restano a disposizione dell'admin.
-- Budget: **12 richieste** per esecuzione con BSD (basta a provare tutti i
-  candidati la prima volta; a regime sono 2-3), **3** con API-Football.
+### Scelta della rotta nell'elenco
+
+`src/lib/availability/bsd-discovery.ts` trasforma il documento in un elenco
+piatto di rotte `GET` con i loro parametri. Sono accettati: un documento
+**OpenAPI** (oggetto `paths`), un array di stringhe (`"GET /v1/x"` o `"/v1/x"`),
+`{routes:[…]}`, `{endpoints:[…]}`, o un oggetto con i percorsi come chiavi.
+Formato non riconosciuto → nessuna scoperta, si torna ai candidati statici.
+
+Il punteggio di ogni rotta `GET`:
+
+| Capacità      | Parole cercate nel percorso                                         |
+| ------------- | ------------------------------------------------------------------- |
+| indisponibili | `injur`; in mancanza `unavailab`, `sideline`, `absence`, `absent`   |
+| calendario    | `fixture`, `match`, `schedule`; in mancanza `game`, `calendar`      |
+| formazioni    | `lineup`, `line-up`, `formation`, `squad`; poi `starting`, `eleven` |
+
+Bonus a chi contiene anche `football`/`soccer` o dichiara un parametro di lega;
+malus ai percorsi con segnaposto `{…}` (per le formazioni invece un segnaposto
+tipo `{fixtureId}` è **richiesto**: senza, la rotta non saprebbe di quale partita
+parlare e viene scartata). Le rotte non `GET` non vengono mai scelte.
+
+### Nomi dei parametri (dal documento, non indovinati)
+
+| Il nostro concetto | Primo nome dichiarato fra                                                                |
+| ------------------ | ---------------------------------------------------------------------------------------- |
+| lega               | `league`, `league_id`, `leagueId`, `competition`, `competition_id`, `tournament`, `slug` |
+| stagione           | `season`, `season_id`, `year` — **inviata solo se dichiarata**                           |
+| partita            | il segnaposto del percorso, oppure `fixture`, `fixture_id`, `match`, `match_id`          |
+| stato/prossime     | `status`, `state` — solo se dichiarati (valore `upcoming`)                               |
+
+Se il documento dichiara un **enum** per il parametro della lega e il valore
+configurato (`BSD_LEAGUE`) non è fra quelli, si usa la voce dell'enum che
+somiglia a "serie a" (es. `serie-a` → `it-serie-a`) e la sostituzione viene
+scritta nel riepilogo dell'esecuzione.
+
+### Cache e budget
+
+- Rotta scelta, nomi dei parametri ed eventuale valore di lega sostituito
+  finiscono in `league_settings.availability_endpoints`
+  (`save_availability_diagnostics`, riservata al service role), sotto la chiave
+  `routes`; i vecchi candidati salvati (`{"injuries": "/…"}`) continuano a
+  essere letti. **Dalla esecuzione successiva si va dritti alla rotta**: una
+  richiesta per capacità, zero per la scoperta. Una sola lettura e al massimo
+  una scrittura di impostazioni per esecuzione.
+- Se la rotta memorizzata comincia a rispondere `404`, viene dimenticata e la
+  scoperta riparte da sola.
+- Se **niente** risponde, l'esecuzione fallisce con `endpoint non trovato`
+  seguito dagli stati provati (`/v1/football/injuries → HTTP 404 · …`), non
+  viene cancellato nessuno stato e le risposte grezze — scoperta compresa —
+  restano a disposizione dell'admin.
+- Budget: **16 richieste** per esecuzione con BSD (basta a provare tutti i
+  candidati _e_ la scoperta la prima volta; a regime sono 2-3), **3** con
+  API-Football.
 
 ## BSD: lettura tollerante del payload
 
@@ -167,8 +233,9 @@ un giro solo, in _Admin → Indisponibili_:
    pulsante: le risposte grezze vengono salvate anche se l'aggiornamento
    riesce (dopo un errore vengono salvate comunque);
 2. apri **"Mostra risposta grezza"**: per ogni chiamata compaiono la capacità
-   (`injuries`/`fixtures`/`lineups`), l'URL, il codice HTTP e i **primi 1500
-   caratteri** del corpo, più l'elenco dei percorsi che hanno risposto;
+   (`injuries`/`fixtures`/`lineups`, più `discovery` per l'elenco delle rotte),
+   l'URL, il codice HTTP e i **primi 1500 caratteri** del corpo, più l'elenco
+   dei percorsi e delle rotte che hanno risposto;
 3. se i dati non arrivano, quel testo dice esattamente cosa correggere: i
    candidati in `BSD_CANDIDATES` o i nomi dei campi in
    `src/lib/availability/bsd.ts` (e le fixture in `tests/fixtures/bsd-*.json`).
@@ -180,6 +247,17 @@ prima del salvataggio (sostituzione esatta della chiave configurata, più una
 regex su `key=`, `token:`, `Bearer …` e su qualunque stringa opaca lunga).
 Il pannello mostra anche quante righe sono arrivate ma **non sono state
 leggibili**: se quel numero è alto, i nomi dei campi sono sbagliati.
+
+Sopra la risposta grezza compare la riga **"Rotte del fornitore"**, per esempio:
+
+```
+rotte trovate: 34 da /openapi.json · scelte: /v1/soccer/injuries (league_id), /v1/soccer/fixtures (league_id, season, status)
+lega non accettata dalla rotta /v1/soccer/injuries: "serie-a" sostituita con "it-serie-a"
+nessuna rotta per formazioni: cercate lineup, line-up, line_up, formation, squad, starting, eleven
+```
+
+L'ultima riga è quella da rimandare a chi sviluppa insieme all'elenco delle
+rotte: dice esattamente quali parole sono state cercate e non trovate.
 
 ## Cadenza
 
@@ -240,33 +318,43 @@ fornitore si leggerebbe come "sono guariti tutti".
 - **`SUPABASE_SERVICE_ROLE_KEY` assente**: `sync_availability` è riservata al
   service role, quindi il feed non scrive; il pannello lo segnala.
 
-## Da verificare in produzione (BSD)
+## Verificato in produzione, e cosa resta da verificare (BSD)
 
-Nessuna di queste cose ha potuto essere verificata: **tutto quanto segue è una
-ipotesi** scritta leggendo l'interfaccia tipica di questi servizi, e il codice è
-stato testato su fixture scritte a mano (`tests/fixtures/bsd-*.json`).
-Al primo aggiornamento vero, con la **modalità diagnostica** accesa, l'admin
-deve controllare:
+**Verificato il 2026-09-11**, prima esecuzione vera con la chiave dell'admin:
 
-1. **l'indirizzo base** `https://api.bigballsdata.com` (altrimenti `BSD_BASE_URL`);
-2. **come si autentica**: `Authorization: Bearer` oppure `x-api-key` (ne mandiamo
-   due, ma se il servizio vuole la chiave in query string va cambiato il codice);
-3. **il percorso giusto** fra i candidati: se nessuno risponde, l'errore elenca
-   gli stati provati e il percorso vero si legge dalla documentazione del
-   fornitore;
-4. **come si chiama la Serie A** (`BSD_LEAGUE`: slug `serie-a`, altro slug, o un
-   id numerico) e se serve anche la stagione;
-5. **i nomi dei campi** di ogni riga (calciatore, club, stato, rientro) e il
+- l'indirizzo base `https://api.bigballsdata.com` risponde e **la chiave è
+  valida** (l'API ha dichiarato 93 richieste residue);
+- **nessuno dei candidati statici esiste**: tutti `404 route_not_found`, con il
+  corpo che indica `GET /v1/` e `GET /openapi.json` — da qui la scoperta
+  automatica delle rotte.
+
+**Resta da verificare al primo aggiornamento con la scoperta attiva** (modalità
+diagnostica accesa):
+
+1. che `/openapi.json` (o `/v1/`) risponda davvero e in un formato riconosciuto:
+   la riga "Rotte del fornitore" dice quante rotte sono state trovate e quali
+   sono state scelte; se dice "formato non riconosciuto", serve il corpo grezzo;
+2. che le **parole chiave** peschino la rotta giusta: se una capacità non trova
+   niente, il pannello elenca le parole cercate — vanno confrontate con
+   l'elenco vero delle rotte;
+3. che i **nomi dei parametri** presi dal documento siano quelli giusti e che
+   non ne manchi uno obbligatorio (un `400` invece di un `404` è il sintomo);
+4. **come si chiama la Serie A**: se il documento dichiara l'enum delle leghe la
+   sostituzione è automatica ed è scritta nel pannello, altrimenti va messo il
+   valore giusto in `BSD_LEAGUE`;
+5. **come si autentica**: mandiamo `Authorization: Bearer` **e** `x-api-key`; se
+   il servizio volesse la chiave in query string va cambiato il codice;
+6. **i nomi dei campi** di ogni riga (calciatore, club, stato, rientro) e il
    punto in cui stanno le righe nel payload;
-6. **il vocabolario degli stati**: le parole vere vanno aggiunte alla tabella
+7. **il vocabolario degli stati**: le parole vere vanno aggiunte alla tabella
    qui sopra, altrimenti tutto finisce in `unavailable`;
-7. **l'id esterno**: se le righe non hanno un id numerico per calciatore
+8. **l'id esterno**: se le righe non hanno un id numerico per calciatore
    l'abbinamento manuale non è possibile (il pannello lo dice riga per riga) e
    restano solo i nomi;
-8. **le formazioni**: se l'endpoint non esiste sul piano gratuito, restano gli
+9. **le formazioni**: se la rotta non esiste sul piano gratuito, restano gli
    indisponibili e gli stati manuali;
-9. **la quota**: quale header dichiara le richieste residue e che non si
-   avvicini a zero (in quel caso allungare l'intervallo del job).
+10. **la quota**: quale header dichiara le richieste residue e che non si
+    avvicini a zero (in quel caso allungare l'intervallo del job).
 
 ## Da verificare in produzione (API-Football)
 

@@ -42,8 +42,8 @@ export interface FeedMapping {
 
 export interface AvailabilityDiagnostics {
   provider: string;
-  /** The candidate paths that answered, to be reused by the next run. */
-  endpoints: Record<string, string> | null;
+  /** The routes and paths that answered, to be reused by the next run. */
+  endpoints: Record<string, unknown> | null;
   /** The raw answers, redacted and capped: only saved when asked or on failure. */
   samples: ProviderSample[];
 }
@@ -93,6 +93,8 @@ export interface AvailabilityOutcome {
   requests_max: number;
   /** Rows the provider sent that nobody could read (wrong shape). */
   unparsed: number;
+  /** What the provider learnt about itself (discovered routes, substitutions). */
+  notes: string[];
   rate_limit_remaining: number | null;
   fixture: { id: number; kickoff: string; label: string } | null;
   applied: Record<string, unknown> | null;
@@ -137,6 +139,7 @@ function emptyOutcome(status: AvailabilityOutcome["status"]): AvailabilityOutcom
     requests: 0,
     requests_max: 0,
     unparsed: 0,
+    notes: [],
     rate_limit_remaining: null,
     fixture: null,
     applied: null,
@@ -339,6 +342,7 @@ export async function runAvailabilitySync(
 
   out.requests = provider.budget.used;
   out.unparsed = provider.unparsed;
+  out.notes = provider.notes;
   out.rate_limit_remaining = provider.rateLimitRemaining;
   out.statuses = statuses.size;
   out.lineups = lineups.length;
@@ -365,6 +369,7 @@ export async function runAvailabilitySync(
       requests: out.requests,
       requests_max: out.requests_max,
       unparsed: out.unparsed,
+      notes: out.notes,
       diagnostics: opts.diagnostics === true,
       rate_limit_remaining: out.rate_limit_remaining,
       errors: out.errors,

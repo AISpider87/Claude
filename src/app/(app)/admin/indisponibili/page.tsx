@@ -140,6 +140,18 @@ export default async function AdminPlayerStatusPage() {
                 {formatInt(run.rate_limit_remaining)}.
               </p>
             )}
+            {Array.isArray(run?.notes) && run.notes.length > 0 && (
+              <div className="flex flex-col gap-1">
+                <p className="text-sm font-semibold">Rotte del fornitore</p>
+                <ul className="text-muted list-disc pl-5 text-sm">
+                  {run.notes.map((n, i) => (
+                    <li key={i} className="break-words">
+                      {n}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             {(run?.unparsed ?? 0) > 0 && (
               <p className="text-muted text-sm">
                 {formatInt(run?.unparsed ?? 0)} righe ricevute ma non leggibili (nome o stato in un

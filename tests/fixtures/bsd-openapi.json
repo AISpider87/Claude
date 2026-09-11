@@ -1,0 +1,54 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "Big Balls Sports Data", "version": "1.0.0" },
+  "_comment": "Hand-written hypothesis of what GET /openapi.json answers: the real routes live under /v1/soccer, the league parameter is called league_id and only accepts a list of slugs, and the lineups are a path template.",
+  "paths": {
+    "/v1/": { "get": { "summary": "Index of every endpoint" } },
+    "/v1/soccer/leagues": {
+      "get": { "summary": "Leagues", "parameters": [{ "name": "country", "in": "query" }] }
+    },
+    "/v1/soccer/injuries": {
+      "get": {
+        "summary": "Injured and unavailable players",
+        "parameters": [
+          {
+            "name": "league_id",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "enum": ["eng-premier-league", "it-serie-a", "esp-laliga"] }
+          },
+          { "name": "team_id", "in": "query", "schema": { "type": "string" } }
+        ]
+      }
+    },
+    "/v1/soccer/fixtures": {
+      "get": {
+        "summary": "Fixtures",
+        "parameters": [
+          {
+            "name": "league_id",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["eng-premier-league", "it-serie-a"] }
+          },
+          { "name": "season", "in": "query", "schema": { "type": "integer" } },
+          { "name": "status", "in": "query", "schema": { "enum": ["upcoming", "finished"] } }
+        ]
+      }
+    },
+    "/v1/soccer/fixtures/{fixtureId}/lineups": {
+      "get": {
+        "summary": "Line-ups of one fixture",
+        "parameters": [{ "name": "fixtureId", "in": "path", "required": true }]
+      }
+    },
+    "/v1/soccer/players/{playerId}": {
+      "get": { "parameters": [{ "name": "playerId", "in": "path" }] }
+    },
+    "/v1/basketball/injuries": {
+      "get": { "parameters": [{ "name": "league_id", "in": "query" }] }
+    },
+    "/v1/soccer/injuries/history": {
+      "post": { "summary": "not a GET, must never be chosen" }
+    }
+  }
+}

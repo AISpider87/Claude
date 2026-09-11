@@ -6,17 +6,23 @@
  * offers a free tier (no card, ~1000 requests/day) that covers the current
  * season. See docs/DECISIONS.md.
  *
- * Everything here is written blind: the dev network blocks bigballsdata.com, so
- * neither the exact paths nor the exact payload shape could be verified. Two
- * defences, so that one real run in production is enough to fix it:
+ * The dev network blocks bigballsdata.com, so neither the exact paths nor the
+ * exact payload shape could be verified from here. Three defences, so that one
+ * real run in production is enough to settle it:
  *
- *  1. **candidate paths** — each capability has a small list of plausible
- *     paths, tried in order until one answers 200 with JSON; the winner is
- *     remembered in `league_settings.availability_endpoints`, so the next run
- *     goes straight to it (one request per capability);
- *  2. **diagnostics** — every attempt (path, status, first 1500 chars of the
- *     body, key redacted) is kept in `lastSamples()` and shown to the admin in
- *     Admin → Indisponibili → "Mostra risposta grezza".
+ *  1. **self-discovery** — the API answers an unknown path with
+ *     "Browse every endpoint at GET /v1/ or the OpenAPI spec at
+ *     GET /openapi.json", so the job reads that list and picks the right route
+ *     by keyword, with the parameter names the spec itself declares
+ *     (src/lib/availability/bsd-discovery.ts);
+ *  2. **candidate paths** — a short list of plausible paths per capability,
+ *     tried in order, for the case where there is no route list to read;
+ *     whatever works — a discovered route or a candidate — is remembered in
+ *     `league_settings.availability_endpoints`, so the next run goes straight
+ *     to it (one request per capability, zero discovery);
+ *  3. **diagnostics** — every attempt (path, status, first 1500 chars of the
+ *     body, key redacted), discovery included, is kept in `lastSamples()` and
+ *     shown to the admin in Admin → Indisponibili → "Mostra risposta grezza".
  *
  * The parsing is deliberately shape-tolerant: rows may sit at the root or under
  * `data` / `response` / `results` / `items`, and every field is read from a
@@ -25,12 +31,22 @@
  */
 
 import {
+  CAPABILITY_KEYWORDS,
+  DISCOVERY_PATHS,
+  chooseRoute,
+  parseRouteIndex,
+  type BsdCapability,
+  type BsdEndpoints,
+  type BsdRoute,
+  type DiscoveredRoute,
+  type RouteChoice,
+} from "@/lib/availability/bsd-discovery";
+import {
   MAX_BYTES,
   ProviderError,
   RequestBudget,
   SampleLog,
   TIMEOUT_MS,
-  at,
   currentSeason,
   pickArray,
   pickBool,
@@ -52,10 +68,22 @@ export const BSD_DOCS_URL = "https://bigballsdata.com/";
 export const BSD_BASE_URL = "https://api.bigballsdata.com";
 export const BSD_DEFAULT_LEAGUE = "serie-a";
 
-/** ~1000 requests/day: a discovery run may try every candidate and still fit. */
-export const BSD_BUDGET = 12;
+/**
+ * ~1000 requests/day, so a first run can afford to look around: the route list
+ * (1-2 calls) plus every candidate of every capability still fits. Once the
+ * routes are cached a run costs 2-3 calls.
+ */
+export const BSD_BUDGET = 16;
 
-export type BsdCapability = "injuries" | "fixtures" | "lineups";
+export { parseEndpoints } from "@/lib/availability/bsd-discovery";
+export type { BsdCapability, BsdEndpoints, BsdRoute } from "@/lib/availability/bsd-discovery";
+
+/** What the admin reads instead of the English capability name. */
+export const CAPABILITY_LABEL: Record<BsdCapability, string> = {
+  injuries: "indisponibili",
+  fixtures: "calendario",
+  lineups: "formazioni",
+};
 
 /**
  * The paths to try, in order, per capability. `{league}` and `{fixture}` are
@@ -149,8 +177,10 @@ export interface BsdOptions {
   season?: number;
   budget?: RequestBudget;
   fetchImpl?: typeof fetch;
-  /** Paths that worked on a previous run, from `league_settings`. */
-  endpoints?: Partial<Record<BsdCapability, string>>;
+  /** Routes and paths that worked on a previous run, from `league_settings`. */
+  endpoints?: BsdEndpoints;
+  /** Skip the route list (tests that only exercise the static candidates). */
+  discovery?: boolean;
 }
 
 function fill(template: string, vars: Record<string, string>): string {
@@ -171,67 +201,231 @@ export function bsdProvider(key: string, opts: BsdOptions = {}) {
   const budget = opts.budget ?? new RequestBudget(BSD_BUDGET);
   const doFetch = opts.fetchImpl ?? fetch;
   const samples = new SampleLog([key]);
-  const endpoints: Partial<Record<BsdCapability, string>> = { ...opts.endpoints };
+  const templates: Partial<Record<BsdCapability, string>> = { ...opts.endpoints?.templates };
+  const routes: Partial<Record<BsdCapability, BsdRoute>> = { ...opts.endpoints?.routes };
+  const useDiscovery = opts.discovery !== false;
+
   let learned = false;
   let rateLimitRemaining: number | null = null;
   let unparsed = 0;
 
-  /** Known path first (it should answer), then the remaining candidates. */
-  function templatesFor(what: BsdCapability): string[] {
-    const known = endpoints[what];
-    const rest = BSD_CANDIDATES[what].filter((t) => t !== known);
-    return known ? [known, ...rest] : rest;
+  // what discovery found, for the cache, the notes and the next capability
+  let discoveryDone = false;
+  let discovered: DiscoveredRoute[] | null = null;
+  let discoverySource = "";
+  const chosen: Partial<Record<BsdCapability, RouteChoice>> = {};
+  const missed = new Set<BsdCapability>();
+  const substitutions: string[] = [];
+  const discoveryProblems: string[] = [];
+
+  /** One GET, recorded in the diagnostics whatever happens. Null = no good. */
+  async function fetchJson(
+    what: string,
+    url: string,
+    tried: string[],
+    label: string,
+  ): Promise<unknown | null> {
+    budget.spend(label);
+    let res: Response;
+    try {
+      res = await doFetch(url, {
+        headers: {
+          authorization: `Bearer ${key}`,
+          "x-api-key": key,
+          accept: "application/json",
+        },
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      });
+    } catch (e) {
+      // Never echo the exception as-is: it can carry the request (and the key).
+      const name = e instanceof Error ? e.name : "errore";
+      samples.add(what, url, 0, `rete non raggiungibile (${name})`);
+      tried.push(`${label} → rete non raggiungibile`);
+      return null;
+    }
+    const remaining = readRateLimit(res);
+    if (remaining !== null) rateLimitRemaining = remaining;
+
+    const text = await safeBody(res);
+    samples.add(what, url, res.status, text);
+    if (!res.ok) {
+      tried.push(`${label} → HTTP ${res.status}`);
+      return null;
+    }
+    try {
+      return JSON.parse(text) as unknown;
+    } catch {
+      tried.push(`${label} → HTTP ${res.status} ma risposta non JSON`);
+      return null;
+    }
   }
 
+  /**
+   * Reads the provider's own route list, once per run. The 404 body points at
+   * `/openapi.json` and `/v1/`; an unreadable answer is not an error, it just
+   * leaves the static candidates to do the work.
+   */
+  async function ensureDiscovery(tried: string[]): Promise<void> {
+    if (discoveryDone || !useDiscovery) return;
+    discoveryDone = true;
+    for (const path of DISCOVERY_PATHS) {
+      const json = await fetchJson("discovery", `${baseUrl}${path}`, tried, path);
+      if (json === null) continue;
+      const found = parseRouteIndex(json);
+      if (found.length === 0) {
+        discoveryProblems.push(`${path}: elenco rotte in un formato non riconosciuto`);
+        continue;
+      }
+      discovered = found;
+      discoverySource = path;
+      return;
+    }
+    if (!discovered && discoveryProblems.length === 0) {
+      discoveryProblems.push("nessun elenco rotte: /openapi.json e /v1/ non hanno risposto");
+    }
+  }
+
+  /** The discovered route for one capability, chosen once and remembered. */
+  function discoveredRoute(what: BsdCapability): BsdRoute | null {
+    if (chosen[what]) return chosen[what]!.route;
+    if (!discovered || missed.has(what)) return null;
+    const choice = chooseRoute(discovered, what, league);
+    if (!choice) {
+      missed.add(what);
+      return null;
+    }
+    chosen[what] = choice;
+    if (choice.leagueSubstituted) {
+      substitutions.push(
+        `lega non accettata dalla rotta ${choice.route.path}: "${choice.leagueSubstituted.from}" sostituita con "${choice.leagueSubstituted.to}"`,
+      );
+    }
+    return choice.route;
+  }
+
+  /** A discovered route turned into a URL: placeholders first, then the query. */
+  function routeUrl(route: BsdRoute, vars: { fixture?: string }): string {
+    const leagueValue = route.league ?? league;
+    const path = route.path.replace(/\{([^}]+)\}/g, (_, name: string) => {
+      const key2 = name.toLowerCase();
+      if (/fixture|match|game/.test(key2) || key2 === "id") {
+        return encodeURIComponent(vars.fixture ?? "");
+      }
+      if (/league|competition|tournament|slug/.test(key2)) return encodeURIComponent(leagueValue);
+      if (/season|year/.test(key2)) return encodeURIComponent(String(season));
+      return "";
+    });
+    const url = new URL(`${baseUrl}${path}`);
+    if (route.params.league) url.searchParams.set(route.params.league, leagueValue);
+    if (route.params.season) url.searchParams.set(route.params.season, String(season));
+    if (route.params.fixture && vars.fixture) {
+      url.searchParams.set(route.params.fixture, vars.fixture);
+    }
+    if (route.params.status) url.searchParams.set(route.params.status, "upcoming");
+    return url.toString();
+  }
+
+  /**
+   * One capability, in this order: the cached route, the cached candidate, the
+   * first candidate, then — only if all that failed — the provider's own route
+   * list, then the remaining candidates. A cached route that has started
+   * answering 404 is dropped and discovery runs again.
+   */
   async function call(what: BsdCapability, vars: Record<string, string>): Promise<unknown> {
     const tried: string[] = [];
-    for (const template of templatesFor(what)) {
-      const path = fill(template, vars);
-      const url = `${baseUrl}${path}`;
-      budget.spend(path);
+    const done = new Set<string>();
 
-      let res: Response;
-      try {
-        res = await doFetch(url, {
-          headers: {
-            authorization: `Bearer ${key}`,
-            "x-api-key": key,
-            accept: "application/json",
-          },
-          signal: AbortSignal.timeout(TIMEOUT_MS),
-        });
-      } catch (e) {
-        // Never echo the exception as-is: it can carry the request (and the key).
-        const name = e instanceof Error ? e.name : "errore";
-        samples.add(what, url, 0, `rete non raggiungibile (${name})`);
-        tried.push(`${path} → rete non raggiungibile`);
-        continue;
-      }
-      const remaining = readRateLimit(res);
-      if (remaining !== null) rateLimitRemaining = remaining;
-
-      const text = await safeBody(res);
-      samples.add(what, url, res.status, text);
-      if (!res.ok) {
-        tried.push(`${path} → HTTP ${res.status}`);
-        continue;
-      }
-      let json: unknown;
-      try {
-        json = JSON.parse(text) as unknown;
-      } catch {
-        tried.push(`${path} → HTTP ${res.status} ma risposta non JSON`);
-        continue;
-      }
-      if (endpoints[what] !== template) {
-        endpoints[what] = template;
+    const attemptRoute = async (route: BsdRoute): Promise<unknown | null> => {
+      const url = routeUrl(route, { fixture: vars.fixture });
+      if (done.has(url)) return null;
+      done.add(url);
+      const json = await fetchJson(what, url, tried, url.slice(baseUrl.length));
+      if (json === null) return null;
+      if (routes[what]?.path !== route.path || routes[what]?.league !== route.league) {
+        routes[what] = route;
         learned = true;
       }
       return json;
+    };
+
+    const attemptTemplate = async (template: string): Promise<unknown | null> => {
+      const path = fill(template, vars);
+      const url = `${baseUrl}${path}`;
+      if (done.has(url)) return null;
+      done.add(url);
+      const json = await fetchJson(what, url, tried, path);
+      if (json === null) return null;
+      if (templates[what] !== template) {
+        templates[what] = template;
+        learned = true;
+      }
+      return json;
+    };
+
+    // 1. what worked last time
+    const cached = routes[what];
+    if (cached) {
+      const json = await attemptRoute(cached);
+      if (json !== null) return json;
+      // The route has gone: forget it and look at the list again.
+      delete routes[what];
+      learned = true;
     }
+    const cachedTemplate = templates[what];
+    if (cachedTemplate) {
+      const json = await attemptTemplate(cachedTemplate);
+      if (json !== null) return json;
+      delete templates[what];
+      learned = true;
+    }
+
+    // 2. the first guess, then the provider's own list, then the other guesses
+    const candidates = BSD_CANDIDATES[what];
+    for (const [index, template] of candidates.entries()) {
+      const json = await attemptTemplate(template);
+      if (json !== null) return json;
+      if (index > 0) continue;
+      await ensureDiscovery(tried);
+      const route = discoveredRoute(what);
+      if (route) {
+        const found = await attemptRoute(route);
+        if (found !== null) return found;
+        // The list named a route that does not answer: do not cache it.
+        delete chosen[what];
+        missed.add(what);
+      }
+    }
+
     throw new ProviderError(
       `${what}: endpoint non trovato (${tried.join(" · ") || "nessun tentativo"})`,
     );
+  }
+
+  /**
+   * The lines the admin reads under the feed card: what the route list gave,
+   * what was chosen, and — when a capability found nothing — which words were
+   * looked for, so the admin can paste the route list back to us.
+   */
+  function summary(): string[] {
+    const out: string[] = [];
+    if (discovered) {
+      const picked = Object.values(chosen as Record<string, RouteChoice>).map(
+        (choice) =>
+          `${choice.route.path}${choice.paramNames.length > 0 ? ` (${choice.paramNames.join(", ")})` : ""}`,
+      );
+      out.push(
+        `rotte trovate: ${discovered.length}${discoverySource ? ` da ${discoverySource}` : ""}` +
+          (picked.length > 0 ? ` · scelte: ${picked.join(", ")}` : " · nessuna scelta"),
+      );
+    }
+    for (const what of missed) {
+      const { primary, fallback } = CAPABILITY_KEYWORDS[what];
+      out.push(
+        `nessuna rotta per ${CAPABILITY_LABEL[what]}: cercate ${[...primary, ...fallback].join(", ")}`,
+      );
+    }
+    out.push(...substitutions, ...discoveryProblems);
+    return out;
   }
 
   return {
@@ -247,7 +441,14 @@ export function bsdProvider(key: string, opts: BsdOptions = {}) {
       return unparsed;
     },
     lastSamples: () => samples.all(),
-    resolvedEndpoints: () => (learned ? { ...endpoints } : null),
+    get notes() {
+      return summary();
+    },
+    /**
+     * What to cache for the next run: the legacy per-capability templates
+     * (kept so an older deployment still reads them) plus the routes.
+     */
+    resolvedEndpoints: () => (learned ? { ...templates, routes: { ...routes } } : null),
 
     async injuries(): Promise<ProviderInjury[]> {
       const json = await call("injuries", { league, season: String(season) });
@@ -372,14 +573,4 @@ async function safeBody(res: Response): Promise<string> {
 export function bsdLeague(env: Record<string, string | undefined> = process.env): string {
   const value = env.BSD_LEAGUE?.trim();
   return value && value.length > 0 ? value : BSD_DEFAULT_LEAGUE;
-}
-
-/** Reads the stored discovery result, ignoring anything that is not a path. */
-export function parseEndpoints(value: unknown): Partial<Record<BsdCapability, string>> {
-  const out: Partial<Record<BsdCapability, string>> = {};
-  for (const what of ["injuries", "fixtures", "lineups"] as BsdCapability[]) {
-    const path = at(value, what);
-    if (typeof path === "string" && path.startsWith("/") && path.length <= 200) out[what] = path;
-  }
-  return out;
 }

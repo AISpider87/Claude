@@ -55,6 +55,7 @@ export interface AvailabilityRunSummary {
   requests?: number;
   requests_max?: number;
   unparsed?: number;
+  notes?: string[];
   diagnostics?: boolean;
   rate_limit_remaining?: number | null;
   errors?: string[];
@@ -126,11 +127,33 @@ export async function getAvailabilityFeedState(): Promise<AvailabilityFeedState>
   };
 }
 
+/**
+ * The cached endpoints, flattened for the panel: a discovered route (with the
+ * parameter names it takes) wins over the static candidate of the same
+ * capability, which is what the job does too.
+ */
 function readEndpoints(value: unknown): Record<string, string> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   const out: Record<string, string> = {};
-  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+  const row = value as Record<string, unknown>;
+  for (const [k, v] of Object.entries(row)) {
     if (typeof v === "string") out[k] = v;
+  }
+  const routes = row.routes;
+  if (routes && typeof routes === "object" && !Array.isArray(routes)) {
+    for (const [what, entry] of Object.entries(routes as Record<string, unknown>)) {
+      if (!entry || typeof entry !== "object" || Array.isArray(entry)) continue;
+      const route = entry as Record<string, unknown>;
+      if (typeof route.path !== "string") continue;
+      const params =
+        route.params && typeof route.params === "object" && !Array.isArray(route.params)
+          ? Object.values(route.params as Record<string, unknown>).filter(
+              (p): p is string => typeof p === "string",
+            )
+          : [];
+      const league = typeof route.league === "string" ? ` · lega "${route.league}"` : "";
+      out[what] = `${route.path}${params.length > 0 ? ` (${params.join(", ")})` : ""}${league}`;
+    }
   }
   return out;
 }

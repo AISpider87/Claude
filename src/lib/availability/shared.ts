@@ -85,11 +85,18 @@ export interface AvailabilityProvider {
   /** The raw answers of this run, redacted: the only way to fix a wrong shape. */
   lastSamples(): ProviderSample[];
   /**
-   * Paths that answered this run, to be remembered for the next one
-   * (`{injuries: "/v1/football/injuries"}`), or null when there is nothing to
-   * learn (a provider with fixed paths).
+   * What the provider learnt about itself this run, in plain Italian, for the
+   * admin panel: the routes it found and chose, a league value it had to
+   * substitute, a capability no route matched.
    */
-  resolvedEndpoints(): Record<string, string> | null;
+  readonly notes: string[];
+  /**
+   * Paths and routes that answered this run, to be remembered for the next one,
+   * or null when there is nothing to learn (a provider with fixed paths). The
+   * shape is the provider's own business; it is stored as-is in
+   * `league_settings.availability_endpoints` and handed back on the next run.
+   */
+  resolvedEndpoints(): Record<string, unknown> | null;
 }
 
 /** Raised when the provider answered with a non-empty `errors` field. */
