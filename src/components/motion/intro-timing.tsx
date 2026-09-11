@@ -16,5 +16,6 @@ export const INTRO_BEAT = 1.3;
 export const INTRO_WIPE = 3.55;
 export const INTRO_END = 4.2;
 
-/** Reduced motion: one calm fade of the emblem instead of the whole thing. */
-export const INTRO_REDUCED_END = 0.9;
+/** Reduced motion: one calm fade of the emblem instead of the whole thing —
+ * long enough to be noticed, with nothing that moves. */
+export const INTRO_REDUCED_END = 1.6;

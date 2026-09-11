@@ -578,3 +578,13 @@ listone,operazioni}`) con exceljs, letture paginate (`fetchAll`) sotto la
   Regola: mai leggere `window.location` durante il render per decidere cosa
   mostrare dopo una navigazione App Router. Test jsdom che riproduce il caso
   (`tests/unit/login-intro-arming.test.tsx`).
+
+- 2026-09-11 — **L'intro parte anche all'apertura dell'app, non solo dopo
+  "Accedi".** Chi ha la sessione ricordata (l'app installata, o il browser che
+  non chiede più la password) non passa mai dal form di login: per lui "il
+  login" è aprire l'app. Quindi l'intro parte alla **prima pagina autenticata
+  di ogni sessione del browser** (`sessionStorage`, chiave `superlega-intro`:
+  un avvio a freddo dell'app installata è una sessione nuova) oltre che dopo
+  l'accesso col marker `?welcome=1`. Una volta per sessione, un tocco la salta,
+  si rivede da Profilo. Lo script pre-paint dell'app shell dipinge il fondo
+  anche in questo caso, così la pagina non lampeggia prima dell'animazione.

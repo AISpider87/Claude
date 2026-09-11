@@ -20,6 +20,11 @@ import { INTRO_END, INTRO_REDUCED_END, INTRO_WIPE } from "@/components/motion/in
  * this tree has rendered: the marker must be read through `useSearchParams`,
  * which already reflects the destination, never through `location.search`
  * during render — that is how the intro silently never played in production.
+ *
+ * It also plays on the first authenticated page of a browser session (an
+ * installed app opened from the home screen is a new session at every cold
+ * start): for a manager whose session is remembered, opening the app *is* the
+ * sign-in moment. `sessionStorage` remembers that this session already had it.
  */
 
 /** If the stage chunk is not there in time, the intro is skipped altogether.
@@ -38,7 +43,10 @@ type StageComponent = ComponentType<{ reduced?: boolean }>;
  */
 const INTRO_CLASS = "intro-pending";
 
-const INTRO_SCRIPT = `(function(){try{if(!/[?&]welcome=1(&|$)/.test(location.search))return;var r=document.documentElement;r.classList.add("${INTRO_CLASS}");setTimeout(function(){r.classList.remove("${INTRO_CLASS}")},2200)}catch(e){}})();`;
+/** sessionStorage key: set once the intro has played (or been skipped) in this session. */
+const LAUNCH_KEY = "superlega-intro";
+
+const INTRO_SCRIPT = `(function(){try{var m=/[?&]welcome=1(&|$)/.test(location.search);var f=false;try{f=!sessionStorage.getItem("${LAUNCH_KEY}")}catch(e){}if(!m&&!f)return;var r=document.documentElement;r.classList.add("${INTRO_CLASS}");setTimeout(function(){r.classList.remove("${INTRO_CLASS}")},2200)}catch(e){}})();`;
 
 /** Rendered once at the top of the app shell; does nothing without the marker. */
 export function IntroScript() {
@@ -102,13 +110,29 @@ function usePrefersReducedMotion(): boolean {
   return reduced;
 }
 
-/** Arms the store from the sign-in marker and consumes it right away. */
-function useWelcomeMarker() {
+/** True once per browser session: the first authenticated page of this launch. */
+function claimFirstLaunch(): boolean {
+  try {
+    if (sessionStorage.getItem(LAUNCH_KEY)) return false;
+    sessionStorage.setItem(LAUNCH_KEY, "1");
+    return true;
+  } catch {
+    // Storage blocked (private mode, quota): the sign-in marker still works.
+    return false;
+  }
+}
+
+/**
+ * Arms the store from the sign-in marker (consumed right away) or from the
+ * first launch of this session.
+ */
+function useIntroTrigger() {
   const params = useSearchParams();
   const marker = params?.get(WELCOME_PARAM) === "1";
   useEffect(() => {
+    const firstLaunch = claimFirstLaunch();
+    if (marker || firstLaunch) arm();
     if (!marker) return;
-    arm();
     // Consume the marker straight away: a reload must never replay the intro.
     const url = new URL(window.location.href);
     url.searchParams.delete(WELCOME_PARAM);
@@ -126,7 +150,7 @@ export function LoginIntro() {
 }
 
 function LoginIntroOverlay() {
-  useWelcomeMarker();
+  useIntroTrigger();
   const reduced = usePrefersReducedMotion();
   // Server and first hydration render nothing; the overlay appears right after.
   const playing = useSyncExternalStore(subscribe, getArmed, () => false);

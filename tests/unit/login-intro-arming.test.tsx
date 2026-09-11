@@ -21,6 +21,8 @@ let host: HTMLDivElement;
 
 beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  // Every test starts as a session that already had its launch intro, unless it says otherwise.
+  sessionStorage.setItem("superlega-intro", "1");
   window.matchMedia = ((query: string) => ({
     matches: false,
     media: query,
@@ -65,10 +67,20 @@ describe("LoginIntro after a client-side sign-in redirect", () => {
     expect(window.location.search).toBe("?done=buy");
   });
 
-  it("stays out of the way on a normal page load", async () => {
+  it("stays out of the way on a normal page load later in the session", async () => {
     window.history.replaceState(null, "", "/rosa");
     params = new URLSearchParams();
     await act(async () => root.render(<LoginIntro />));
     expect(host.querySelector('[data-testid="login-intro"]')).toBeNull();
+  });
+
+  it("plays on the first authenticated page of a browser session, once", async () => {
+    // A remembered session: no sign-in, the app is simply opened.
+    sessionStorage.removeItem("superlega-intro");
+    window.history.replaceState(null, "", "/rosa");
+    params = new URLSearchParams();
+    await act(async () => root.render(<LoginIntro />));
+    expect(host.querySelector('[data-testid="login-intro"]')).not.toBeNull();
+    expect(sessionStorage.getItem("superlega-intro")).toBe("1");
   });
 });
