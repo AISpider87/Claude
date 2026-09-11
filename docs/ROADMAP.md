@@ -1,8 +1,13 @@
 # ROADMAP — SuperLega v1
 
-> Stato al 2026-09-09: **M1–M8 completate** (vedi commit `feat: …(M1)`…`(M8)` e le
-> correzioni delle review QA/sicurezza). Resta la **Fase 3** (deploy), che richiede
-> gli account dell'admin: `docs/DEPLOY.md`.
+> Stato al 2026-09-11: **M1–M8 completate** e **app in produzione** su
+> thesuperleague.vercel.app. Fase 3 quasi chiusa: fatto deploy, SMTP (Brevo),
+> import listone e rose reali, sessioni automatiche, mercato v2 (svincolo →
+> acquisto, operazioni in sospeso), privacy delle rose, avatar e riga rosa,
+> export nel formato Leghe, feed indisponibili/formazioni da Big Balls Sports
+> Data. **Da fare**: pianificazione pg_cron ogni 15 minuti (comando pronto in
+> Admin → Indisponibili), sessione di prova con la lega, consegna del codice
+> lega ai manager, promozione dei 2 admin.
 
 Per ogni milestone: pianifica → implementa → test verdi → revisione QA + security
 → commit (conventional commits) → riepilogo ≤ 8 righe (fatto / test / rischi /
