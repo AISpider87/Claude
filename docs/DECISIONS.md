@@ -303,3 +303,11 @@ listone,operazioni}`) con exceljs, letture paginate (`fetchAll`) sotto la
   all'apertura non lo aveva e "Apri ora"/apertura automatica fallivano solo in
   produzione. Regola annotata nella skill supabase-conventions. Migrazione
   `20260909240000`.
+- 2026-09-11 · **Avatar v2 a mezzo busto e riga rosa con stato**: ritratto
+  testa-spalle-maglia senza pallone, tratti aggiuntivi (sopracciglia, lunghezza
+  capelli, tono pelle), 55 giocatori curati; componente `RosterPlayerRow`
+  (avatar, nome, ruolo, club, pagato, delta vs Qt.A, Qt.A grande, chip di
+  stato con fonte e data, slot azioni) e `RosterPlayerList` per ruolo con i
+  posti da riempire. Anteprima admin `/admin/anteprima-rosa`; integrazione in
+  Rosa/Mercato dopo l'ok dell'admin. Gli avatar non compaiono nel listone
+  (scelta dell'admin).

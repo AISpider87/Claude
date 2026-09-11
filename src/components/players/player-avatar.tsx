@@ -209,7 +209,7 @@ function Hair({
     if (traits.hair === "long")
       return (
         <path
-          d="M30.5 36 L30.5 70 C37 67 43 69 50 73 C57 69 63 67 69.5 70 L69.5 36 Z"
+          d="M31.5 36 L32.5 62 C38 60.5 44 62 50 65 C56 62 62 60.5 67.5 62 L68.5 36 Z"
           fill={hair.base}
           {...OUTLINE}
         />
@@ -553,7 +553,12 @@ export function PlayerAvatar({
       />
 
       <g clipPath={`url(#${frameClip})`}>
-        <g className={idle ? "avatar-idle" : undefined} style={idleStyle}>
+        {/* The bust is drawn around (50, 40) and enlarged to fill the frame. */}
+        <g
+          className={idle ? "avatar-idle" : undefined}
+          style={idleStyle}
+          transform="translate(-7 -3.5) scale(1.14)"
+        >
           <Hair traits={traits} headClip={headClip} layer="back" />
           {/* Neck + trapezius, shaded under the chin */}
           <path d={NECK_PATH} fill={skin.dark} {...OUTLINE} />

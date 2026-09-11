@@ -75,10 +75,11 @@ const SECTIONS = [
     ready: true,
   },
   {
-    href: "/admin/anteprima-avatar",
+    href: "/admin/anteprima-rosa",
     icon: CircleUserRound,
-    title: "Anteprima avatar",
-    description: "Avatar SVG generati per i giocatori: stile da approvare prima dell'uso.",
+    title: "Anteprima rosa",
+    description:
+      "Lista rosa con avatar a mezzo busto, quotazioni e stati: da approvare prima dell'uso.",
     ready: true,
   },
 ];

@@ -76,7 +76,20 @@ describe("traits", () => {
     const merged = traitsFor(309, "Dybala");
     expect(merged.beard).toBe("stubble");
     expect(merged.expression).toBe("smile");
+    expect(merged.eyebrows).toBe("thick");
+    expect(merged.hairLength).toBe("medium");
     expect(traitsFor(123456, "Nessuno")).toEqual(defaultTraits(123456, "Nessuno"));
+  });
+
+  it("v2 fields are always present and varied", () => {
+    const all = Array.from({ length: 60 }, (_, i) => defaultTraits(i + 1, `P${i}`));
+    for (const t of all) {
+      expect(["thin", "thick"]).toContain(t.eyebrows);
+      expect(["short", "medium", "long"]).toContain(t.hairLength);
+      expect(["warm", "neutral", "cool"]).toContain(t.skinShade);
+    }
+    expect(new Set(all.map((t) => t.eyebrows)).size).toBe(2);
+    expect(new Set(all.map((t) => t.hairLength)).size).toBe(3);
   });
 });
 
@@ -90,7 +103,8 @@ describe("PlayerAvatar", () => {
       </>,
     );
     const ids = [...html.matchAll(/ id="([^"]+)"/g)].map((m) => m[1]);
-    expect(ids.length).toBe(20);
+    // frame clip + head clip + jersey clip + skin gradient + jersey shading per avatar
+    expect(ids.length).toBe(50);
     expect(new Set(ids).size).toBe(ids.length);
     for (const m of html.matchAll(/url\(#([^)]+)\)/g)) {
       expect(ids, m[1]).toContain(m[1]);
@@ -105,6 +119,11 @@ describe("PlayerAvatar", () => {
     expect(real).toContain('width="120"');
     expect(real).toMatch(/<text[^>]*>P<\/text>/);
     expect(real).not.toContain("fill-danger");
+    // Half-bust: no ball, no legs; a rounded-square frame with the jersey clipped inside.
+    expect(real).not.toContain('polygon points="69,89.2');
+    expect(real).toContain('rx="24"');
+    expect(real).toContain("<radialGradient");
+    expect(real).toContain("<linearGradient");
 
     const placeholder = renderToStaticMarkup(
       <PlayerAvatar id={-3} name="Partito" team="Fuori Serie A" role="A" size="sm" />,
@@ -112,5 +131,17 @@ describe("PlayerAvatar", () => {
     expect(placeholder).toContain('width="32"');
     expect(placeholder).toContain("fill-danger");
     expect(placeholder).toContain("stroke-dasharray");
+  });
+
+  it("draws the club pattern and the role dot can be hidden", () => {
+    const stripes = renderToStaticMarkup(
+      <PlayerAvatar id={1870} name="Barella" team="Inter" role="C" showRole={false} />,
+    );
+    expect(stripes).not.toMatch(/<text/);
+    expect((stripes.match(/<rect[^>]*height="44"/g) ?? []).length).toBe(6);
+    const sash = renderToStaticMarkup(<PlayerAvatar id={1} name="Sash" team="Parma" role="D" />);
+    expect(sash).toContain("<polygon");
+    const halves = renderToStaticMarkup(<PlayerAvatar id={1} name="Half" team="Genoa" role="D" />);
+    expect(halves).toMatch(/<rect x="50"[^>]*width="48"/);
   });
 });
