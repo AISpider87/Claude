@@ -59,6 +59,7 @@ describe("LoginIntro", () => {
     expect(html.match(/intro-emblem-face/g)?.length ?? 0).toBeGreaterThan(3);
     expect(html).toContain("translateZ");
     expect(html).toContain("intro-floor");
+    expect(html).toContain("/intro/backdrop.webp");
     // Decorative overlay: never announced, never focusable.
     expect(html).toContain('focusable="false"');
   });

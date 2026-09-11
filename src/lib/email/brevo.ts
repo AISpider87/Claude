@@ -16,7 +16,7 @@ export function isBrevoConfigured(): boolean {
 
 /** `EMAIL_FROM` keeps its meaning: `Nome <indirizzo>`, verified on Brevo. */
 export function brevoSender(): { name: string; email: string } {
-  return parseSender(process.env.EMAIL_FROM?.trim() || "SuperLega <no-reply@superlega.local>");
+  return parseSender(process.env.EMAIL_FROM?.trim() || "The SuperLeague <no-reply@superlega.local>");
 }
 
 /**

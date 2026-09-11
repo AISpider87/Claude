@@ -112,7 +112,7 @@ function addSheet(
 
 function newWorkbook() {
   const wb = new ExcelJS.Workbook();
-  wb.creator = "SuperLega";
+  wb.creator = "The SuperLeague";
   wb.created = new Date();
   return wb;
 }

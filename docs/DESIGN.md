@@ -1,4 +1,4 @@
-# DESIGN — SuperLega
+# DESIGN — The SuperLeague
 
 Direzione: **"calcio futuristico"** su palette vincolata **blu chiaro / blu scuro /
 nero** (scelta dell'admin). Tema scuro di default, chiaro selezionabile. Design
@@ -118,6 +118,8 @@ dipendenza, nessun colore fuori dai token.
 - **Mercato come console**: rosa a sinistra, acquisto a destra da `lg`, con la
   striscia delle operazioni in sospeso fissata sopra le due colonne.
 - **Intro dopo il login** (`src/components/motion/login-intro.tsx`): **4,2 s**,
+  fondale renderizzato (`public/intro/backdrop.webp`, vortice generato con
+  Higgsfield, 38 KB, solo tema scuro) che spinge lentamente in avanti,
   griglia in prospettiva che corre verso la camera → cometa che cresce venendoci
   incontro → impatto con onda d'urto e scintille → **stemma in 3D** (pila di
   facce in `preserve-3d`, quindi con spessore vero) che ruota, si posa e

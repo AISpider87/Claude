@@ -12,11 +12,11 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: { default: "SuperLega", template: "%s · SuperLega" },
-  description: "Gestione rose e mercato della SuperLega 2026/27.",
-  applicationName: "SuperLega",
+  title: { default: "The SuperLeague", template: "%s · The SuperLeague" },
+  description: "Gestione rose e mercato di The SuperLeague 2026/27.",
+  applicationName: "The SuperLeague",
   manifest: "/manifest.webmanifest",
-  appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "SuperLega" },
+  appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "SuperLeague" },
   icons: {
     icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
     apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],

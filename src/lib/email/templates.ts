@@ -15,11 +15,11 @@ function layout(title: string, paragraphs: string[], cta: { label: string; url: 
   const body = paragraphs.map((p) => `<p style="margin:0 0 12px">${p}</p>`).join("");
   return `<!doctype html><html lang="it"><body style="margin:0;background:#05080f;color:#e6edf7;font-family:Inter,Arial,sans-serif;font-size:16px;line-height:1.5">
 <div style="max-width:560px;margin:0 auto;padding:32px 20px">
-<p style="margin:0 0 20px;font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:#38bdf8">SuperLega</p>
+<p style="margin:0 0 20px;font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:#38bdf8">The SuperLeague</p>
 <h1 style="margin:0 0 16px;font-size:22px">${title}</h1>
 ${body}
 <p style="margin:24px 0"><a href="${cta.url}" style="display:inline-block;background:#0ea5e9;color:#05080f;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:8px">${cta.label}</a></p>
-<p style="margin:0;font-size:12px;color:#8ca0bf">Ricevi questa email perché fai parte della SuperLega.</p>
+<p style="margin:0;font-size:12px;color:#8ca0bf">Ricevi questa email perché fai parte di The SuperLeague.</p>
 </div></body></html>`;
 }
 
@@ -42,7 +42,7 @@ export function sessionOpenedEmail(input: {
     `Svincolati disponibili in questa sessione: <strong>${formatInt(input.freeAgents)}</strong>.`,
   ].filter(Boolean);
   return {
-    subject: `SuperLega · mercato aperto: ${input.sessionName}`,
+    subject: `The SuperLeague · mercato aperto: ${input.sessionName}`,
     html: layout(`Mercato aperto: ${name}`, lines, { label: "Vai al mercato", url }),
     text: [
       `È aperta la sessione di mercato "${input.sessionName}".`,
@@ -100,7 +100,7 @@ export function freeSwapEmail(input: {
       ? "Svincolo gratuito (fuori lista)"
       : "Acquisto gratuito (posto libero)";
   return {
-    subject: `SuperLega · Cambio gratuito: ${input.teamName}`,
+    subject: `The SuperLeague · Cambio gratuito: ${input.teamName}`,
     html: layout(
       title,
       [
@@ -113,7 +113,7 @@ export function freeSwapEmail(input: {
       { label: "Apri il registro operazioni", url },
     ),
     text: [
-      `${title} nella SuperLega.`,
+      `${title} in The SuperLeague.`,
       "",
       `Squadra: ${input.teamName} — manager: ${input.managerName}`,
       movement.text,
@@ -144,7 +144,7 @@ export function sessionClosedEmail(input: {
     "Le rose restano in sola lettura fino alla prossima sessione (esclusi i cambi gratuiti per chi ha lasciato la Serie A).",
   ];
   return {
-    subject: `SuperLega · mercato chiuso: ${input.sessionName}`,
+    subject: `The SuperLeague · mercato chiuso: ${input.sessionName}`,
     html: layout(`Mercato chiuso: ${name}`, lines, { label: "Vedi la tua rosa", url }),
     text: [
       `La sessione di mercato "${input.sessionName}" è chiusa.`,

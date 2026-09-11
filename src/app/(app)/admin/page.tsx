@@ -88,7 +88,7 @@ export default async function AdminPage() {
   await requireAdmin();
   return (
     <>
-      <PageHeader title="Pannello admin" description="Gestione della SuperLega." />
+      <PageHeader title="Pannello admin" description="Gestione di The SuperLeague." />
       <div className="grid gap-4 sm:grid-cols-2">
         {SECTIONS.map(({ href, icon: Icon, title, description, ready }) => (
           <Card key={href} className={ready ? undefined : "opacity-60"}>

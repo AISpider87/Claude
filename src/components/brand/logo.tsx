@@ -2,7 +2,7 @@ import { useId } from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * SuperLega emblem: hexagonal shield, a tactical diagonal run and the "SL"
+ * The SuperLeague emblem: hexagonal shield, a tactical diagonal run and the "SL"
  * monogram, monochrome on the primary colour. Original artwork (no club or
  * federation marks); the same shapes feed public/icons via scripts/make-icons.mjs.
  */
@@ -62,7 +62,7 @@ export function Logo({ className, compact = false }: { className?: string; compa
       <Emblem />
       {!compact && (
         <span className="font-display text-lg font-bold tracking-wide uppercase">
-          Super<span className="text-primary">Lega</span>
+          The Super<span className="text-primary">League</span>
         </span>
       )}
     </span>

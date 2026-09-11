@@ -1,6 +1,6 @@
-# CLAUDE.md — SuperLega
+# CLAUDE.md — The SuperLeague
 
-App web PWA per la gestione delle rose della lega fantacalcio **SuperLega 2026/27**
+App web PWA per la gestione delle rose della lega fantacalcio **The SuperLeague 2026/27** (nome interno breve: SuperLega)
 (20 squadre, Classic). Docs autoritative in `docs/`: **SPEC.md** (requisiti
 congelati — modificarla solo con ok dell'admin), REGOLE-LEGA.md, ARCHITECTURE.md,
 DATA_MODEL.md, ROADMAP.md, DESIGN.md, DECISIONS.md (annota qui ogni scelta),

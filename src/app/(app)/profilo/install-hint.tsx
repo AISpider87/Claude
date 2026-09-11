@@ -18,7 +18,7 @@ function getPlatform(): Platform {
   return /iPad|iPhone|iPod/.test(navigator.userAgent) ? "ios" : "other";
 }
 
-/** Explains how to add SuperLega to the home screen; hidden when already installed. */
+/** Explains how to add The SuperLeague to the home screen; hidden when already installed. */
 export function InstallHint() {
   const platform = useSyncExternalStore(subscribe, getPlatform, () => "unknown" as Platform);
 
@@ -28,7 +28,7 @@ export function InstallHint() {
     <Card>
       <CardHeader className="flex-row items-center gap-2">
         <Smartphone className="text-primary size-5" aria-hidden />
-        <CardTitle className="text-base">Installa SuperLega</CardTitle>
+        <CardTitle className="text-base">Installa The SuperLeague</CardTitle>
       </CardHeader>
       <CardContent className="text-muted text-sm">
         {platform === "ios"

@@ -11,7 +11,7 @@ describe("email templates", () => {
       freeAgents: 120,
       siteUrl: "https://superlega.example/",
     });
-    expect(mail.subject).toBe("SuperLega · mercato aperto: Prima sessione");
+    expect(mail.subject).toBe("The SuperLeague · mercato aperto: Prima sessione");
     expect(mail.text).toContain("fino a 10/09/2026, 20:00");
     expect(mail.text).toContain("5 crediti extra");
     expect(mail.text).toContain("https://superlega.example/mercato");
@@ -57,9 +57,9 @@ describe("freeSwapEmail (admin alert)", () => {
   });
 
   it("says who released whom, for how much, and what is left", () => {
-    expect(release.subject).toBe("SuperLega · Cambio gratuito: Real Gear Second");
+    expect(release.subject).toBe("The SuperLeague · Cambio gratuito: Real Gear Second");
     expect(release.text.split("\n")).toEqual([
-      "Svincolo gratuito (fuori lista) nella SuperLega.",
+      "Svincolo gratuito (fuori lista) in The SuperLeague.",
       "",
       "Squadra: Real Gear Second — manager: Mario",
       "Esce: Rui Patricio (Portiere) — rimborso 12 crediti",
@@ -85,7 +85,7 @@ describe("freeSwapEmail (admin alert)", () => {
       at: "2026-09-11T18:31:00.000Z",
       siteUrl: "https://superlega.example",
     });
-    expect(buy.subject).toBe("SuperLega · Cambio gratuito: Tettenham");
+    expect(buy.subject).toBe("The SuperLeague · Cambio gratuito: Tettenham");
     expect(buy.text).toContain("Acquisto gratuito (posto libero)");
     expect(buy.text).toContain("Entra: Falcone (Portiere) — costo 8 crediti");
     expect(buy.text).toContain("Conta nei cambi stagionali: no");

@@ -523,6 +523,83 @@ body::before {
     48px 48px;
 }
 
+/* Rendered backdrop of the cinematic and of the auth pages
+   (public/intro/backdrop.webp, generated with Higgsfield). It is a dark
+   render, so the light theme keeps the plain ground and hides it. */
+.intro-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  pointer-events: none;
+  user-select: none;
+  will-change: transform, opacity;
+}
+
+.intro-shade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    70% 52% at 50% 50%,
+    color-mix(in srgb, var(--bg) 82%, transparent) 0%,
+    color-mix(in srgb, var(--bg) 55%, transparent) 42%,
+    transparent 78%
+  );
+}
+
+.intro-wordmark {
+  text-shadow:
+    0 2px 18px var(--bg),
+    0 0 6px var(--bg);
+}
+
+:root.light .intro-shade {
+  display: none;
+}
+
+.auth-backdrop {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(
+      120% 80% at 50% 50%,
+      color-mix(in srgb, var(--bg) 35%, transparent) 0%,
+      color-mix(in srgb, var(--bg) 82%, transparent) 60%,
+      var(--bg) 100%
+    ),
+    url("/intro/backdrop.webp");
+  background-size:
+    100% 100%,
+    cover;
+  background-position: center;
+  opacity: 0.85;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .auth-backdrop {
+    animation: auth-backdrop-drift 26s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes auth-backdrop-drift {
+  from {
+    transform: scale(1.02);
+  }
+  to {
+    transform: scale(1.12);
+  }
+}
+
+:root.light .intro-backdrop,
+:root.light .auth-backdrop {
+  display: none;
+}
+
 /* Perspective floor of the cinematic: a grid laid flat under the camera that
    rushes toward it. Pure CSS, one composited layer, no JavaScript. */
 .intro-floor {

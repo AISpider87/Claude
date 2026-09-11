@@ -111,7 +111,7 @@ describe("sendBrevoEmails", () => {
     });
     await sendBrevoEmails([message()], fetchImpl as unknown as typeof fetch);
     expect(bodies[0]).toMatchObject({
-      sender: { name: "SuperLega", email: "lega@superlega.test" },
+      sender: { name: "The SuperLeague", email: "lega@superlega.test" },
     });
   });
 });

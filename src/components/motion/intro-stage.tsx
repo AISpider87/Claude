@@ -19,9 +19,10 @@ import {
  * Choreography of the sign-in cinematic, loaded on demand by `LoginIntro` so
  * the animation code never reaches the pages that do not play it.
  *
- * The run: a perspective floor rushes toward the camera, a comet ball curves in
+ * The run: the rendered vortex backdrop pushes in slowly, a perspective floor
+ * rushes toward the camera, a comet ball curves in
  * from the lower left growing as it comes at us, the impact opens a shockwave
- * and throws embers out of the screen, and the SuperLega emblem swings in on a
+ * and throws embers out of the screen, and the SuperLeague emblem swings in on a
  * 3D turn — a stack of layers in `preserve-3d`, so it has real thickness — and
  * then *stays*, beating like a heart with its halo until the curtain wipes.
  */
@@ -347,6 +348,25 @@ export function IntroStage({ reduced = false }: { reduced?: boolean }) {
       transition={{ duration: T.end - T.wipe, delay: T.wipe, ease: [0.7, 0, 0.3, 1] }}
     >
       <div className="intro-ground absolute inset-0 overflow-hidden">
+        {/* Rendered backdrop (public/intro/backdrop.webp, generated with
+            Higgsfield, 38 KB): a slow push-in through the vortex for the whole
+            run. Dark theme only, see globals.css. */}
+        <motion.img
+          src="/intro/backdrop.webp"
+          alt=""
+          aria-hidden
+          draggable={false}
+          className="intro-backdrop"
+          initial={{ opacity: 0, scale: 1.28 }}
+          animate={{ opacity: 0.82, scale: 1.04 }}
+          transition={{
+            opacity: { duration: 0.5, ease: "easeOut" },
+            scale: { duration: T.end, ease: [0.2, 0.6, 0.3, 1] },
+          }}
+        />
+        {/* Dark pool in the middle of the render, so the emblem and the
+            wordmark read over the rings. */}
+        <div className="intro-shade" aria-hidden />
         {/* Perspective floor rushing toward the camera (pure CSS, see globals). */}
         <div className="intro-floor" aria-hidden />
 
@@ -504,12 +524,12 @@ export function IntroStage({ reduced = false }: { reduced?: boolean }) {
           </div>
 
           <motion.p
-            className="font-display text-foreground text-xl font-bold uppercase sm:text-2xl"
+            className="intro-wordmark font-display text-foreground text-xl font-bold uppercase sm:text-2xl"
             initial={{ opacity: 0, y: 14, letterSpacing: "0.5em", filter: "blur(6px)" }}
             animate={{ opacity: 1, y: 0, letterSpacing: "0.16em", filter: "blur(0px)" }}
             transition={{ duration: 0.55, delay: T.word, ease: [0.16, 0.8, 0.24, 1] }}
           >
-            Super<span className="text-primary">Lega</span>
+            The Super<span className="text-primary">League</span>
           </motion.p>
         </div>
       </div>

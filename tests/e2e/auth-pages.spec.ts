@@ -37,7 +37,7 @@ test.describe("public auth pages", () => {
     const res = await request.get("/manifest.webmanifest");
     expect(res.ok()).toBe(true);
     const manifest = await res.json();
-    expect(manifest.name).toBe("SuperLega");
+    expect(manifest.name).toBe("The SuperLeague");
     expect(manifest.display).toBe("standalone");
   });
 });

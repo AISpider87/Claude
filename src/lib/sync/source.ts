@@ -9,7 +9,7 @@ export interface QuotationSource {
   fetchLatest(): Promise<{ bytes: Uint8Array; fileName: string } | null>;
 }
 
-const USER_AGENT = "SuperLega/1.0 (+lega privata; sync quotazioni 1x/giorno)";
+const USER_AGENT = "TheSuperLeague/1.0 (+lega privata; sync quotazioni 1x/giorno)";
 const MAX_BYTES = 5 * 1024 * 1024;
 const TIMEOUT_MS = 20_000;
 

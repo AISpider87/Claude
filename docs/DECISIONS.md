@@ -539,3 +539,28 @@ listone,operazioni}`) con exceljs, letture paginate (`fetchAll`) sotto la
   l'ambiente di build non può scaricare il CDN che ospita i render, quindi
   l'animazione resta **tutta vettoriale/CSS** — nessun asset raster, niente peso
   aggiunto e i colori seguono il tema chiaro/scuro.
+
+- 2026-09-11 — **Il nome vero è "The SuperLeague".** Su indicazione dell'admin
+  cambia tutto ciò che vede l'utente: wordmark (`The Super` + `League`),
+  intro, `<title>`, manifest (`short_name` "SuperLeague", ≤ 12 caratteri per
+  la home screen), etichette, pagina offline, email (intestazione, oggetti,
+  mittente predefinito), creatore dei file Excel. Restano com'erano gli
+  identificatori tecnici (package, database, `superlega_test`, i fixture) e
+  "SuperLega" nei documenti interni come nome breve: rinominare tutto lì non
+  cambia niente per la lega e sporca lo storico delle decisioni.
+
+- 2026-09-11 — **Fondale Higgsfield nell'intro e nel login.** L'admin ha
+  chiesto di curare la grafica con Higgsfield. Con i crediti gratuiti del piano
+  free (0 €) ho generato un vortice di luce astratto nella nostra palette
+  (ciano + brace, niente testi, loghi, persone o palloni: nessun problema di
+  licenza, è un'opera generata su nostro prompt) e un video di 4 s dallo stesso
+  fotogramma. L'ambiente di build non raggiunge il CDN di Higgsfield: il file è
+  passato dalla sandbox di Higgsfield (ridotto a 768 px, WebP, **38 KB**,
+  verificato con SHA-256) a `public/intro/backdrop.webp`. Sta **dietro** allo
+  stemma vettoriale — l'identità resta la nostra — con una lenta spinta in
+  avanti durante l'intro e, sulle pagine di accesso, come sfondo vignettato con
+  una deriva di 26 s. **Solo tema scuro**: è un render scuro, nel tema chiaro
+  resta il fondo piatto. Il **video** non è nell'app: 4 s a 720p pesano più di
+  tutta la pagina di login e su iOS l'autoplay non è garantito; lo si rivede
+  nella galleria Higgsfield e si può integrare in seguito se l'admin lo vuole
+  davvero (con un peso di ~400 KB a ogni accesso).

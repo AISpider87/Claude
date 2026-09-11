@@ -26,7 +26,7 @@ export function AppShell({ user, children }: { user: CurrentUser; children: Reac
       <IntroScript />
       {/* Desktop sidebar */}
       <aside className="border-line bg-surface/80 hidden w-60 shrink-0 flex-col border-r p-4 backdrop-blur lg:flex">
-        <Link href="/rosa" className="mb-6 px-2" aria-label="SuperLega">
+        <Link href="/rosa" className="mb-6 px-2" aria-label="The SuperLeague">
           <Logo />
         </Link>
         <MainNav items={items} orientation="vertical" />
@@ -41,7 +41,7 @@ export function AppShell({ user, children }: { user: CurrentUser; children: Reac
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Mobile header: slim, lifts off the page when it scrolls */}
         <AppHeader>
-          <Link href="/rosa" aria-label="SuperLega">
+          <Link href="/rosa" aria-label="The SuperLeague">
             <Logo />
           </Link>
           <span className="flex min-w-0 items-center gap-1">

@@ -17,7 +17,7 @@ export function isResendConfigured(): boolean {
 }
 
 export function emailSender(): string {
-  return process.env.EMAIL_FROM?.trim() || "SuperLega <onboarding@resend.dev>";
+  return process.env.EMAIL_FROM?.trim() || "The SuperLeague <onboarding@resend.dev>";
 }
 
 export async function sendResendEmails(

@@ -16,6 +16,6 @@ export interface SendResult {
 /** `EMAIL_FROM` is `Nome <indirizzo>` (the name is optional). */
 export function parseSender(value: string): { name: string; email: string } {
   const match = /^\s*(.*?)\s*<\s*([^<>\s]+)\s*>\s*$/.exec(value);
-  if (match) return { name: match[1] || "SuperLega", email: match[2]! };
-  return { name: "SuperLega", email: value.trim() };
+  if (match) return { name: match[1] || "The SuperLeague", email: match[2]! };
+  return { name: "The SuperLeague", email: value.trim() };
 }

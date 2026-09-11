@@ -147,7 +147,7 @@ describe("quotation sources", () => {
     ).fetchLatest();
     expect(ok?.fileName).toBe("Quotazioni_2026.xlsx");
     expect(ok?.bytes.byteLength).toBe(2000);
-    expect((seen[0]?.headers as Record<string, string>)["user-agent"]).toContain("SuperLega");
+    expect((seen[0]?.headers as Record<string, string>)["user-agent"]).toContain("TheSuperLeague");
 
     const html = (async () => new Response("<html>login</html>", { status: 200 })) as typeof fetch;
     await expect(

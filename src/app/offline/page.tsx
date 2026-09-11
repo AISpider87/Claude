@@ -11,7 +11,7 @@ export default function OfflinePage() {
       <WifiOff className="text-primary size-12" aria-hidden />
       <h1 className="font-display text-2xl font-semibold">Sei offline</h1>
       <p className="text-muted max-w-sm">
-        SuperLega ha bisogno della connessione per mostrare rose e mercato. Riprova appena torni
+        The SuperLeague ha bisogno della connessione per mostrare rose e mercato. Riprova appena torni
         online.
       </p>
     </main>

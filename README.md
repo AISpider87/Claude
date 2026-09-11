@@ -1,7 +1,7 @@
-# SuperLega
+# The SuperLeague
 
 App web (PWA) per la gestione delle rose e del mercato della lega fantacalcio
-**SuperLega 2026/27**: 20 squadre, modalità Classic, quotazioni da Fantacalcio.it.
+**The SuperLeague 2026/27**: 20 squadre, modalità Classic, quotazioni da Fantacalcio.it.
 
 - Documentazione di progetto: `docs/` (`SPEC.md`, `ARCHITECTURE.md`, `DATA_MODEL.md`,
   `ROADMAP.md`, `DESIGN.md`, `REGOLE-LEGA.md`, `DECISIONS.md`, `BACKLOG.md`).

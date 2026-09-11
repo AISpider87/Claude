@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "SuperLega",
-    short_name: "SuperLega",
-    description: "Gestione rose e mercato della SuperLega.",
+    name: "The SuperLeague",
+    short_name: "SuperLeague",
+    description: "Gestione rose e mercato di The SuperLeague.",
     lang: "it",
     start_url: "/rosa",
     scope: "/",
