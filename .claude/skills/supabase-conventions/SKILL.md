@@ -45,3 +45,11 @@ request.jwt.claims ...` nei test SQL, per anon/manager/admin.
   locali. Il seed di produzione crea solo il primo admin da env.
 - Mai chiave service-role nel client; nei server action usare il client
   server-side con i cookie dell'utente (RLS attiva), service-role solo nel cron.
+
+## pg-safeupdate (Supabase)
+
+The API roles run with `pg-safeupdate`: an `UPDATE`/`DELETE` without `WHERE`
+fails with "UPDATE requires a WHERE clause" in production only (local tests do
+not load the extension). Every `UPDATE`/`DELETE` inside a function must carry a
+`WHERE`, using `where true` when it is meant for all rows (migration
+`20260909240000`).

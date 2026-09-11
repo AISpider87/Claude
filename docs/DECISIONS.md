@@ -296,3 +296,9 @@ listone,operazioni}`) con exceljs, letture paginate (`fetchAll`) sotto la
 - 2026-09-11 · **Avatar v1 rivisti su feedback dell'admin**: mezzo busto senza
   pallone, più dettaglio; mostrati solo nella rosa del manager (dove si fanno
   svincoli e acquisti), non nel listone. In corso.
+- 2026-09-11 · **`where true` obbligatorio negli UPDATE su tutte le righe**:
+  Supabase esegue i ruoli API con `pg-safeupdate`, che rifiuta gli UPDATE senza
+  WHERE ("UPDATE requires a WHERE clause"); l'accredito del budget extra
+  all'apertura non lo aveva e "Apri ora"/apertura automatica fallivano solo in
+  produzione. Regola annotata nella skill supabase-conventions. Migrazione
+  `20260909240000`.
