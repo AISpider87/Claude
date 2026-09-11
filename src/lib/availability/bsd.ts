@@ -424,6 +424,11 @@ export function bsdProvider(key: string, opts: BsdOptions = {}) {
         `nessuna rotta per ${CAPABILITY_LABEL[what]}: cercate ${[...primary, ...fallback].join(", ")}`,
       );
     }
+    // With a capability unmatched, the admin needs the whole list to send back.
+    if (discovered && missed.size > 0) {
+      const paths = [...new Set(discovered.map((r) => r.path))].sort();
+      out.push(`elenco rotte: ${paths.join(" · ")}`);
+    }
     out.push(...substitutions, ...discoveryProblems);
     return out;
   }

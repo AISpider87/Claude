@@ -70,15 +70,30 @@ export const CAPABILITY_KEYWORDS: Record<BsdCapability, { primary: string[]; fal
   {
     injuries: {
       primary: ["injur"],
-      fallback: ["unavailab", "sideline", "absence", "absent"],
+      // BSD names things its own way: the live index has no "injuries" route,
+      // so we also look for availability/status wordings before giving up.
+      fallback: [
+        "unavailab",
+        "sideline",
+        "absence",
+        "absent",
+        "availability",
+        "player-status",
+        "player_status",
+        "playerstatus",
+        "suspension",
+        "suspended",
+        "missing",
+        "doubtful",
+      ],
     },
     fixtures: {
       primary: ["fixture", "match", "schedule"],
       fallback: ["game", "calendar"],
     },
     lineups: {
-      primary: ["lineup", "line-up", "line_up", "formation", "squad"],
-      fallback: ["starting", "eleven"],
+      primary: ["lineup", "line-up", "line_up", "formation"],
+      fallback: ["squad", "starting", "eleven", "roster", "team-sheet", "teamsheet"],
     },
   };
 
