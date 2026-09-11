@@ -282,7 +282,8 @@ listone,operazioni}`) con exceljs, letture paginate (`fetchAll`) sotto la
   e non al manager che ha caricato la pagina; ricontrollo "una sola sessione
   aperta" dopo il lock delle squadre; email di chiusura conta le operazioni v2;
   scelte "fuori lista" dell'import validate riga per riga. Migrazione
-  `20260909230000`.
+  `20260909250000` (rinumerata: la revisione l'aveva creata come 230000, in
+  conflitto con `player_status`).
 - 2026-09-11 · **Stato di disponibilità dei calciatori con fonte** (richiesta
   dell'admin: "infortunato, con la notizia e la fonte"): tabella
   `player_status` scritta a mano dall'admin da _Admin → Indisponibili_, letta

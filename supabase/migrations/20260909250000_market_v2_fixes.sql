@@ -3,6 +3,8 @@
 -- M1 automatic transitions are attributed to nobody (user_id null, source 'auto'),
 --    not to the manager whose page load triggered them;
 -- L1 re-check the single-open rule after taking the teams lock.
+-- (Renumbered to 250000 so it runs after the player_status and safeupdate
+-- migrations; it re-creates open_session with the "where true" of 240000.)
 
 create or replace function private.check_market_throttle(p_team_id uuid)
 returns void
@@ -71,7 +73,7 @@ begin
   select count(*) into v_free from public.session_free_agents where session_id = p_id;
 
   if not v_session.extra_budget_applied and v_session.extra_budget > 0 then
-    update public.teams set credits = credits + v_session.extra_budget;
+    update public.teams set credits = credits + v_session.extra_budget where true;  -- pg-safeupdate
     insert into public.transactions (team_id, session_id, kind, credits_delta, note, created_by)
     select id, p_id, 'admin_credits', v_session.extra_budget, 'Budget extra apertura sessione', v_actor
     from public.teams;
