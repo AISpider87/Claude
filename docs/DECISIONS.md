@@ -311,3 +311,10 @@ listone,operazioni}`) con exceljs, letture paginate (`fetchAll`) sotto la
   posti da riempire. Anteprima admin `/admin/anteprima-rosa`; integrazione in
   Rosa/Mercato dopo l'ok dell'admin. Gli avatar non compaiono nel listone
   (scelta dell'admin).
+- 2026-09-11 · **Export rose anche nel layout Leghe Fantacalcio** (richiesta
+  dell'admin "excel delle rose aggiornate dopo la sessione"): terzo foglio
+  "ROSE" a blocchi di 3 colonne, ordinato per ruolo e Qt.A, `*` sui fuori
+  lista, riga Totale, 5 squadre per banda; test di andata e ritorno con il
+  parser dell'import. Pulsante di download nella pagina della sessione chiusa.
+  Il foglio dettagliato si chiama ora "Dettaglio" (ExcelJS non distingue
+  "Rose"/"ROSE").

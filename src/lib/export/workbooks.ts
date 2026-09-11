@@ -117,11 +117,65 @@ function newWorkbook() {
   return wb;
 }
 
+const ROLE_ORDER: Record<string, number> = { P: 0, D: 1, C: 2, A: 3 };
+const LEGHE_TEAMS_PER_BAND = 5;
+
+/**
+ * Sheet "ROSE" in the layout of the Leghe Fantacalcio "Rose" export: teams side
+ * by side in 3-column blocks (`team | costo | blank`), players by role, "*" for
+ * out-of-list players, a "totale" row, several vertical bands. The rosters
+ * import of this app reads it back as-is.
+ */
+function addLegheSheet(wb: ExcelJS.Workbook, rosters: RosterExportRow[], teams: TeamExportRow[]) {
+  const sheet = wb.addWorksheet("ROSE");
+  const byTeam = new Map<string, RosterExportRow[]>();
+  for (const r of rosters) {
+    const list = byTeam.get(r.team) ?? [];
+    list.push(r);
+    byTeam.set(r.team, list);
+  }
+  const names = [...new Set([...teams.map((t) => t.team), ...byTeam.keys()])].sort((a, b) =>
+    a.localeCompare(b, "it"),
+  );
+  let top = 1;
+  for (let i = 0; i < names.length; i += LEGHE_TEAMS_PER_BAND) {
+    const band = names.slice(i, i + LEGHE_TEAMS_PER_BAND);
+    let height = 0;
+    band.forEach((team, j) => {
+      const col = 1 + j * 3;
+      const players = [...(byTeam.get(team) ?? [])].sort(
+        (a, b) =>
+          (ROLE_ORDER[a.role] ?? 9) - (ROLE_ORDER[b.role] ?? 9) ||
+          b.qtA - a.qtA ||
+          a.player.localeCompare(b.player, "it"),
+      );
+      sheet.getCell(top, col).value = team;
+      sheet.getCell(top, col).font = { bold: true };
+      sheet.getCell(top, col + 1).value = "Costo";
+      sheet.getCell(top, col + 1).font = { bold: true };
+      players.forEach((p, k) => {
+        sheet.getCell(top + 1 + k, col).value = p.outOfList ? `${p.player}*` : p.player;
+        sheet.getCell(top + 1 + k, col + 1).value = p.pricePaid;
+      });
+      const totalRow = top + 1 + players.length;
+      sheet.getCell(totalRow, col).value = "Totale";
+      sheet.getCell(totalRow, col).font = { bold: true };
+      sheet.getCell(totalRow, col + 1).value = players.reduce((n, p) => n + p.pricePaid, 0);
+      sheet.getColumn(col).width = 24;
+      sheet.getColumn(col + 1).width = 8;
+      sheet.getColumn(col + 2).width = 3;
+      height = Math.max(height, players.length + 2);
+    });
+    top += height + 1;
+  }
+  return sheet;
+}
+
 export function buildRostersWorkbook(rosters: RosterExportRow[], teams: TeamExportRow[]) {
   const wb = newWorkbook();
   addSheet(
     wb,
-    "Rose",
+    "Dettaglio",
     [
       { header: "Squadra", key: "team", width: 26 },
       { header: "Sigla", key: "shortName", width: 8 },
@@ -155,6 +209,7 @@ export function buildRostersWorkbook(rosters: RosterExportRow[], teams: TeamExpo
     ],
     teams.map((t) => ({ ...t, manager: t.manager ?? "" })),
   );
+  addLegheSheet(wb, rosters, teams);
   return wb;
 }
 

@@ -539,10 +539,14 @@ lista a prezzo pagato) non sono modificabili dall'interfaccia.
 **Admin → Impostazioni lega → Export Excel**: tre file `.xlsx` scaricabili
 con un tocco.
 
-- **Rose e crediti**: un foglio con una riga per calciatore in rosa (Squadra,
-  Sigla, Id, Calciatore, R, Squadra Serie A, Qt.A, Prezzo pagato, Acquisito
-  il, Come, Fuori lista) e un foglio per squadra (Manager, Crediti residui,
-  Cambi usati, Giocatori).
+- **Rose e crediti**: foglio **Dettaglio** con una riga per calciatore in
+  rosa (Squadra, Sigla, Id, Calciatore, R, Squadra Serie A, Qt.A, Prezzo
+  pagato, Acquisito il, Come, Fuori lista), foglio **Squadre** (Manager,
+  Crediti residui, Cambi usati, Giocatori) e foglio **ROSE** nello stesso
+  layout dell'export "Rose" di Leghe Fantacalcio (squadre affiancate, nome e
+  costo, `*` sui fuori lista, riga Totale): si può ricaricare altrove e anche
+  re-importare qui (§4). Lo stesso file si scarica dalla pagina di ogni
+  **sessione chiusa** ("Rose aggiornate").
 - **Listone con quotazioni**: stesse intestazioni del file ufficiale più
   Stato, In quante rose, Aggiornato il (colonne che il parser ignora), quindi
   **si può re-importare** con l'import manuale (§3.1).

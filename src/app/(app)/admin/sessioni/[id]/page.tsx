@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Download } from "lucide-react";
 import { LedgerTable } from "@/components/market/ledger-table";
 import { Badge, RoleBadge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -103,6 +103,27 @@ export default async function AdminSessionPage({ params }: { params: Promise<{ i
             </CardContent>
           </Card>
         </div>
+
+        {session.status === "closed" && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Rose aggiornate</CardTitle>
+              <CardDescription>
+                Excel con tutte le rose dopo questa sessione: foglio dettagliato, riepilogo squadre
+                e foglio &quot;ROSE&quot; nel formato dell&apos;export di Leghe Fantacalcio.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- file download from a route handler, not a page */}
+              <a
+                href="/api/admin/export/rose"
+                className="bg-primary-strong text-on-primary inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-control)] px-4 text-sm font-semibold"
+              >
+                <Download className="size-4" aria-hidden /> Scarica le rose (Excel)
+              </a>
+            </CardContent>
+          </Card>
+        )}
 
         {report?.teams && (
           <Card>

@@ -51,7 +51,7 @@ describe("admin Excel exports", () => {
       ],
     );
     const loaded = await reload(await workbookToBuffer(wb));
-    const rose = loaded.getWorksheet("Rose")!;
+    const rose = loaded.getWorksheet("Dettaglio")!;
     expect(rowValues(rose, 1)).toEqual([
       "Squadra",
       "Sigla",
@@ -154,5 +154,87 @@ describe("admin Excel exports", () => {
       "sì",
       "",
     ]);
+  });
+});
+
+describe("rosters export — Leghe Fantacalcio layout round-trip", () => {
+  it("writes a ROSE sheet the rosters import reads back unchanged", async () => {
+    const { parseRostersWorkbook } = await import("@/lib/import/rosters-parser");
+    const base = {
+      manager: null,
+      credits: 0,
+      swapsUsed: 0,
+      serieATeam: "Roma",
+      acquiredAt: "2026-08-20T20:00:00.000Z",
+      acquiredVia: "buy",
+    };
+    const rosters = [
+      {
+        ...base,
+        team: "Beta",
+        shortName: "BET",
+        playerId: 2,
+        player: "Meret",
+        role: "P",
+        qtA: 11,
+        pricePaid: 11,
+        outOfList: false,
+      },
+      {
+        ...base,
+        team: "Alpha",
+        shortName: "ALP",
+        playerId: 3,
+        player: "Dimarco",
+        role: "D",
+        qtA: 31,
+        pricePaid: 24,
+        outOfList: false,
+      },
+      {
+        ...base,
+        team: "Alpha",
+        shortName: "ALP",
+        playerId: 1,
+        player: "Svilar",
+        role: "P",
+        qtA: 18,
+        pricePaid: 17,
+        outOfList: false,
+      },
+      {
+        ...base,
+        team: "Alpha",
+        shortName: "ALP",
+        playerId: -4,
+        player: "Partito",
+        role: "A",
+        qtA: 0,
+        pricePaid: 9,
+        outOfList: true,
+      },
+    ];
+    const teams = [
+      { team: "Alpha", shortName: "ALP", manager: null, credits: 0, swapsUsed: 0, players: 3 },
+      { team: "Beta", shortName: "BET", manager: null, credits: 0, swapsUsed: 0, players: 1 },
+    ];
+    const bytes = await workbookToBuffer(buildRostersWorkbook(rosters, teams));
+    const wb = await reload(bytes);
+    const sheet = wb.getWorksheet("ROSE")!;
+    expect(rowValues(sheet, 1).slice(0, 5)).toEqual(["Alpha", "Costo", undefined, "Beta", "Costo"]);
+    expect(rowValues(sheet, 2).slice(0, 2)).toEqual(["Svilar", 17]); // goalkeeper first
+    expect(rowValues(sheet, 4).slice(0, 2)).toEqual(["Partito*", 9]); // out of list marked
+    expect(rowValues(sheet, 5).slice(0, 2)).toEqual(["Totale", 50]);
+
+    const parsed = await parseRostersWorkbook(bytes);
+    const alpha = parsed.teams.find((t) => t.name === "Alpha")!;
+    expect(alpha.entries.map((e) => [e.name, e.cost, e.outOfList])).toEqual([
+      ["Svilar", 17, false],
+      ["Dimarco", 24, false],
+      ["Partito", 9, true],
+    ]);
+    expect(alpha.declaredTotal).toBe(50);
+    expect(parsed.teams.find((t) => t.name === "Beta")!.total).toBe(11);
+    expect(parsed.anomalies.filter((a) => a.code !== "roster_size")).toEqual([]);
   });
 });
