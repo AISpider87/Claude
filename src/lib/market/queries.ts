@@ -85,6 +85,8 @@ export interface TeamMarketState {
   slots: Record<RoleClassic, number>;
   /** Free releases not yet compensated: purchases for these do not count. */
   freeSlots: Record<RoleClassic, number>;
+  /** Operations of the open session not yet final, and how many purchases among them will count. */
+  pending: { operations: number; swaps: number };
 }
 
 const ZERO: Record<RoleClassic, number> = { P: 0, D: 0, C: 0, A: 0 };
@@ -92,14 +94,25 @@ const ZERO: Record<RoleClassic, number> = { P: 0, D: 0, C: 0, A: 0 };
 export async function getTeamMarketState(teamId: string): Promise<TeamMarketState> {
   const supabase = await createClient();
   const { data } = await supabase.rpc("team_market_state", { p_team_id: teamId });
-  const v = (data ?? {}) as { slots?: Record<string, number>; free_slots?: Record<string, number> };
+  const v = (data ?? {}) as {
+    slots?: Record<string, number>;
+    free_slots?: Record<string, number>;
+    pending?: { operations?: number; swaps?: number };
+  };
   const pick = (m: Record<string, number> | undefined): Record<RoleClassic, number> => ({
     P: Number(m?.P ?? 0),
     D: Number(m?.D ?? 0),
     C: Number(m?.C ?? 0),
     A: Number(m?.A ?? 0),
   });
-  return { slots: data ? pick(v.slots) : ZERO, freeSlots: data ? pick(v.free_slots) : ZERO };
+  return {
+    slots: data ? pick(v.slots) : ZERO,
+    freeSlots: data ? pick(v.free_slots) : ZERO,
+    pending: {
+      operations: Number(v.pending?.operations ?? 0),
+      swaps: Number(v.pending?.swaps ?? 0),
+    },
+  };
 }
 
 export async function getMarketSettings() {
@@ -125,11 +138,18 @@ export interface LedgerRow extends Transaction {
   reversed: boolean;
 }
 
+/** Pending operations of a team in the open session, oldest first. */
+export async function listPendingOperations(teamId: string): Promise<LedgerRow[]> {
+  const rows = await listTransactions({ teamId, limit: 100, status: "pending" });
+  return rows.reverse();
+}
+
 export async function listTransactions(
   options: {
     limit?: number;
     sessionId?: string;
     teamId?: string;
+    status?: "pending" | "confirmed";
   } = {},
 ): Promise<LedgerRow[]> {
   const supabase = await createClient();
@@ -140,6 +160,7 @@ export async function listTransactions(
     .limit(options.limit ?? 50);
   if (options.sessionId) query = query.eq("session_id", options.sessionId);
   if (options.teamId) query = query.eq("team_id", options.teamId);
+  if (options.status) query = query.eq("status", options.status);
   const { data: rows } = await query;
   if (!rows?.length) return [];
 

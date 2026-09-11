@@ -7,10 +7,10 @@ declare
   v_tx uuid; v_tx2 uuid; v_rev uuid;
   v_credits int; v_swaps int; v_state jsonb;
 begin
-  alter table public.transactions disable trigger trg_transactions_immutable;
+  alter table public.transactions disable trigger trg_transactions_guard;
   delete from public.transactions; delete from public.session_free_agents; delete from public.market_sessions;
   delete from public.player_quotations; delete from public.roster_players; delete from public.teams; delete from public.players;
-  alter table public.transactions enable trigger trg_transactions_immutable;
+  alter table public.transactions enable trigger trg_transactions_guard;
   -- composition for the test: 1P / 2D / 1C / 1A
   insert into public.league_settings (key, value) values ('roster_composition', '{"P":1,"D":2,"C":1,"A":1}')
   on conflict (key) do update set value = excluded.value;
@@ -132,6 +132,8 @@ begin
   -- buy Def3 (12) → 10 credits, 1 swap; buy Def5 (4) → 6 credits, 2 swaps
   perform public.buy_player(v_a, 4);
   perform public.buy_player(v_a, 11);
+  -- session operations are pending until confirmed (M14): confirm to count them
+  perform public.confirm_pending_operations(v_a);
   perform 1 from public.teams where id = v_a and credits = 6 and swaps_used = 2;
   if not found then raise exception 'purchases should count and charge Qt.A'; end if;
   if (public.team_market_state(v_a) #>> '{slots,D}')::int <> 0 then raise exception 'D holes should be filled'; end if;
@@ -144,6 +146,7 @@ begin
   -- midfielder: release Cen1 (+9 → 15), buy Cen2 (11) → 4 credits, 3 swaps
   perform public.sell_player(v_a, 6);
   perform public.buy_player(v_a, 7);
+  perform public.confirm_pending_operations(v_a);
   perform 1 from public.teams where id = v_a and credits = 4 and swaps_used = 3;
   if not found then raise exception 'C purchase wrong'; end if;
   perform auth.test_logout();

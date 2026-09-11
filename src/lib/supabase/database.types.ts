@@ -201,6 +201,8 @@ type TransactionRow = {
   reversal_of: string | null;
   created_by: string | null;
   created_at: string;
+  /** In-session releases/purchases stay pending until the manager confirms or the session closes. */
+  status: "pending" | "confirmed";
 };
 
 type AuditLogRow = {
@@ -345,6 +347,8 @@ export type Database = {
         }[];
       };
       reverse_transaction: { Args: { p_tx_id: string; p_reason: string }; Returns: string };
+      undo_pending_operation: { Args: { p_tx_id: string }; Returns: undefined };
+      confirm_pending_operations: { Args: { p_team_id: string }; Returns: number };
       consume_rate_limit: { Args: { p_bucket: RateLimitBucket }; Returns: undefined };
       consume_anonymous_attempt: {
         Args: { p_bucket: "login" | "signup" | "reset"; p_key: string };

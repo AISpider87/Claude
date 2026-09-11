@@ -23,9 +23,11 @@ export interface BuyCandidate {
   qtA: number;
   /** Fills a free slot (from a free release): does not count toward the limit. */
   free: boolean;
+  /** Why this player cannot be bought right now (no hole in the role, limit reached…). */
+  blocked?: string;
 }
 
-const MAX_OPTIONS = 60;
+const MAX_OPTIONS = 150;
 const tileClass =
   "avatar-host border-line flex min-h-12 w-full items-center gap-2.5 rounded-[var(--radius-control)] border py-1.5 pr-3 pl-2 text-left text-sm transition-colors";
 
@@ -43,7 +45,7 @@ export function BuyPanel({
   teamId: string;
   credits: number;
   candidates: BuyCandidate[];
-  /** Roles with at least one hole, in display order. */
+  /** Roles with at least one hole, in display order (the filter starts on the only open one). */
   openRoles: RoleClassic[];
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
 }) {
@@ -64,6 +66,7 @@ export function BuyPanel({
   const cost = chosen?.qtA ?? 0;
   const after = credits - cost;
 
+  const rolesPresent = ROLE_ORDER.filter((r) => candidates.some((c) => c.role === r));
   const q = normalizeName(query);
   const matching = candidates
     .filter((c) => !roleFilter || c.role === roleFilter)
@@ -79,9 +82,9 @@ export function BuyPanel({
         <h4 id={ids.list} className="text-muted mb-2 text-xs font-semibold uppercase">
           Svincolati che puoi prendere (hai {formatInt(credits)} crediti)
         </h4>
-        {openRoles.length > 1 && (
+        {rolesPresent.length > 1 && (
           <div className="mb-2 flex flex-wrap gap-2" role="group" aria-label="Filtra per ruolo">
-            {ROLE_ORDER.filter((r) => openRoles.includes(r)).map((role) => (
+            {rolesPresent.map((role) => (
               <button
                 key={role}
                 type="button"
@@ -93,6 +96,7 @@ export function BuyPanel({
                 )}
               >
                 <RoleBadge role={role} className="size-5 text-[10px]" /> {ROLE_LABEL[role]}
+                {!openRoles.includes(role) && <span className="text-muted text-xs">(pieno)</span>}
               </button>
             ))}
           </div>
@@ -118,7 +122,7 @@ export function BuyPanel({
           <>
             <div className="grid max-h-96 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
               {options.map((c) => {
-                const affordable = credits - c.qtA >= 0;
+                const affordable = credits - c.qtA >= 0 && !c.blocked;
                 return (
                   <button
                     key={c.id}
@@ -151,7 +155,7 @@ export function BuyPanel({
                         {!affordable && (
                           <span id={ids.why(c.id)} className="text-danger">
                             {" "}
-                            · crediti insufficienti
+                            · {c.blocked ?? "crediti insufficienti"}
                           </span>
                         )}
                       </span>

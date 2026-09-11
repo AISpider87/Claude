@@ -62,6 +62,11 @@ export function LedgerTable({
               >
                 {KIND_LABEL[t.kind] ?? t.kind}
               </Badge>
+              {t.status === "pending" && (
+                <Badge variant="muted" className="ml-1">
+                  in sospeso
+                </Badge>
+              )}
               {t.kind === "buy" && !t.counts_toward_limit && (
                 <Badge variant="muted" className="ml-1">
                   gratuito

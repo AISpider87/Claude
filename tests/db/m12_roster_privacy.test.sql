@@ -5,10 +5,10 @@ declare
   v_a uuid; v_b uuid;
   v_count int;
 begin
-  alter table public.transactions disable trigger trg_transactions_immutable;
+  alter table public.transactions disable trigger trg_transactions_guard;
   delete from public.transactions; delete from public.session_free_agents; delete from public.market_sessions;
   delete from public.player_quotations; delete from public.roster_players; delete from public.teams; delete from public.players;
-  alter table public.transactions enable trigger trg_transactions_immutable;
+  alter table public.transactions enable trigger trg_transactions_guard;
   insert into public.players (id, name, team, role_classic, qt_a, qt_i, diff) values
     (1, 'Por1', 'Roma', 'P', 10, 10, 0), (2, 'Por2', 'Inter', 'P', 15, 15, 0), (3, 'Por3', 'Como', 'P', 5, 5, 0);
   insert into auth.users (email, raw_user_meta_data) values ('admin@superlega.local', '{"display_name": "Daniele", "league_code": "superlega-dev"}') returning id into v_admin;

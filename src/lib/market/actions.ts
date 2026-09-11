@@ -320,3 +320,23 @@ export async function reverseTransaction(_prev: FormState, formData: FormData): 
   revalidatePath("/listone");
   return { status: "success", message: "Operazione annullata: creata l'operazione inversa." };
 }
+
+/** Manager: undo one of their own pending operations (before the session closes). */
+export async function undoPendingOperation(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  await requireUser();
+  const limited = await throttle("market");
+  if (limited) return { status: "error", message: limited };
+  const parsed = z.object({ txId: z.uuid() }).safeParse({ txId: formData.get("txId") });
+  if (!parsed.success) return { status: "error", message: "Operazione non valida." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("undo_pending_operation", { p_tx_id: parsed.data.txId });
+  if (error)
+    return { status: "error", message: marketMessage(error.message, "Annullamento non riuscito.") };
+  revalidatePath("/mercato");
+  revalidatePath("/rosa");
+  revalidatePath("/listone");
+  redirect("/mercato?done=undo");
+}

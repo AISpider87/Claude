@@ -46,9 +46,13 @@ regolamento**, non si faranno mai.
   origine "cambio" atomico): a sessione aperta il manager **svincola** un
   proprio giocatore (rientro = Qt.A attuale, si apre un posto nel suo ruolo) e
   **acquista** svincolati solo nei ruoli con posti liberi (chi esce difensore
-  rientra difensore). Ogni acquisto usa uno dei **20 cambi a stagione** per
-  squadra (nessun limite per sessione); gli svincoli non contano. Alla chiusura
-  la rosa deve tornare 3/7/7/6: i posti vuoti finiscono nel report.
+  rientra difensore). Svincoli e acquisti della sessione restano **in sospeso**:
+  spostano subito giocatori e crediti, ma il manager può annullarli finché la
+  sessione è aperta; **alla chiusura diventano definitivi** e ogni acquisto usa
+  uno dei **20 cambi a stagione** per squadra (nessun limite per sessione; il
+  limite vale anche sommando gli acquisti in sospeso). Gli svincoli non
+  contano. Alla chiusura la rosa deve tornare 3/7/7/6: i posti vuoti finiscono
+  nel report. (Modifica approvata dall'admin il 2026-09-11.)
 - **Prezzi: sempre quotazione attuale (Qt.A)** dell'ultimo listone importato, sia
   per l'acquisto sia per il rientro della vendita.
 - **Fuori lista** (usciti dalla Serie A, foglio "Ceduti" / asterisco, o assenti

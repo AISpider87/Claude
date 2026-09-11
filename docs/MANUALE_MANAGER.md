@@ -119,11 +119,20 @@ Le operazioni sono due, separate:
    **Qt.A attuale**. Chi costa più dei tuoi crediti è grigio con "crediti
    insufficienti".
 
+**Puoi ripensarci fino alla chiusura.** Svincoli e acquisti fatti in sessione
+compaiono nel riquadro **Operazioni di questa sessione** con il pulsante
+**Annulla**: la rosa e i crediti tornano come prima. Alla chiusura della
+sessione le operazioni rimaste diventano definitive e vengono registrate. Il
+riquadro **Acquista** mostra tutti gli svincolati della sessione: quelli che
+non puoi prendere sono in grigio con il motivo ("nessun posto libero: svincola
+prima un difensore", "hai finito i cambi").
+
 Regole che l'app fa rispettare:
 
-- **Ogni acquisto usa uno dei 20 cambi** della stagione; gli svincoli non
-  contano. Quando li hai finiti la pagina dice "Hai usato tutti i 20 cambi
-  della stagione."
+- **Ogni acquisto usa uno dei 20 cambi** della stagione, conteggiato alla
+  chiusura; gli svincoli non contano. Il contatore mostra anche quelli in
+  sospeso, es. "3/20 (+2)". Quando li hai finiti la pagina dice "Hai usato
+  tutti i 20 cambi della stagione."
 - Non puoi comprare in un ruolo senza posti liberi ("Non hai posti liberi in
   questo ruolo: svincola prima…").
 - All'apertura di ogni sessione ricevi **+5 crediti** (lo vedi nella Bacheca

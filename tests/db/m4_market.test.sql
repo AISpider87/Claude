@@ -9,10 +9,10 @@ declare
   v_report jsonb;
 begin
   -- test-only: the ledger is immutable by design; a superuser may pause the guard to reset the fixture
-  alter table public.transactions disable trigger trg_transactions_immutable;
+  alter table public.transactions disable trigger trg_transactions_guard;
   delete from public.transactions; delete from public.session_free_agents; delete from public.market_sessions;
   delete from public.player_quotations; delete from public.roster_players; delete from public.teams; delete from public.players;
-  alter table public.transactions enable trigger trg_transactions_immutable;
+  alter table public.transactions enable trigger trg_transactions_guard;
   insert into public.players (id, name, team, role_classic, qt_a, qt_i, diff) values
     (1, 'Por1', 'Roma', 'P', 10, 10, 0), (2, 'Por2', 'Inter', 'P', 15, 15, 0), (3, 'Por3', 'Como', 'P', 5, 5, 0),
     (4, 'Att1', 'Roma', 'A', 30, 30, 0), (5, 'Att2', 'Inter', 'A', 20, 20, 0), (6, 'Att3', 'Como', 'A', 40, 40, 0),
@@ -183,11 +183,11 @@ declare
   v_count int; v_credits int; v_swaps int; v_report jsonb;
 begin
   -- test-only: the ledger is immutable by design; a superuser may pause the guard to reset the fixture
-  alter table public.transactions disable trigger trg_transactions_immutable;
+  alter table public.transactions disable trigger trg_transactions_guard;
   delete from public.transactions; delete from public.session_free_agents; delete from public.market_sessions;
   delete from public.player_quotations; delete from public.roster_players; delete from public.teams; delete from public.players;
   delete from public.profiles; delete from auth.users;
-  alter table public.transactions enable trigger trg_transactions_immutable;
+  alter table public.transactions enable trigger trg_transactions_guard;
   insert into public.players (id, name, team, role_classic, qt_a, qt_i, diff) values
     (1, 'Por1', 'Roma', 'P', 10, 10, 0), (2, 'Por2', 'Inter', 'P', 15, 15, 0),
     (4, 'Att1', 'Roma', 'A', 30, 30, 0), (5, 'Att2', 'Inter', 'A', 20, 20, 0),

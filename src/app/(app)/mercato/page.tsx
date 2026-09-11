@@ -24,19 +24,22 @@ import {
   getNextScheduledSession,
   getSessionFreeAgents,
   getTeamMarketState,
+  listPendingOperations,
   listTransactions,
   type FreeAgentOption,
 } from "@/lib/market/queries";
 import { getPlayerStatuses } from "@/lib/players/status";
-import { ROLE_ORDER } from "@/lib/roles";
+import { ROLE_LABEL_SINGULAR, ROLE_ORDER } from "@/lib/roles";
 import { getMyTeam, getRosterComposition, getTeamRoster } from "@/lib/teams/queries";
 import { BuyPanel, type BuyCandidate } from "./buy-panel";
 import { MarketRoster, type RosterOption } from "./market-roster";
+import { PendingOperations, type PendingRow } from "./pending-operations";
 
 const DONE_MESSAGE: Record<string, string> = {
   sell: "Svincolo registrato: i crediti sono tornati nel tuo budget.",
   buy: "Acquisto registrato: la tua rosa è aggiornata.",
   free_release: "Svincolo gratuito registrato.",
+  undo: "Operazione annullata: rosa e crediti sono tornati come prima.",
 };
 
 export const metadata = { title: "Mercato" };
@@ -70,6 +73,8 @@ export default async function MercatoPage({
   }
   const slots = state?.slots ?? { P: 0, D: 0, C: 0, A: 0 };
   const freeSlots = state?.freeSlots ?? { P: 0, D: 0, C: 0, A: 0 };
+  const pendingSwaps = state?.pending.swaps ?? 0;
+  const limitReached = team ? team.swaps_used + pendingSwaps >= settings.swapLimit : false;
   // Roles the team can buy for: a free slot (any time, current free agents) or a
   // hole to fill during the open session (from the session snapshot).
   const freeRoles = ROLE_ORDER.filter((r) => freeSlots[r] > 0 && slots[r] > 0);
@@ -79,20 +84,42 @@ export default async function MercatoPage({
   const openRoles: RoleClassic[] = ROLE_ORDER.filter(
     (r) => freeRoles.includes(r) || sessionRoles.includes(r),
   );
-  const [sessionFreeAgents, currentFreeAgents] = await Promise.all([
-    session && sessionRoles.length > 0 ? getSessionFreeAgents(session.id) : Promise.resolve([]),
+  // The whole free-agent list is shown (every role); players the team cannot buy
+  // right now are disabled with the reason, so nobody wonders where they went.
+  const [sessionFreeAgents, currentFreeAgents, pendingRows] = await Promise.all([
+    session && team ? getSessionFreeAgents(session.id) : Promise.resolve([]),
     freeRoles.length > 0 ? getCurrentFreeAgents() : Promise.resolve([]),
+    session && team ? listPendingOperations(team.id) : Promise.resolve([]),
   ]);
   const owned = new Set(rosterOptions.map((r) => r.id));
-  const toCandidate = (p: FreeAgentOption, free: boolean): BuyCandidate => ({ ...p, free });
+  const blockedReason = (role: RoleClassic): string | undefined => {
+    if (freeRoles.includes(role)) return undefined;
+    if (slots[role] <= 0)
+      return `nessun posto libero: svincola prima un ${ROLE_LABEL_SINGULAR[role]}`;
+    if (!session) return "il mercato è chiuso";
+    if (limitReached) return "hai finito i cambi della stagione";
+    return undefined;
+  };
+  const toCandidate = (p: FreeAgentOption, free: boolean): BuyCandidate => ({
+    ...p,
+    free,
+    blocked: free ? undefined : blockedReason(p.role),
+  });
+  const freeIds = new Set(
+    currentFreeAgents.filter((p) => freeRoles.includes(p.role)).map((p) => p.id),
+  );
   const candidates: BuyCandidate[] = [
-    ...currentFreeAgents.filter((p) => freeRoles.includes(p.role)).map((p) => toCandidate(p, true)),
-    ...sessionFreeAgents
-      .filter((p) => sessionRoles.includes(p.role))
-      .map((p) => toCandidate(p, false)),
+    ...currentFreeAgents.filter((p) => freeIds.has(p.id)).map((p) => toCandidate(p, true)),
+    ...sessionFreeAgents.filter((p) => !freeIds.has(p.id)).map((p) => toCandidate(p, false)),
   ].filter((p) => !owned.has(p.id));
   const holes = ROLE_ORDER.reduce((n, r) => n + Math.max(0, slots[r]), 0);
-  const limitReached = team ? team.swaps_used >= settings.swapLimit : false;
+  const pending: PendingRow[] = pendingRows.map((t) => ({
+    id: t.id,
+    kind: t.kind,
+    label: t.kind === "buy" ? `entra ${t.playerInName ?? "—"}` : `esce ${t.playerOutName ?? "—"}`,
+    counts: t.counts_toward_limit,
+    creditsDelta: t.credits_delta,
+  }));
 
   return (
     <>
@@ -122,8 +149,12 @@ export default async function MercatoPage({
                 <Stat label="Crediti" value={formatInt(team.credits)} tone="primary" />
                 <Stat
                   label="Cambi usati"
-                  value={`${team.swaps_used}/${settings.swapLimit}`}
-                  tone={team.swaps_used >= settings.swapLimit ? "danger" : "neutral"}
+                  value={
+                    pendingSwaps > 0
+                      ? `${team.swaps_used}/${settings.swapLimit} (+${pendingSwaps})`
+                      : `${team.swaps_used}/${settings.swapLimit}`
+                  }
+                  tone={limitReached ? "danger" : "neutral"}
                 />
                 <Stat
                   label="Posti da riempire"
@@ -187,23 +218,39 @@ export default async function MercatoPage({
           </Card>
         )}
 
-        {team && holes > 0 && (
+        {team && session && pending.length > 0 && (
+          <Card className="border-role-p/40">
+            <CardHeader>
+              <CardTitle>Operazioni di questa sessione</CardTitle>
+              <CardDescription>
+                Finché la sessione è aperta puoi annullarle. Alla chiusura diventano definitive e
+                ogni acquisto conta un cambio.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <PendingOperations rows={pending} />
+            </CardContent>
+          </Card>
+        )}
+
+        {team && (holes > 0 || (session && candidates.length > 0)) && (
           <Card className="border-primary/50">
             <CardHeader>
               <CardTitle>Acquista</CardTitle>
               <CardDescription>
-                {openRoles.length > 0
-                  ? "Solo svincolati dei ruoli in cui hai un posto libero: chi esce difensore rientra difensore."
-                  : session
-                    ? "Nessuno svincolato disponibile per i ruoli scoperti."
+                {session
+                  ? "Tutti gli svincolati della sessione. Puoi prendere solo chi copre un posto libero: chi esce difensore rientra difensore."
+                  : openRoles.length > 0
+                    ? "Sostituti dei fuori lista, tra gli svincolati liberi adesso."
                     : "Il mercato è chiuso: potrai riempire i posti liberi alla prossima sessione."}
               </CardDescription>
             </CardHeader>
-            {openRoles.length > 0 && (
+            {candidates.length > 0 && (
               <CardContent>
-                {limitReached && sessionRoles.length > 0 && freeRoles.length === 0 ? (
+                {limitReached && freeRoles.length === 0 ? (
                   <FormMessage tone="info">
-                    Hai usato tutti i {settings.swapLimit} cambi della stagione.
+                    Hai usato tutti i {settings.swapLimit} cambi della stagione
+                    {pendingSwaps > 0 ? " (compresi quelli in sospeso)" : ""}.
                   </FormMessage>
                 ) : (
                   <BuyPanel

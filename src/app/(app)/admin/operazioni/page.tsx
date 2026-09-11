@@ -26,7 +26,9 @@ export default async function AdminLedgerPage() {
           <LedgerTable
             rows={ledger}
             actions={(t) =>
-              t.kind !== "reversal" && !t.reversed ? <ReverseButton txId={t.id} /> : null
+              t.kind !== "reversal" && !t.reversed && t.status !== "pending" ? (
+                <ReverseButton txId={t.id} />
+              ) : null
             }
           />
         </CardContent>

@@ -67,7 +67,8 @@ Rosa corrente = righe con `released_at is null`; lo storico non si cancella mai.
 `kind check (sell|buy|free_release|swap|free_swap|admin_assign|admin_remove|admin_credits|reversal)`,
 `player_out_id null`, `player_out_price null` (rientro),
 `player_in_id null`, `player_in_price null`, `credits_delta int`,
-`counts_toward_limit bool`, `note`, `reversal_of null → transactions unique`,
+`counts_toward_limit bool`, `status check (pending|confirmed)` (svincoli e
+acquisti di sessione nascono `pending`), `note`, `reversal_of null → transactions unique`,
 `created_by`, `created_at`. Niente UPDATE/DELETE: nessun grant, nessuna policy e
 un trigger `forbid_change` che blocca anche le funzioni security definer.
 
@@ -114,6 +115,13 @@ source_url)` (admin, audit) o `private.set_player_status(...)` per un futuro syn
 - `release_out_of_list(team_id, player)` — in qualsiasi momento, `player.status =
 out_of_list`: rimborso = `price_paid` (`free_swap_refund_rule`), riga
   `free_release`, non conta.
+- `undo_pending_operation(tx)` — il manager annulla una propria operazione
+  `pending` (riapre/cancella la riga rosa, inverte i crediti, cancella la riga);
+  `confirm_pending_operations(team)` — rende definitive le operazioni in sospeso
+  e incrementa `swaps_used` degli acquisti che contano (usata anche da
+  `private.close_session` per tutte le squadre). Il trigger
+  `private.transactions_guard` ammette solo DELETE di righe `pending` e il
+  passaggio `pending → confirmed`.
 - `buy_player(team_id, player)` — riempie un posto libero **dello stesso ruolo**
   (`private.role_slots` = composizione − rosa attuale). Se il ruolo ha uno "slot
   gratuito" (`private.free_slots` = svincoli gratuiti non ancora compensati, dal

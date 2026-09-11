@@ -26,6 +26,16 @@ Any time. `players.status = 'out_of_list'`; refund = roster.price_paid
 (`free_swap_refund_rule`); `released_via = 'free_release'`; kind
 `free_release`; counts = false; session_id = current session or null.
 
+## Pending operations (v2.1)
+
+In-session `sell`/`buy` rows are created with `status = 'pending'`: roster and
+credits move immediately, `swaps_used` does not. `undo_pending_operation(tx)`
+(manager) reverses and deletes the row; `close_session` confirms every pending
+row and adds the counting purchases to `swaps_used`. The limit check in
+`buy_player` uses `swaps_used + pending_swaps(team)`. Admin `reverse_transaction`
+refuses pending rows (`PENDING_OPERATION`). Free releases/purchases stay
+confirmed.
+
 ## buy_player(team, player)
 
 ```

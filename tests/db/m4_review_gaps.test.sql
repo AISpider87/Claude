@@ -8,11 +8,11 @@ declare
   v_admin uuid; v_mario uuid; v_a uuid; v_s1 uuid;
   v_credits int; v_swaps int;
 begin
-  alter table public.transactions disable trigger trg_transactions_immutable;
+  alter table public.transactions disable trigger trg_transactions_guard;
   delete from public.transactions; delete from public.session_free_agents; delete from public.market_sessions;
   delete from public.player_quotations; delete from public.roster_players; delete from public.teams; delete from public.players;
   delete from public.profiles; delete from auth.users;
-  alter table public.transactions enable trigger trg_transactions_immutable;
+  alter table public.transactions enable trigger trg_transactions_guard;
   insert into public.players (id, name, team, role_classic, qt_a, qt_i, diff) values
     (5, 'Att2', 'Inter', 'A', 20, 20, 0), (7, 'Gone', 'Estero', 'A', 25, 25, 0);
   update public.players set status = 'out_of_list', out_of_list_at = now() where id = 7;

@@ -404,8 +404,9 @@ non è più programmata.".
 
 - **Allo scadere dell'orario di chiusura i cambi si bloccano** e, alla prima
   visita successiva di un qualsiasi utente (o al cron notturno), la sessione
-  passa a **Chiusa** con il report di validazione e parte l'email "mercato
-  chiuso".
+  passa a **Chiusa**: le operazioni in sospeso diventano definitive (gli
+  acquisti vengono contati nei 20), esce il report di validazione e parte
+  l'email "mercato chiuso".
 - Per chiudere prima dell'orario: **Chiudi sessione** → **Chiudi davvero**. La
   chiusura viene anticipata a adesso; i cambi già confermati restano validi.
 - Una sessione chiusa non si riapre. Se serve altro tempo, crea una nuova

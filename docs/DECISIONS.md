@@ -326,3 +326,17 @@ listone,operazioni}`) con exceljs, letture paginate (`fetchAll`) sotto la
   Rosa del manager; il pannello di svincolo del Mercato usa `RosterPlayerRow`
   con lo stato (Indisponibili) e il pulsante nello slot azioni; avatar 32 px
   nelle tessere di acquisto. `RosterTable` resta nelle pagine admin e squadra.
+- 2026-09-11 · **Operazioni di sessione in sospeso fino alla chiusura**
+  (richiesta dell'admin: "il conteggio dei cambi solo dopo la conferma, uno si
+  può pentire; si registrano ufficialmente quando il mercato si conclude"):
+  `transactions.status pending|confirmed`; svincoli e acquisti in sessione
+  nascono pending, muovono subito rosa e crediti, il manager li annulla con
+  `undo_pending_operation` (la riga sparisce, audit `market.undo`); la
+  chiusura li conferma tutti e conta gli acquisti; il limite dei 20 vale
+  sommando confermati e in sospeso; l'admin annulla solo righe confermate. Il
+  trigger di immutabilità ammette le sole transizioni pending→confirmed e
+  DELETE di righe pending. Nessun pulsante "Conferma" in UI (l'admin ha
+  chiesto la registrazione alla chiusura); la funzione resta nel DB. Elenco
+  acquisti: tutti gli svincolati della sessione, con motivo di blocco per
+  ruolo sulle tessere non acquistabili (prima erano nascosti e sembravano
+  mancanti). Migrazione `20260909260000`.
