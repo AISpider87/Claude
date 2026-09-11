@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { sendEmails } from "@/lib/email/resend";
-import { sessionClosedEmail, sessionOpenedEmail } from "@/lib/email/templates";
+import { sendResendEmails } from "@/lib/email/resend";
+import { freeSwapEmail, sessionClosedEmail, sessionOpenedEmail } from "@/lib/email/templates";
 
 describe("email templates", () => {
   it("describes an opened session in Italian with the Rome deadline", () => {
@@ -42,6 +42,74 @@ describe("email templates", () => {
   });
 });
 
+describe("freeSwapEmail (admin alert)", () => {
+  const release = freeSwapEmail({
+    kind: "free_release",
+    teamName: "Real Gear Second",
+    managerName: "Mario",
+    playerName: "Rui Patricio",
+    roleLabel: "Portiere",
+    amount: 12,
+    credits: 37,
+    countsTowardLimit: false,
+    at: "2026-09-11T18:30:00.000Z",
+    siteUrl: "https://superlega.example/",
+  });
+
+  it("says who released whom, for how much, and what is left", () => {
+    expect(release.subject).toBe("SuperLega · Cambio gratuito: Real Gear Second");
+    expect(release.text.split("\n")).toEqual([
+      "Svincolo gratuito (fuori lista) nella SuperLega.",
+      "",
+      "Squadra: Real Gear Second — manager: Mario",
+      "Esce: Rui Patricio (Portiere) — rimborso 12 crediti",
+      "Crediti residui: 37",
+      "Conta nei cambi stagionali: no",
+      "Quando: 11/09/2026, 20:30 (ora italiana)",
+      "",
+      "Registro operazioni: https://superlega.example/admin/operazioni",
+    ]);
+    expect(release.html).toContain("https://superlega.example/admin/operazioni");
+  });
+
+  it("describes the free purchase that fills the slot", () => {
+    const buy = freeSwapEmail({
+      kind: "free_buy",
+      teamName: "Tettenham",
+      managerName: "Luca",
+      playerName: "Falcone",
+      roleLabel: "Portiere",
+      amount: 8,
+      credits: 29,
+      countsTowardLimit: false,
+      at: "2026-09-11T18:31:00.000Z",
+      siteUrl: "https://superlega.example",
+    });
+    expect(buy.subject).toBe("SuperLega · Cambio gratuito: Tettenham");
+    expect(buy.text).toContain("Acquisto gratuito (posto libero)");
+    expect(buy.text).toContain("Entra: Falcone (Portiere) — costo 8 crediti");
+    expect(buy.text).toContain("Conta nei cambi stagionali: no");
+  });
+
+  it("escapes team and player names in the HTML", () => {
+    const mail = freeSwapEmail({
+      kind: "free_release",
+      teamName: "<b>X</b>",
+      managerName: "M",
+      playerName: "P",
+      roleLabel: "Portiere",
+      amount: 1,
+      credits: 1,
+      countsTowardLimit: true,
+      at: "2026-09-11T18:30:00.000Z",
+      siteUrl: "https://x.test",
+    });
+    expect(mail.html).not.toContain("<b>X</b>");
+    expect(mail.html).toContain("&#60;b&#62;X");
+    expect(mail.text).toContain("Conta nei cambi stagionali: sì");
+  });
+});
+
 describe("sendEmails (Resend batch)", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
@@ -50,7 +118,7 @@ describe("sendEmails (Resend batch)", () => {
   it("skips sending without an API key and reports every message as failed", async () => {
     vi.stubEnv("RESEND_API_KEY", "");
     const fetchImpl = vi.fn();
-    const result = await sendEmails(
+    const result = await sendResendEmails(
       [{ to: "a@x.test", subject: "s", html: "h", text: "t" }],
       fetchImpl,
     );
@@ -77,7 +145,7 @@ describe("sendEmails (Resend batch)", () => {
       html: "h",
       text: "t",
     }));
-    const result = await sendEmails(messages, fetchImpl as unknown as typeof fetch);
+    const result = await sendResendEmails(messages, fetchImpl as unknown as typeof fetch);
     expect(result).toEqual({ sent: 150, failed: 0, error: undefined });
     expect(calls).toHaveLength(2);
     expect(calls[0]!.url).toBe("https://api.resend.com/emails/batch");
@@ -91,7 +159,7 @@ describe("sendEmails (Resend batch)", () => {
   it("reports provider errors without throwing", async () => {
     vi.stubEnv("RESEND_API_KEY", "re_test");
     const fetchImpl = vi.fn(async () => new Response("invalid from", { status: 422 }));
-    const result = await sendEmails(
+    const result = await sendResendEmails(
       [{ to: "a@x.test", subject: "s", html: "h", text: "t" }],
       fetchImpl as unknown as typeof fetch,
     );

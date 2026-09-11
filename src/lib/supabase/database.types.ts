@@ -29,7 +29,7 @@ export type TransactionKind =
 export type AcquiredVia = "initial_import" | "admin" | "swap" | "free_swap" | "buy" | "reversal";
 export type ReleasedVia = "swap" | "free_swap" | "sell" | "free_release" | "admin" | "reversal";
 
-export type RateLimitBucket = "market" | "import" | "export" | "email" | "admin";
+export type RateLimitBucket = "market" | "import" | "export" | "email" | "email_ops" | "admin";
 export type NotificationStatus = "sent" | "partial" | "failed" | "skipped";
 
 type ProfileRow = {
@@ -391,7 +391,7 @@ export type Database = {
       };
       admin_list_users: { Args: Record<string, never>; Returns: AdminUserRow[] };
       admin_notification_recipients: {
-        Args: Record<string, never>;
+        Args: { p_admins_only?: boolean };
         Returns: { email: string; display_name: string }[];
       };
       admin_audit_log: { Args: { p_limit?: number }; Returns: AuditEntryRow[] };

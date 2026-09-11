@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { getLeagueSettings, listNotifications } from "@/lib/admin/queries";
 import { requireAdmin } from "@/lib/auth/dal";
-import { isEmailConfigured } from "@/lib/email/resend";
+import { emailProviderLabel, isEmailConfigured } from "@/lib/email/provider";
 import { formatDateTime, formatInt } from "@/lib/format";
 import { LeagueCodeForm, SettingsForm } from "./settings-form";
 
@@ -32,6 +32,7 @@ export default async function AdminSettingsPage() {
   await requireAdmin();
   const [settings, notifications] = await Promise.all([getLeagueSettings(), listNotifications()]);
   const emailReady = isEmailConfigured();
+  const provider = emailProviderLabel();
 
   return (
     <>
@@ -59,8 +60,8 @@ export default async function AdminSettingsPage() {
               <CardTitle>Email inviate</CardTitle>
               <CardDescription>
                 {emailReady
-                  ? "Provider configurato: le email partono all'apertura e alla chiusura delle sessioni."
-                  : "Provider email non configurato (RESEND_API_KEY assente): le notifiche vengono saltate e registrate qui."}
+                  ? `Provider configurato (${provider}): le email partono all'apertura e alla chiusura delle sessioni e a ogni cambio gratuito.`
+                  : "Provider email non configurato (né BREVO_API_KEY né RESEND_API_KEY): le notifiche vengono saltate e registrate qui."}
               </CardDescription>
             </CardHeader>
             <CardContent>

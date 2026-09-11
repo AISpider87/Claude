@@ -121,6 +121,7 @@ const settingsSchema = z.object({
   composition_A: intField(0, 50, "Attaccanti"),
   sync_enabled: z.enum(["on"]).optional(),
   notifications_enabled: z.enum(["on"]).optional(),
+  notifications_free_swap: z.enum(["on"]).optional(),
 });
 
 export async function saveLeagueSettings(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -145,6 +146,7 @@ export async function saveLeagueSettings(_prev: FormState, formData: FormData): 
     ],
     ["sync_enabled", d.sync_enabled === "on"],
     ["notifications_enabled", d.notifications_enabled === "on"],
+    ["notifications_free_swap", d.notifications_free_swap === "on"],
   ];
   const supabase = await createClient();
   for (const [key, value] of updates) {

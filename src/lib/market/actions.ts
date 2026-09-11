@@ -6,7 +6,8 @@ import { after } from "next/server";
 import { z } from "zod";
 import { requireAdmin, requireUser } from "@/lib/auth/dal";
 import type { FormState } from "@/lib/auth/schemas";
-import { notifySessionClosed, notifySessionOpened } from "@/lib/email/notify";
+import { notifyFreeSwap, notifySessionClosed, notifySessionOpened } from "@/lib/email/notify";
+import type { FreeSwapKind } from "@/lib/email/templates";
 import { createClient } from "@/lib/supabase/server";
 import type { RateLimitBucket } from "@/lib/supabase/database.types";
 import { zonedLocalToUtc } from "@/lib/time";
@@ -143,6 +144,8 @@ async function playerOperation(
   rpc: PlayerRpc,
   done: string,
   formData: FormData,
+  /** Free operations of the out-of-list flow also alert the admins by email. */
+  notify?: FreeSwapKind,
 ): Promise<FormState> {
   await requireUser();
   const limited = await throttle("market");
@@ -154,12 +157,16 @@ async function playerOperation(
   if (!parsed.success) return { status: "error", errors: fieldErrors(parsed.error) };
 
   const supabase = await createClient();
-  const { error } = await supabase.rpc(rpc, {
+  const { data: txId, error } = await supabase.rpc(rpc, {
     p_team_id: parsed.data.teamId,
     p_player_id: parsed.data.playerId,
   });
   if (error)
     return { status: "error", message: marketMessage(error.message, "Operazione non riuscita.") };
+
+  // after the operation is already committed: a mail problem can never undo it
+  // (notifyFreeSwap ignores a purchase that counted toward the 20 swaps)
+  if (notify && txId) after(() => notifyFreeSwap(notify, txId));
 
   revalidatePath("/mercato");
   revalidatePath("/rosa");
@@ -174,12 +181,12 @@ export async function sellPlayer(_prev: FormState, formData: FormData): Promise<
 
 /** Manager: buy a free agent to fill a hole of the same role. */
 export async function buyPlayer(_prev: FormState, formData: FormData): Promise<FormState> {
-  return playerOperation("buy_player", "buy", formData);
+  return playerOperation("buy_player", "buy", formData, "free_buy");
 }
 
 /** Manager: release a player who left Serie A, any time, refund = price paid. */
 export async function releaseOutOfList(_prev: FormState, formData: FormData): Promise<FormState> {
-  return playerOperation("release_out_of_list", "free_release", formData);
+  return playerOperation("release_out_of_list", "free_release", formData, "free_release");
 }
 
 // ---------------------------------------------------------------------------

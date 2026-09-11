@@ -1,6 +1,6 @@
 # DEPLOY — SuperLega in produzione (0 €/mese)
 
-Percorso: **GitHub → Vercel (app) + Supabase (database, auth, storage) + Resend
+Percorso: **GitHub → Vercel (app) + Supabase (database, auth, storage) + Brevo
 (email)**, tutti sui piani gratuiti. Tempo stimato la prima volta: 45–60 minuti.
 Tutte le chiavi vanno **solo** nelle impostazioni di Vercel/Supabase, mai nel repo.
 
@@ -65,15 +65,32 @@ Tutte le chiavi vanno **solo** nelle impostazioni di Vercel/Supabase, mai nel re
 8. **Settings → API**: copia `Project URL`, `anon public key` e
    `service_role key` (segreta).
 
-## 2. Resend — email di lega (facoltativo ma consigliato)
+## 2. Email di lega — Brevo (consigliato) o Resend
 
-1. Account su resend.com (Free: 100 email/giorno). Crea una **API key**.
-2. Senza dominio proprio puoi usare il mittente di prova
-   `SuperLega <onboarding@resend.dev>` (le email arrivano solo all'indirizzo
-   del tuo account Resend: utile per il test, non per la lega). Per inviare a
-   tutti serve un **dominio verificato** (DNS) e `EMAIL_FROM=SuperLega <lega@tuodominio.it>`.
-3. Senza chiave l'app funziona lo stesso: le notifiche vengono "saltate" e
-   registrate in _Admin → Impostazioni_.
+Le email dell'app (apertura e chiusura sessione, avviso agli admin a ogni
+cambio gratuito) escono dallo **stesso account Brevo** già usato per l'SMTP di
+Supabase Auth al punto 1.6: niente nuovo servizio, niente costi (piano
+gratuito, 300 email/giorno complessive).
+
+1. Brevo → _SMTP e API_ → scheda **API Keys** (non la scheda SMTP: la chiave
+   SMTP non vale per l'API) → **Generate a new API key**. Il valore inizia con
+   `xkeysib-` e si vede **una volta sola**: copialo subito.
+2. Su Vercel: `BREVO_API_KEY` = quella chiave, `EMAIL_PROVIDER=brevo`
+   (facoltativa: con `BREVO_API_KEY` presente Brevo è già il predefinito).
+3. `EMAIL_FROM` = `SuperLega <indirizzo>` dove **l'indirizzo deve essere un
+   mittente verificato su Brevo** (_Mittenti, domini e IP dedicati →
+   Mittenti_, lo stesso verificato per l'SMTP di Auth). Se non lo è, Brevo
+   rifiuta l'invio e il motivo compare **testuale** in _Admin → Impostazioni
+   lega → Email inviate_ (es. `Brevo 400: Sender email is not valid...`).
+4. In alternativa **Resend** (resend.com, Free 100 email/giorno): `RESEND_API_KEY`
+   e `EMAIL_PROVIDER=resend`. Senza dominio verificato il mittente di prova
+   `SuperLega <onboarding@resend.dev>` consegna solo all'indirizzo del tuo
+   account Resend: utile per il test, non per la lega.
+5. Senza nessuna chiave l'app funziona lo stesso: le notifiche vengono
+   "saltate" e registrate in _Admin → Impostazioni_.
+6. L'avviso "cambio gratuito" va **solo agli admin** e parte dal server con la
+   `SUPABASE_SERVICE_ROLE_KEY`: se quella variabile manca, l'operazione di
+   mercato resta valida ma l'email non parte.
 
 ## 3. Vercel — app e cron
 
@@ -88,8 +105,10 @@ Tutte le chiavi vanno **solo** nelle impostazioni di Vercel/Supabase, mai nel re
    | `NEXT_PUBLIC_SITE_URL`          | `https://<app>.vercel.app` (o il dominio)                                                                                                      |
    | `SUPABASE_SERVICE_ROLE_KEY`     | service_role key (solo server)                                                                                                                 |
    | `CRON_SECRET`                   | stringa casuale lunga (`openssl rand -hex 32`)                                                                                                 |
-   | `RESEND_API_KEY`                | chiave Resend (vuota = email saltate)                                                                                                          |
-   | `EMAIL_FROM`                    | mittente, es. `SuperLega <lega@tuodominio.it>`                                                                                                 |
+   | `EMAIL_PROVIDER`                | `brevo` (consigliato) o `resend`; vuota = si sceglie da sé in base alle chiavi                                                                 |
+   | `BREVO_API_KEY`                 | chiave API di Brevo, scheda **API Keys** (vuota = email saltate)                                                                               |
+   | `RESEND_API_KEY`                | solo se usi Resend: chiave Resend                                                                                                              |
+   | `EMAIL_FROM`                    | mittente **verificato** sul provider, es. `SuperLega <lega@tuodominio.it>`                                                                     |
    | `QUOTATIONS_SOURCE_URL`         | **vuota** finché non verifichi Fantacalcio.it (docs/SYNC.md)                                                                                   |
    | `AVAILABILITY_PROVIDER`         | `bsd` (consigliato) oppure `api-football`                                                                                                      |
    | `BSD_API_KEY`                   | chiave di bigballsdata.com, piano gratuito (vuota = feed spento)                                                                               |
@@ -200,8 +219,10 @@ Tutte le chiavi vanno **solo** nelle impostazioni di Vercel/Supabase, mai nel re
 - **Vercel Hobby**: uso personale/non commerciale; 1 esecuzione cron al giorno
   per job; funzioni serverless con timeout 60 s (l'import del listone impiega
   pochi secondi).
-- **Resend Free**: 100 email/giorno, 3.000/mese; dominio verificato necessario
-  per inviare a indirizzi diversi dal tuo.
+- **Brevo gratuito**: 300 email/giorno complessive, condivise tra le email di
+  Auth (SMTP) e quelle di lega (API); mittente verificato necessario.
+- **Resend Free** (alternativa): 100 email/giorno, 3.000/mese; dominio
+  verificato necessario per inviare a indirizzi diversi dal tuo.
 - **API-Football Free**: 100 richieste al giorno. Il feed ne usa al massimo 3 per
   esecuzione (2 quando non c'è una partita imminente): con il job ogni 15 minuti
   il consumo tipico sta dentro la quota, ma nei giorni di campionato va tenuto

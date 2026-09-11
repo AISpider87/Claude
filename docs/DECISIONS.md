@@ -484,3 +484,27 @@ listone,operazioni}`) con exceljs, letture paginate (`fetchAll`) sotto la
   tasto), `aria-hidden`, non prende il focus; con `prefers-reduced-motion`
   diventa una dissolvenza ferma di 200 ms. Accento caldo `--ember`
   (`#ffb648` scuro / `#b45309` chiaro) usato **solo** qui, mai per stati.
+- 2026-09-11 · **Email agli admin a ogni cambio gratuito + provider Brevo**:
+  il giro fuori lista (`release_out_of_list` e l'acquisto `buy_player` che non
+  conta nei 20) manda **un'email per operazione ai soli admin**
+  ("SuperLega · Cambio gratuito: <squadra>") con squadra, manager, chi
+  esce/entra con rimborso o costo, crediti residui, se conta nel limite, ora
+  italiana e link al registro. Parte da `after()` dopo la commit, come le email
+  di sessione: un problema di posta non annulla mai un'operazione di mercato.
+  Gira con il **service client** perché la lista destinatari e
+  `log_notification` restano admin-only, mentre il limitatore è contato sul
+  manager che l'ha innescata. `admin_notification_recipients(p_admins_only)`
+  sostituisce la versione senza argomenti (una sola firma: due overload
+  renderebbero ambigua la chiamata PostgREST). Bucket **`email_ops`, 30/ora**,
+  separato da `email` (5/ora): una raffica di cambi gratuiti non fa più sparire
+  in silenzio gli avvisi di sessione, e quando scatta la notifica è registrata
+  come "Saltata" con il motivo. Nuova impostazione `notifications_free_swap`
+  (default acceso) nella whitelist di `admin_set_setting`.
+  **Provider email**: `sendEmails` non parla più solo Resend. `EMAIL_PROVIDER`
+  sceglie (`brevo` | `resend`), altrimenti vince Brevo se c'è `BREVO_API_KEY`,
+  poi Resend, poi nessuno (comportamento "Saltata" invariato). Brevo perché
+  l'account **esiste già** per l'SMTP di Supabase Auth e il piano gratuito
+  (300 email/giorno) copre la lega a 0 €: `POST /v3/smtp/email`, una chiamata
+  per destinatario, timeout 10 s, errori del fornitore riportati **testuali**
+  nel log notifiche (la chiave non compare mai). `EMAIL_FROM` resta
+  `Nome <indirizzo>` e l'indirizzo deve essere un mittente verificato.

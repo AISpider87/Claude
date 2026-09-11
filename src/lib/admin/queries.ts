@@ -35,6 +35,7 @@ export interface LeagueSettings {
   quotation_change_alert_threshold: number;
   sync_enabled: boolean;
   notifications_enabled: boolean;
+  notifications_free_swap: boolean;
   updated_at: string | null;
 }
 
@@ -48,6 +49,7 @@ const DEFAULTS: LeagueSettings = {
   quotation_change_alert_threshold: 5,
   sync_enabled: true,
   notifications_enabled: true,
+  notifications_free_swap: true,
   updated_at: null,
 };
 
@@ -86,11 +88,12 @@ export async function getLeagueSettings(): Promise<LeagueSettings> {
     ),
     sync_enabled: map.get("sync_enabled") !== false,
     notifications_enabled: map.get("notifications_enabled") !== false,
+    notifications_free_swap: map.get("notifications_free_swap") !== false,
     updated_at: updated ?? null,
   };
 }
 
-/** True when league emails are enabled and Resend is configured. */
+/** True when league emails are enabled (the provider is checked separately). */
 export async function notificationsEnabled(): Promise<boolean> {
   const supabase = await createClient();
   const { data } = await supabase

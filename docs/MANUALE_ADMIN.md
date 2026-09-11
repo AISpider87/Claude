@@ -531,8 +531,8 @@ l'acquisto o rimuovi qualcuno (§5.4).
 
 ## 9. Email di lega
 
-L'app manda due sole email, a tutti i membri **attivi**, un messaggio per
-destinatario (nessuno vede gli indirizzi altrui):
+L'app manda tre email, un messaggio per destinatario (nessuno vede gli
+indirizzi altrui). Le prime due vanno a **tutti i membri attivi**:
 
 - **"SuperLega · mercato aperto: <nome sessione>"** all'apertura: scadenza,
   crediti extra accreditati, numero di svincolati, link a Mercato.
@@ -540,9 +540,39 @@ destinatario (nessuno vede gli indirizzi altrui):
   registrati, elenco delle rose da sistemare ("l'admin vi contatterà"), link
   alla Rosa.
 
-L'invio parte **dopo** che apertura/chiusura sono già state salvate: un
-problema di posta **non annulla mai** l'operazione. L'esito è in **Admin →
-Impostazioni lega → Email inviate** (Quando, Oggetto, Destinatari, Esito):
+La terza va **solo agli admin**:
+
+- **"SuperLega · Cambio gratuito: <squadra>"** a ogni operazione gratuita del
+  giro fuori lista: lo **svincolo gratuito** di chi ha lasciato la Serie A e
+  l'**acquisto gratuito** che ne riempie il posto (quello che non consuma uno
+  dei 20 cambi). Un'email per operazione, quindi due per un cambio completo.
+  Dentro: squadra e manager, chi esce con il rimborso o chi entra con il
+  costo, crediti residui, se l'operazione conta nei cambi stagionali, l'ora
+  italiana e il link a **Registro operazioni**. Gli acquisti normali (a
+  pagamento, in sessione) **non** mandano nulla.
+
+Esempio del testo:
+
+```
+Svincolo gratuito (fuori lista) nella SuperLega.
+
+Squadra: Real Gear Second — manager: Mario
+Esce: Rui Patricio (Portiere) — rimborso 12 crediti
+Crediti residui: 37
+Conta nei cambi stagionali: no
+Quando: 11/09/2026, 20:30 (ora italiana)
+
+Registro operazioni: https://<app>/admin/operazioni
+```
+
+Per spegnerla: **Admin → Impostazioni lega → Regole → Automazioni**, casella
+**"Email agli admin a ogni cambio gratuito"** → _Salva impostazioni_. La
+casella "Email alla lega…" spegne invece tutte e tre.
+
+L'invio parte **dopo** che l'operazione è già stata salvata: un
+problema di posta **non annulla mai** né la sessione né il cambio. L'esito è in
+**Admin → Impostazioni lega → Email inviate** (Quando, Oggetto, Destinatari,
+Esito):
 
 | Esito        | Significato                                                     |
 | ------------ | --------------------------------------------------------------- |
@@ -551,14 +581,21 @@ Impostazioni lega → Email inviate** (Quando, Oggetto, Destinatari, Esito):
 | **Fallita**  | nessun invio riuscito (errore nel dettaglio)                    |
 | **Saltata**  | non è stato nemmeno tentato l'invio; il dettaglio spiega perché |
 
-"Saltata" ha quattro cause: **Notifiche disattivate** (casella in
-Impostazioni), **Provider email non configurato** (manca la chiave del
-provider nelle variabili d'ambiente: lo dice anche il sottotitolo del
-riquadro), **Limite invii raggiunto** (più di 5 invii di lega in un'ora),
-**Nessun destinatario**.
+"Saltata" ha quattro cause: **Notifiche disattivate** (una delle due caselle
+in Impostazioni), **Provider email non configurato** (manca `BREVO_API_KEY`
+— o `RESEND_API_KEY` — nelle variabili d'ambiente: lo dice anche il
+sottotitolo del riquadro, che quando è tutto a posto mostra il provider in
+uso), **Limite invii raggiunto** (più di 5 email di lega in un'ora; i cambi
+gratuiti hanno un contatore separato da 30 all'ora per manager, così una
+raffica non fa sparire gli avvisi di sessione), **Nessun destinatario**.
 
-Se un'email è saltata o fallita, la sessione è comunque aperta/chiusa: avvisa
-i manager in chat. Non esiste un pulsante "reinvia".
+Quando il provider rifiuta un invio, il dettaglio riporta **il suo messaggio
+testuale**: `Brevo 400: Sender email is not valid…` significa che `EMAIL_FROM`
+non è un mittente verificato sull'account Brevo (vedi `docs/DEPLOY.md` §2).
+
+Se un'email è saltata o fallita, la sessione è comunque aperta/chiusa e il
+cambio è comunque registrato: guarda il Registro operazioni e avvisa i manager
+in chat. Non esiste un pulsante "reinvia".
 
 ## 10. Impostazioni lega
 
@@ -577,7 +614,8 @@ non cambiano.
 | **Composizione della rosa** (Portieri, Difensori, Centrocampisti, Attaccanti) | 3/7/7/6                                               | usata da Rosa, import rose e report di chiusura                  |
 | **Soglia variazioni quotazione**                                              | evidenzia in anteprima le variazioni di Qt.A ≥ soglia | solo informativa                                                 |
 | **Aggiornamento automatico delle quotazioni**                                 | interruttore del sync giornaliero                     | uguale ad Attiva/Disattiva sync in Listone                       |
-| **Email alla lega all'apertura e alla chiusura delle sessioni**               | interruttore notifiche                                | se spento le email risultano "Saltata"                           |
+| **Email alla lega all'apertura e alla chiusura delle sessioni**               | interruttore notifiche                                | se spento **tutte** le email risultano "Saltata"                 |
+| **Email agli admin a ogni cambio gratuito (fuori lista)**                     | interruttore del solo avviso ai cambi gratuiti        | §9; non tocca le email di sessione                               |
 
 Tutti i numeri sono interi; valori fuori intervallo vengono rifiutati con un
 messaggio sul campo. Le regole sui prezzi (rientro a Qt.A, rimborso fuori

@@ -132,6 +132,15 @@ export function SettingsForm({ settings }: { settings: LeagueSettings }) {
           />
           Email alla lega all&rsquo;apertura e alla chiusura delle sessioni
         </label>
+        <label className="flex min-h-11 items-center gap-3 text-sm">
+          <input
+            type="checkbox"
+            name="notifications_free_swap"
+            defaultChecked={settings.notifications_free_swap}
+            className="accent-primary size-5"
+          />
+          Email agli admin a ogni cambio gratuito (fuori lista)
+        </label>
       </fieldset>
 
       <FormMessage tone={state?.status === "success" ? "success" : "error"}>

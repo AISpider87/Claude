@@ -59,6 +59,73 @@ export function sessionOpenedEmail(input: {
   };
 }
 
+export type FreeSwapKind = "free_release" | "free_buy";
+
+/**
+ * Admin-only alert for an out-of-list free operation: who did what, for how
+ * much, what is left, and whether it ate one of the 20 season swaps (it never
+ * does today — the line is there so a future rule change shows up in the mail).
+ */
+export function freeSwapEmail(input: {
+  kind: FreeSwapKind;
+  teamName: string;
+  managerName: string;
+  playerName: string;
+  roleLabel: string;
+  amount: number;
+  credits: number;
+  countsTowardLimit: boolean;
+  at: string;
+  siteUrl: string;
+}): EmailContent {
+  const team = escapeHtml(input.teamName);
+  const manager = escapeHtml(input.managerName);
+  const player = escapeHtml(input.playerName);
+  const role = escapeHtml(input.roleLabel);
+  const when = formatDateTime(input.at);
+  const url = `${input.siteUrl.replace(/\/$/, "")}/admin/operazioni`;
+  const counts = input.countsTowardLimit ? "sì" : "no";
+  const movement =
+    input.kind === "free_release"
+      ? {
+          html: `<strong>Esce:</strong> ${player} (${role}) — rimborso <strong>${formatInt(input.amount)} crediti</strong>`,
+          text: `Esce: ${input.playerName} (${input.roleLabel}) — rimborso ${input.amount} crediti`,
+        }
+      : {
+          html: `<strong>Entra:</strong> ${player} (${role}) — costo <strong>${formatInt(input.amount)} crediti</strong>`,
+          text: `Entra: ${input.playerName} (${input.roleLabel}) — costo ${input.amount} crediti`,
+        };
+  const title =
+    input.kind === "free_release"
+      ? "Svincolo gratuito (fuori lista)"
+      : "Acquisto gratuito (posto libero)";
+  return {
+    subject: `SuperLega · Cambio gratuito: ${input.teamName}`,
+    html: layout(
+      title,
+      [
+        `<strong>Squadra:</strong> ${team} — manager: ${manager}`,
+        movement.html,
+        `<strong>Crediti residui:</strong> ${formatInt(input.credits)}`,
+        `<strong>Conta nei cambi stagionali:</strong> ${counts}`,
+        `<strong>Quando:</strong> ${when} (ora italiana)`,
+      ],
+      { label: "Apri il registro operazioni", url },
+    ),
+    text: [
+      `${title} nella SuperLega.`,
+      "",
+      `Squadra: ${input.teamName} — manager: ${input.managerName}`,
+      movement.text,
+      `Crediti residui: ${input.credits}`,
+      `Conta nei cambi stagionali: ${counts}`,
+      `Quando: ${when} (ora italiana)`,
+      "",
+      `Registro operazioni: ${url}`,
+    ].join("\n"),
+  };
+}
+
 export function sessionClosedEmail(input: {
   sessionName: string;
   swaps: number;

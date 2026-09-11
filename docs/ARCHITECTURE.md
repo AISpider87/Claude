@@ -7,7 +7,7 @@
 - **Tailwind CSS + shadcn/ui + lucide + Framer Motion** — UI.
 - **SheetJS (xlsx)** lato server per il parsing; **Zod** per la validazione input.
 - **Vitest** (unit) + **Playwright** (e2e, anche viewport mobile).
-- **Serwist** per la PWA; **Resend** per le email; **GitHub Actions** per CI.
+- **Serwist** per la PWA; **Brevo** (o Resend) per le email; **GitHub Actions** per CI.
 
 ## Principi
 
@@ -40,7 +40,9 @@
   import automatico + log; fa anche da **keep-alive** per Supabase Free.
 - **Mercato**: UI → server action (Zod) → funzione Postgres → registro
   `transactions` immutabile; annullamento admin = transazione inversa collegata.
-- **Email**: server action/cron → Resend (apertura sessione, riepilogo chiusura).
+- **Email**: server action/cron → provider (Brevo o Resend, scelto da
+  `EMAIL_PROVIDER`): apertura sessione, riepilogo chiusura, avviso agli admin a
+  ogni cambio gratuito.
 
 ## Struttura repo (target)
 
@@ -68,5 +70,6 @@ legacy/         vecchio tool asta (non toccare)
 - Vercel Hobby: 1 esecuzione cron/giorno per job (ok: ne basta una), niente
   code/lunghi job (parsing xlsx ~530 righe è ben sotto i limiti).
 - Supabase Free: pausa dopo ~7 giorni di inattività → il cron giornaliero fa da
-  keep-alive; email Auth con rate limit basso → email transazionali via Resend.
-- Resend Free: 100 email/giorno, 3.000/mese (20 manager → ampio margine).
+  keep-alive; email Auth con rate limit basso → email transazionali via Brevo.
+- Brevo gratuito: 300 email/giorno, SMTP di Auth e API di lega sullo stesso
+  account (20 manager → ampio margine). Resend Free resta un'alternativa.

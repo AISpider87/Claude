@@ -2,25 +2,17 @@ import "server-only";
 /**
  * Minimal Resend client over fetch (no SDK dependency). Batch endpoint: up to 100
  * messages per call, each with its own recipient so members never see each
- * other's addresses.
+ * other's addresses. Kept working for anyone who configures Resend; the league
+ * itself runs on Brevo (see provider.ts).
  */
-export interface OutgoingEmail {
-  to: string;
-  subject: string;
-  html: string;
-  text: string;
-}
+import type { OutgoingEmail, SendResult } from "@/lib/email/types";
 
-export interface SendResult {
-  sent: number;
-  failed: number;
-  error?: string;
-}
+export type { OutgoingEmail, SendResult };
 
 const BATCH_SIZE = 100;
 const ENDPOINT = "https://api.resend.com/emails/batch";
 
-export function isEmailConfigured(): boolean {
+export function isResendConfigured(): boolean {
   return Boolean(process.env.RESEND_API_KEY?.trim());
 }
 
@@ -28,7 +20,7 @@ export function emailSender(): string {
   return process.env.EMAIL_FROM?.trim() || "SuperLega <onboarding@resend.dev>";
 }
 
-export async function sendEmails(
+export async function sendResendEmails(
   messages: OutgoingEmail[],
   fetchImpl: typeof fetch = fetch,
 ): Promise<SendResult> {
