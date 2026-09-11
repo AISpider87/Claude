@@ -155,7 +155,7 @@ export interface UnmatchedRow {
   externalId: number | null;
   name: string;
   team: string;
-  kind: "ambiguous" | "not_found";
+  kind: "ambiguous" | "not_found" | "to_confirm";
   detail: string;
   suggestions: PlayerOption[];
 }
@@ -182,7 +182,11 @@ export function MapRowForm({
         <span className="font-medium">{row.name}</span>
         <span className="text-muted text-sm">
           {row.team || "club sconosciuto"} ·{" "}
-          {row.kind === "ambiguous" ? "più candidati" : "nessun candidato"}
+          {row.kind === "ambiguous"
+            ? "più candidati"
+            : row.kind === "to_confirm"
+              ? "applicato, da confermare"
+              : "nessun candidato"}
           {row.detail ? ` · ${row.detail}` : ""}
         </span>
       </div>
@@ -192,7 +196,13 @@ export function MapRowForm({
       <div className="flex flex-wrap items-end gap-2">
         <div className="min-w-0 flex-1">
           <Label htmlFor={selectId}>Abbina a</Label>
-          <select id={selectId} name="playerId" required className={controlClass} defaultValue="">
+          <select
+            id={selectId}
+            name="playerId"
+            required
+            className={controlClass}
+            defaultValue={row.kind === "to_confirm" ? (row.suggestions[0]?.id ?? "") : ""}
+          >
             <option value="">— scegli dal listone —</option>
             {options.map((p) => (
               <option key={p.id} value={p.id}>

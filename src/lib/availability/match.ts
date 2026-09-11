@@ -19,10 +19,22 @@ export interface ExternalMapping {
   confidence?: string | null;
 }
 
-export type MatchVia = "map" | "name" | "club";
+export type MatchVia = "map" | "name" | "club" | "surname";
 
 export type MatchOutcome =
-  | { status: "matched"; player: ListonePlayer; via: MatchVia }
+  | {
+      status: "matched";
+      player: ListonePlayer;
+      via: MatchVia;
+      /**
+       * The club could not be checked (the provider gave none, or only an id we
+       * could not resolve), or the match rests on the surname alone. The status
+       * is still applied — a missing club is not a reason to lose the news —
+       * but the binding is *not* written to `external_player_map`: the admin
+       * confirms it in Admin → Indisponibili.
+       */
+      confirm?: boolean;
+    }
   | { status: "ambiguous"; candidates: ListonePlayer[] }
   | { status: "not_found"; candidates: ListonePlayer[] };
 
@@ -118,10 +130,23 @@ function tokensOf(name: string): string[] {
     .filter((t) => t.length >= 3);
 }
 
+/**
+ * The surname of a provider name. BSD writes "L. Balerdi" and "R. Lukaku":
+ * a leading initial is dropped, and what is left is read from the end, because
+ * that is where the surname is in "Romelu Lukaku" too.
+ */
+export function surnameOf(name: string): string {
+  const cleaned = (name ?? "").replace(/^\s*[A-Za-zÀ-ÿ]\.?\s+/u, " ");
+  const tokens = tokensOf(cleaned);
+  return tokens[tokens.length - 1] ?? "";
+}
+
 export class AvailabilityMatcher {
   private readonly byExternalId = new Map<number, ListonePlayer>();
   private readonly nameMatcher: NameMatcher;
   private readonly byClubToken = new Map<string, ListonePlayer[]>();
+  /** Listone surname → players, league-wide: the last resort, club unknown. */
+  private readonly bySurname = new Map<string, ListonePlayer[]>();
 
   constructor(players: ListonePlayer[], mappings: ExternalMapping[] = []) {
     const byId = new Map(players.map((p) => [p.id, p]));
@@ -138,6 +163,12 @@ export class AvailabilityMatcher {
         if (list) list.push(p);
         else this.byClubToken.set(key, [p]);
       }
+      // The listone writes "Martinez Lau.": the surname is the first token.
+      const surname = tokensOf(p.name)[0];
+      if (!surname) continue;
+      const bySurname = this.bySurname.get(surname);
+      if (bySurname) bySurname.push(p);
+      else this.bySurname.set(surname, [p]);
     }
   }
 
@@ -147,12 +178,13 @@ export class AvailabilityMatcher {
       if (known) return { status: "matched", player: known, via: "map" };
     }
 
+    const club = clubKey(query.teamName);
     const byName = this.nameMatcher.match(query.name);
     if (byName.status === "matched" && byName.player) {
       // A single perfect name match still has to be in the right club: two
       // leagues away, the same name is a different person.
       if (sameClub(query.teamName, byName.player.team)) {
-        return { status: "matched", player: byName.player, via: "name" };
+        return { status: "matched", player: byName.player, via: "name", confirm: !club };
       }
     }
     if (byName.candidates.length > 1) {
@@ -161,10 +193,9 @@ export class AvailabilityMatcher {
       if (inClub.length > 1) return { status: "ambiguous", candidates: inClub };
     }
 
-    // Last resort: the surname inside the club. API names read
-    // "Lautaro Martinez", listone names read "Martinez Lau.", so the tokens are
-    // tried from the last one (usually the surname) backwards.
-    const club = clubKey(query.teamName);
+    // Next: the surname inside the club. API names read "Lautaro Martinez",
+    // listone names read "Martinez Lau.", so the tokens are tried from the last
+    // one (usually the surname) backwards.
     if (club) {
       const tokens = tokensOf(query.name);
       for (let i = tokens.length - 1; i >= 0; i--) {
@@ -172,6 +203,20 @@ export class AvailabilityMatcher {
         if (hits.length === 1) return { status: "matched", player: hits[0]!, via: "club" };
         if (hits.length > 1) return { status: "ambiguous", candidates: hits };
       }
+    }
+
+    // Last resort, for a provider that writes "L. Balerdi" and gives the club
+    // as an id we could not resolve: the surname alone. Accepted only when it
+    // is unique — inside the club if we know it, league-wide otherwise — and
+    // always left for the admin to confirm.
+    const surname = surnameOf(query.name);
+    if (surname) {
+      const hits = this.bySurname.get(surname) ?? [];
+      const inClub = club ? hits.filter((p) => sameClub(query.teamName, p.team)) : hits;
+      if (inClub.length === 1) {
+        return { status: "matched", player: inClub[0]!, via: "surname", confirm: true };
+      }
+      if (inClub.length > 1) return { status: "ambiguous", candidates: inClub };
     }
     return { status: "not_found", candidates: byName.candidates };
   }

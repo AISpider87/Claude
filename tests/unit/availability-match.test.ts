@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AvailabilityMatcher, clubKey, sameClub } from "@/lib/availability/match";
+import { AvailabilityMatcher, clubKey, sameClub, surnameOf } from "@/lib/availability/match";
 import type { ListonePlayer } from "@/lib/import/name-matching";
 
 const LISTONE: ListonePlayer[] = [
@@ -16,6 +16,7 @@ const LISTONE: ListonePlayer[] = [
     qt_a: 9,
     status: "active",
   },
+  { id: 501, name: "Balerdi", team: "Como", role_classic: "D", qt_a: 8, status: "active" },
 ];
 
 describe("clubKey", () => {
@@ -96,5 +97,54 @@ describe("AvailabilityMatcher", () => {
     expect(matcher.match({ externalId: 8, name: "Dybala", teamName: "Roma" }).status).toBe(
       "matched",
     );
+  });
+});
+
+describe('abbreviated names (BSD writes "L. Balerdi")', () => {
+  const matcher = new AvailabilityMatcher(LISTONE);
+
+  it("strips the leading initial and keeps the surname", () => {
+    expect(surnameOf("L. Balerdi")).toBe("balerdi");
+    expect(surnameOf("R. Lukaku")).toBe("lukaku");
+    expect(surnameOf("Romelu Lukaku")).toBe("lukaku");
+    expect(surnameOf("Balerdi")).toBe("balerdi");
+    expect(surnameOf("L.")).toBe("");
+    expect(surnameOf("")).toBe("");
+  });
+
+  it("matches on the surname alone when the club is unknown, but asks to confirm", () => {
+    const out = matcher.match({ externalId: null, name: "L. Balerdi", teamName: "" });
+    expect(out).toMatchObject({ status: "matched", player: { id: 501 }, confirm: true });
+  });
+
+  it("does not guess between two players with the same surname in different clubs", () => {
+    const twins = new AvailabilityMatcher([
+      ...LISTONE,
+      { id: 502, name: "Balerdi", team: "Lecce", role_classic: "D", qt_a: 7, status: "active" },
+    ]);
+    // Club unknown: two Balerdi in the league, so nothing is applied.
+    const blind = twins.match({ externalId: null, name: "L. Balerdi", teamName: "" });
+    expect(blind.status).toBe("ambiguous");
+    expect(blind.status === "ambiguous" && blind.candidates.map((c) => c.id).sort()).toEqual([
+      501, 502,
+    ]);
+    // Club known: the surname is unique inside it.
+    expect(twins.match({ externalId: null, name: "L. Balerdi", teamName: "Como" })).toMatchObject({
+      status: "matched",
+      player: { id: 501 },
+    });
+  });
+
+  it("flags a plain name match made without a club as one to confirm", () => {
+    expect(matcher.match({ externalId: null, name: "Dybala", teamName: "" })).toMatchObject({
+      status: "matched",
+      player: { id: 301 },
+      confirm: true,
+    });
+    // With the club, it is trusted and bound automatically.
+    expect(matcher.match({ externalId: null, name: "Dybala", teamName: "Roma" })).toMatchObject({
+      status: "matched",
+      confirm: false,
+    });
   });
 });

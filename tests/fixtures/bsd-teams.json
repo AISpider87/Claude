@@ -1,0 +1,12 @@
+{
+  "_comment": "GET /v1/teams?sport=football&league=seriea — the map that turns bb_team_… into a club name.",
+  "data": {
+    "teams": {
+      "value": [
+        { "id": "bb_team_inter00001", "name": "Inter", "short_name": "INT" },
+        { "id": "bb_team_napoli00001", "name": "Napoli" },
+        { "id": "bb_team_roma000001", "display_name": "Roma" }
+      ]
+    }
+  }
+}

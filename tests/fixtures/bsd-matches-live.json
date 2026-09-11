@@ -1,0 +1,31 @@
+{
+  "_comment": "GET /v1/matches — the first-row keys seen in production: id, sport, league, home, away, kickoff_utc, status, score, linescore, attendance, broadcast, round, has_odds.",
+  "data": {
+    "matches": {
+      "value": [
+        {
+          "id": 1208002,
+          "sport": "football",
+          "league": "seriea",
+          "home": "Inter",
+          "away": "Napoli",
+          "kickoff_utc": "2026-09-12T16:00:00Z",
+          "status": "scheduled",
+          "score": null,
+          "linescore": null,
+          "attendance": null,
+          "broadcast": "DAZN",
+          "round": 3,
+          "has_odds": true
+        },
+        {
+          "id": 1208003,
+          "home": { "name": "Roma" },
+          "away": { "name": "Milan" },
+          "kickoff_utc": "2026-09-12T18:45:00Z",
+          "status": "scheduled"
+        }
+      ]
+    }
+  }
+}

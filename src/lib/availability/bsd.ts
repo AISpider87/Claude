@@ -62,6 +62,7 @@ import {
   redactSecrets,
   rowKeys,
   rowsOf,
+  stableId,
   type AvailabilityProvider,
   type ProviderFixture,
   type ProviderInjury,
@@ -74,9 +75,13 @@ export const BSD_SOURCE_NAME = "Big Balls Sports Data";
 export const BSD_DOCS_URL = "https://bigballsdata.com/";
 export const BSD_BASE_URL = "https://api.bigballsdata.com";
 export const BSD_DEFAULT_LEAGUE = "serie-a";
-/** `BSD_SPORT`, and the other spelling to try when the API refuses it. */
-export const BSD_DEFAULT_SPORT = "soccer";
-export const BSD_FALLBACK_SPORT = "football";
+/**
+ * `BSD_SPORT`, and the other spelling to try when the API refuses it. The live
+ * API answered on `football` (and `/v1/leagues?sport=football` is where the
+ * Serie A id `seriea` came from), so that is the default now.
+ */
+export const BSD_DEFAULT_SPORT = "football";
+export const BSD_FALLBACK_SPORT = "soccer";
 
 /**
  * ~1000 requests/day, so a first run can afford to look around: the route list
@@ -171,8 +176,24 @@ const PLAYER_NAME = [
   "athlete.name",
 ];
 const PLAYER_ID = ["player.id", "player_id", "athlete.id", "athlete_id", "id"];
+/** The same, as the opaque string BSD uses (`bb_player_…`). */
+const PLAYER_ID_TEXT = ["player.id", "player_id", "athlete.id", "id", "uuid"];
+const TEAM_LOOKUP_ID = ["id", "team_id", "uuid"];
+const TEAM_LOOKUP_NAME = ["name", "display_name", "full_name", "short_name", "market_name"];
+/** An opaque provider id, never a club or player name. */
+const OPAQUE_ID = /^bb_[a-z]+_[a-z0-9]+$/i;
 const TEAM_NAME = ["team", "team_name", "club", "squad", "team.name", "club.name"];
-const TEAM_ID = ["team.id", "team_id", "club.id", "club_id"];
+/** BSD gives the club as an opaque `bb_team_…`, never as a name. */
+const TEAM_ID = [
+  "current_team_id",
+  "team_id",
+  "team.id",
+  "club_id",
+  "club.id",
+  "squad_id",
+  "team",
+  "club",
+];
 const STATUS_TEXT = [
   "status",
   "type",
@@ -198,6 +219,12 @@ const FIXTURE_ID = [
   "fixture.id",
 ];
 const KICKOFF = [
+  "kickoff_utc",
+  "kickoff_time_utc",
+  "start_utc",
+  "date_utc",
+  "commence_time_utc",
+  "utc",
   "start_time",
   "commence_time",
   "scheduled",
@@ -220,6 +247,7 @@ const FIXTURE_STATUS = [
   "status.long",
   "status.type",
   "status.name",
+  "status.state",
 ];
 const HOME = [
   "home_team",
@@ -299,11 +327,21 @@ export function bsdProvider(key: string, opts: BsdOptions = {}) {
   let discovered: DiscoveredRoute[] | null = null;
   let discoverySource = "";
   let leaguesAsked = false;
+  let teamsAsked = false;
+  let teamsRefreshed = false;
+  // A team map built for another league (or another spelling of the sport) is
+  // worthless: better an empty map than a wrong club on somebody's roster.
+  const cachedTeams = opts.endpoints?.teams;
+  const teams = new Map<string, string>(
+    cachedTeams && cachedTeams.league === leagueValue && cachedTeams.sport === sportValue
+      ? Object.entries(cachedTeams.map)
+      : [],
+  );
+  const rowNotes: string[] = [];
   const chosen: Partial<Record<BsdCapability, RouteChoice>> = {};
   const missed = new Set<BsdCapability>();
   const substitutions: string[] = [];
   const discoveryProblems: string[] = [];
-  const shapeNotes: string[] = [];
 
   function valueOf(concept: Concept, fixture?: string): string | null {
     switch (concept) {
@@ -382,6 +420,68 @@ export function bsdProvider(key: string, opts: BsdOptions = {}) {
     leagueValue = match.id;
     learned = true;
     return true;
+  }
+
+  /**
+   * `GET /v1/teams`, at most twice per run (once, plus one refresh when a row
+   * names a club we have never seen): BSD gives the club of an injured player
+   * as `current_team_id: "bb_team_…"`, so without this map every row would be
+   * clubless and the matcher would have nothing to check a name against.
+   */
+  async function ensureTeams(force = false): Promise<void> {
+    if (teamsAsked && (!force || teamsRefreshed)) return;
+    if (teamsAsked) teamsRefreshed = true;
+    teamsAsked = true;
+    const tried: string[] = [];
+    const league = encodeURIComponent(leagueValue);
+    for (const path of [
+      `/v1/teams?sport=${encodeURIComponent(sportValue)}&league=${league}`,
+      `/v1/teams?league=${league}`,
+    ]) {
+      const answer = await fetchOnce("teams", `${baseUrl}${path}`, tried);
+      if (!answer?.json) continue;
+      let added = 0;
+      for (const row of rowsOf(answer.json)) {
+        const id = pickString(row, TEAM_LOOKUP_ID);
+        const name = pickString(row, TEAM_LOOKUP_NAME);
+        if (!id || !name || id === name || OPAQUE_ID.test(name)) continue;
+        teams.set(id, name);
+        added += 1;
+      }
+      if (added > 0) {
+        learned = true;
+        return;
+      }
+    }
+    rowNotes.push("elenco squadre non disponibile: i club restano da confermare");
+  }
+
+  /** The club of a row: a name if it has one, otherwise an id to resolve. */
+  function teamRef(row: unknown): { name: string; id: string } {
+    const raw = pickString(row, TEAM_NAME);
+    if (raw && !OPAQUE_ID.test(raw)) return { name: raw, id: "" };
+    return { name: "", id: pickString(row, TEAM_ID) };
+  }
+
+  /** Club names for a batch of rows, asking `/v1/teams` only when needed. */
+  async function clubsOf(rows: unknown[]): Promise<string[]> {
+    const refs = rows.map(teamRef);
+    if (refs.some((ref) => !ref.name && ref.id)) await ensureTeams();
+    let names = refs.map((ref) => ref.name || teams.get(ref.id) || "");
+    // An id nobody knows may mean the map is a season old: one refresh, once.
+    if (refs.some((ref, i) => !names[i] && ref.id)) {
+      await ensureTeams(true);
+      names = refs.map((ref) => ref.name || teams.get(ref.id) || "");
+    }
+    return names;
+  }
+
+  /** The external id, hashed when the provider uses opaque strings. */
+  function externalIdOf(row: unknown): number | null {
+    const numeric = pickInt(row, PLAYER_ID);
+    if (numeric !== null) return numeric;
+    const text = pickString(row, PLAYER_ID_TEXT);
+    return text ? stableId(text) : null;
   }
 
   interface Attempt {
@@ -665,16 +765,18 @@ export function bsdProvider(key: string, opts: BsdOptions = {}) {
   }
 
   /**
-   * Rows arrived and none of them could be read: the field names are wrong, and
-   * the keys of the first row are exactly what says so — in one line, in the
-   * admin panel, without a second round trip.
+   * How many rows each capability received and how many it could read — and,
+   * when it could read none of them, the keys of the first row: that is what
+   * says which field names the provider really uses, in one line, without a
+   * second round trip.
    */
-  function reportShape(what: BsdCapability, rows: unknown[], usable: number) {
-    if (rows.length === 0 || usable > 0) return;
+  function reportRows(what: BsdCapability, rows: unknown[], read: number) {
+    rowNotes.push(`${CAPABILITY_LABEL[what]}: ${rows.length} righe ricevute, ${read} lette`);
+    if (rows.length === 0 || read > 0) return;
     const keys = rowKeys(rows[0]);
-    shapeNotes.push(
-      `${CAPABILITY_LABEL[what]}: ${rows.length} righe ricevute, nessuna leggibile · chiavi della prima riga: ${
-        keys.length > 0 ? redactSecrets(keys.join(", ")) : "(nessuna: la riga non è un oggetto)"
+    rowNotes.push(
+      `${CAPABILITY_LABEL[what]}: nessuna riga leggibile · chiavi della prima riga: ${
+        keys.length > 0 ? redactSecrets(keys.join(", ")) : "(la riga non è un oggetto)"
       }`,
     );
   }
@@ -707,7 +809,7 @@ export function bsdProvider(key: string, opts: BsdOptions = {}) {
       const paths = [...new Set(discovered.map((r) => r.path))].sort();
       out.push(`elenco rotte: ${paths.join(" · ")}`);
     }
-    out.push(...substitutions, ...shapeNotes, ...discoveryProblems);
+    out.push(...substitutions, ...rowNotes, ...discoveryProblems);
     return out;
   }
 
@@ -740,6 +842,15 @@ export function bsdProvider(key: string, opts: BsdOptions = {}) {
             // would just freeze today's environment into the database.
             ...(leagueValue !== configuredLeague ? { league: leagueValue } : {}),
             ...(sportValue !== configuredSport ? { sport: sportValue } : {}),
+            ...(teams.size > 0
+              ? {
+                  teams: {
+                    league: leagueValue,
+                    sport: sportValue,
+                    map: Object.fromEntries(teams),
+                  },
+                }
+              : {}),
           }
         : null,
 
@@ -747,28 +858,37 @@ export function bsdProvider(key: string, opts: BsdOptions = {}) {
       const json = await call("injuries", { season: String(season) });
       const out: ProviderInjury[] = [];
       const rows = rowsOf(json);
-      for (const row of rows) {
+      const clubs = await clubsOf(rows);
+      let noStatus = 0;
+      for (const [index, row] of rows.entries()) {
         const playerName = pickString(row, PLAYER_NAME);
-        const statusText = pickString(row, STATUS_TEXT);
-        const kind = mapBsdStatus(statusText);
-        if (!playerName || !kind) {
+        if (!playerName) {
           unparsed += 1;
           continue;
         }
+        const statusText = pickString(row, STATUS_TEXT);
+        // These rows come from the *injuries* endpoint: one without a status
+        // is still an absence, so it counts as an injury rather than being
+        // thrown away. Only a row without a name is unreadable.
+        const kind = mapBsdStatus(statusText);
+        if (!kind) noStatus += 1;
         const back = pickString(row, RETURN_DATE);
         out.push({
-          externalId: pickInt(row, PLAYER_ID),
+          externalId: externalIdOf(row),
           playerName,
           type: back ? `rientro previsto ${back}` : "",
           reason: statusText,
-          kind,
+          kind: kind ?? "injured",
           teamId: pickInt(row, TEAM_ID),
-          teamName: pickString(row, TEAM_NAME),
+          teamName: clubs[index] ?? "",
           fixtureId: null,
           fixtureDate: null,
         });
       }
-      reportShape("injuries", rows, out.length);
+      if (noStatus > 0) {
+        rowNotes.push(`${noStatus} righe senza stato: considerate infortunate`);
+      }
+      reportRows("injuries", rows, out.length);
       return out;
     },
 
@@ -791,7 +911,7 @@ export function bsdProvider(key: string, opts: BsdOptions = {}) {
           awayName: pickString(row, AWAY),
         });
       }
-      reportShape("fixtures", rows, out.length);
+      reportRows("fixtures", rows, out.length);
       // `next` is honoured client-side: a candidate path may ignore the filter.
       return out
         .sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff))
@@ -802,8 +922,9 @@ export function bsdProvider(key: string, opts: BsdOptions = {}) {
       const json = await call("lineups", { fixture: String(fixtureId) });
       const out: ProviderLineupEntry[] = [];
       const rows = rowsOf(json);
-      for (const row of rows) {
-        const teamName = pickString(row, TEAM_NAME);
+      const clubs = await clubsOf(rows);
+      for (const [index, row] of rows.entries()) {
+        const teamName = clubs[index] ?? "";
         const starters = pickArray(row, STARTERS);
         const bench = pickArray(row, BENCH);
         if (starters.length > 0 || bench.length > 0) {
@@ -820,13 +941,13 @@ export function bsdProvider(key: string, opts: BsdOptions = {}) {
           continue;
         }
         out.push({
-          externalId: pickInt(row, PLAYER_ID),
+          externalId: externalIdOf(row),
           playerName,
           teamName,
           state: starting ? "starting" : "bench",
         });
       }
-      reportShape("lineups", rows, out.length);
+      reportRows("lineups", rows, out.length);
       return out;
     },
   } satisfies AvailabilityProvider;
@@ -850,7 +971,7 @@ export function bsdProvider(key: string, opts: BsdOptions = {}) {
         continue;
       }
       out.push({
-        externalId: pickInt(entry, PLAYER_ID),
+        externalId: externalIdOf(entry),
         playerName,
         teamName: pickString(entry, TEAM_NAME) || teamName,
         state,

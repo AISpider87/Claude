@@ -430,3 +430,15 @@ listone,operazioni}`) con exceljs, letture paginate (`fetchAll`) sotto la
   nessuna è leggibile il pannello elenca **le chiavi della prima riga** — così
   i nomi veri dei campi si scoprono in un giro solo. Budget per esecuzione
   16 → **24**. Nessuna migrazione nuova.
+- 2026-09-11 · **Abbinamento per cognome e abbinamenti "da confermare"**: BSD
+  scrive i nomi abbreviati ("L. Balerdi") e dà il club come id opaco
+  (`current_team_id: "bb_team_…"`), tradotto con una mappa da `/v1/teams`
+  memorizzata insieme a lega e sport. Quando il club non è verificabile, o
+  quando il nome combacia solo per cognome (tolta l'iniziale puntata), il
+  calciatore **viene comunque segnato** — perdere la notizia sarebbe peggio — ma
+  l'abbinamento **non viene memorizzato**: finisce fra i "Nomi da abbinare" come
+  _da confermare_, con il candidato già proposto, e basta un clic dell'admin per
+  renderlo definitivo. Il cognome vale solo se è **unico** dentro il club (o in
+  tutta la lega quando il club è ignoto), altrimenti resta ambiguo. Gli id
+  opachi dei calciatori sono ridotti a un intero stabile (FNV-1a a 31 bit)
+  perché `external_player_map.external_id` è un intero.

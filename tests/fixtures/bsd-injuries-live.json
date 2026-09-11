@@ -1,0 +1,31 @@
+{
+  "_comment": "Verbatim shape of the production answer of GET /v1/injuries?sport=football&league=seriea (2026-09-11): the rows sit under data.injuries.value, the name is abbreviated, the club is an opaque id and there is no status field at all.",
+  "data": {
+    "injuries": {
+      "value": [
+        {
+          "id": "bb_player_nuflljaiugdf",
+          "sport": "football",
+          "full_name": "L. Balerdi",
+          "display_name": "L. Balerdi",
+          "current_team_id": "bb_team_yl4g3x6vrnn6"
+        },
+        {
+          "id": "bb_player_puukfr2vbgpa",
+          "sport": "football",
+          "full_name": "R. Lukaku",
+          "display_name": "R. Lukaku",
+          "current_team_id": "bb_team_napoli00001"
+        },
+        {
+          "id": "bb_player_zzz1",
+          "sport": "football",
+          "full_name": "A. Bastoni",
+          "display_name": "A. Bastoni",
+          "current_team_id": "bb_team_inter00001",
+          "status": "Suspended"
+        }
+      ]
+    }
+  }
+}

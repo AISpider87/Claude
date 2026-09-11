@@ -61,7 +61,10 @@ export default async function AdminPlayerStatusPage() {
       externalId: u.external_id ?? null,
       name: u.name,
       team: u.team,
-      kind: u.kind === "ambiguous" ? "ambiguous" : "not_found",
+      kind:
+        u.kind === "ambiguous" || u.kind === "to_confirm"
+          ? u.kind
+          : ("not_found" as UnmatchedRow["kind"]),
       detail: u.detail ?? "",
       suggestions: (u.candidates ?? []).flatMap((c) => {
         const p = byId.get(c.id);
@@ -224,8 +227,11 @@ select cron.schedule(
             <CardHeader>
               <CardTitle>Nomi da abbinare ({unmatched.length})</CardTitle>
               <CardDescription>
-                L&apos;API usa nomi diversi dal listone. Questi non sono stati applicati: scegli tu
-                il calciatore giusto e l&apos;abbinamento resta valido per i prossimi aggiornamenti.
+                L&apos;API usa nomi diversi dal listone. Scegli tu il calciatore giusto:
+                l&apos;abbinamento resta valido per i prossimi aggiornamenti. Le righe{" "}
+                <strong>da confermare</strong> sono già state applicate (l&apos;abbinamento è
+                probabile ma il club non era verificabile): confermale per non doverle indovinare
+                ogni volta.
               </CardDescription>
             </CardHeader>
             <CardContent>

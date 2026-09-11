@@ -63,8 +63,17 @@ export interface BsdEndpoints {
   routes: Partial<Record<BsdCapability, BsdRoute>>;
   /** The league id/slug the API accepted (from `/v1/leagues` when needed). */
   league?: string;
-  /** The sport value the API accepted: `soccer` or `football`. */
+  /** The sport value the API accepted: `football` or `soccer`. */
   sport?: string;
+  /** Club id → club name, from `/v1/teams`, with what it was built for. */
+  teams?: BsdTeamMap;
+}
+
+/** The club names of one league, as the provider spells its own ids. */
+export interface BsdTeamMap {
+  league: string;
+  sport: string;
+  map: Record<string, string>;
 }
 
 /** Where the provider says its route list is, in the order we try them. */
@@ -406,6 +415,24 @@ export function parseEndpoints(value: unknown): BsdEndpoints {
     const stored = value[key];
     if (typeof stored === "string" && stored.trim() && stored.length <= 60) {
       out[key] = stored.trim();
+    }
+  }
+  const teams = value.teams;
+  if (isRecord(teams) && isRecord(teams.map)) {
+    const map: Record<string, string> = {};
+    let kept = 0;
+    for (const [id, name] of Object.entries(teams.map)) {
+      if (kept >= 200) break;
+      if (typeof name !== "string" || !name.trim() || id.length > 80 || name.length > 80) continue;
+      map[id] = name.trim();
+      kept += 1;
+    }
+    if (kept > 0) {
+      out.teams = {
+        league: typeof teams.league === "string" ? teams.league : "",
+        sport: typeof teams.sport === "string" ? teams.sport : "",
+        map,
+      };
     }
   }
   const routes = value.routes;

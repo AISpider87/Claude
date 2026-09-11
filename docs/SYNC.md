@@ -208,37 +208,86 @@ nella cache: le correzioni si pagano una volta sola.
   candidati _e_ la scoperta la prima volta; a regime sono 2-3), **3** con
   API-Football.
 
-## BSD: lettura tollerante del payload
+## BSD: la forma vera del payload
 
-La prima esecuzione vera ha ricevuto **50 righe da `/v1/matches` e non ne ha
-letta nessuna**: la forma non è quella che immaginavamo. Il parser accetta
-quindi molte varianti e **salta** (contandola) qualunque riga che non riesce a
-leggere — meglio uno stato mancante che uno stato sbagliato sulla rosa di
-qualcuno.
+Le prime esecuzioni con `200` hanno mostrato che la forma non è quella che
+immaginavamo. Questo è il payload vero degli **indisponibili**
+(`GET /v1/injuries?sport=football&league=seriea`):
 
-Ogni nome di campo è cercato **ignorando maiuscole, trattini e underscore**
-(`home_team`, `homeTeam` e `HomeTeam` sono la stessa cosa), con percorsi
-puntati (`teams.home.name`) e indici (`competitors[0]`). Un campo che contiene
-un oggetto viene letto dal suo `name` / `display_name` / `full_name` /
+```json
+{
+  "data": {
+    "injuries": {
+      "value": [
+        {
+          "id": "bb_player_nuflljaiugdf",
+          "sport": "football",
+          "full_name": "L. Balerdi",
+          "display_name": "L. Balerdi",
+          "current_team_id": "bb_team_yl4g3x6vrnn6"
+        }
+      ]
+    }
+  }
+}
+```
+
+Quattro cose da leggere qui dentro, tutte gestite:
+
+1. **le righe stanno in `data.<capacità>.value`** — un involucro per capacità
+   più un `value`. Il lettore scende quindi dentro gli involucri: chiavi note
+   (`data`, `response`, `results`, `items`, `rows`, `records`, `matches`,
+   `fixtures`, `injuries`, `players`, `lineups`, `events`), poi un
+   `value`/`values`/`items`/`list`/`records`, poi qualunque oggetto con **una
+   sola chiave**, fino a tre livelli.
+2. **il nome è abbreviato**: "L. Balerdi", non "Leonardo Balerdi" — vedi
+   "Abbinamento dei nomi" più sotto.
+3. **il club è un id opaco** `current_team_id: "bb_team_…"`, mai un nome: si
+   traduce con `GET /v1/teams?sport=<sport>&league=<lega>` (ripiego
+   `?league=<lega>`), una volta per esecuzione, con una sola ripetizione se
+   salta fuori un id sconosciuto; la mappa `id → nome` è memorizzata in
+   `league_settings.availability_endpoints` sotto `teams`, insieme alla lega e
+   allo sport per cui vale (se cambiano, si rifà). Se l'elenco non risponde, la
+   riga **non si butta**: si abbina senza club e l'abbinamento resta **da
+   confermare**.
+4. **lo stato può non esserci affatto**: una riga che arriva dall'endpoint
+   _indisponibili_ è comunque un'assenza, quindi senza testo riconoscibile vale
+   `injured` e il pannello scrive "N righe senza stato: considerate
+   infortunate". Solo una riga **senza nome** è illeggibile.
+
+L'id del calciatore è anch'esso opaco (`bb_player_…`): siccome
+`external_player_map.external_id` è un intero, la stringa viene ridotta a un
+intero stabile (FNV-1a a 31 bit), così l'admin può comunque confermare
+l'abbinamento una volta per tutte.
+
+Il **calendario** (`GET /v1/matches`) ha risposto 200 con 50 righe e queste
+chiavi: `id, sport, league, home, away, kickoff_utc, status, score, linescore,
+attendance, broadcast, round, has_odds`. Il campo dell'orario è `kickoff_utc`,
+che prima non conoscevamo: nessuna riga passava.
+
+### Come vengono letti i campi
+
+Ogni nome è cercato **ignorando maiuscole, trattini e underscore** (`home_team`,
+`homeTeam` e `HomeTeam` sono la stessa cosa), con percorsi puntati
+(`teams.home.name`) e indici (`competitors[0]`). Un campo che contiene un
+oggetto viene letto dal suo `name` / `display_name` / `full_name` /
 `short_name` / `abbreviation`.
 
-- **Dove sono le righe**: alla radice, oppure sotto `data`, `response`,
-  `results`, `items`, `rows`, `records`, `matches`, `fixtures`, `injuries`,
-  `players`, `lineups`, `events` — anche annidati di un livello
-  (`data.matches`, `data.items`).
 - **Id della partita**: `id` | `match_id` | `fixture_id` | `game_id` |
   `event_id` | `uuid` (ci serve **numerico**: un id testuale non è memorizzabile
   e la riga viene saltata).
-- **Calcio d'inizio**: `start_time` | `commence_time` | `scheduled` |
-  `scheduled_at` | `kickoff` | `date` | `datetime` | `utc_date` | `start` |
+- **Calcio d'inizio**: `kickoff_utc` | `kickoff_time_utc` | `start_utc` |
+  `date_utc` | `commence_time_utc` | `utc` | `start_time` | `commence_time` |
+  `scheduled` | `scheduled_at` | `kickoff` | `date` | `datetime` | `start` |
   `starts_at`; stringa ISO **oppure** epoch in secondi o millisecondi.
 - **Stato della partita**: `status` | `state` | `match_status`, stringa oppure
-  oggetto (`status.short`, `status.long`, `status.type`).
-- **Squadre**: `home_team` | `home` | `teams.home` | `competitors[0]` (e gli
+  oggetto (`status.short`, `status.long`, `status.type`, `status.state`).
+- **Squadre**: `home` | `home_team` | `teams.home` | `competitors[0]` (e gli
   equivalenti away), stringa oppure oggetto.
 - **Nome del calciatore**: `player` | `player_name` | `athlete` | `name` |
   `full_name` | `display_name`.
-- **Club**: `team` | `team_name` | `club` | `squad`.
+- **Club**: `team` | `team_name` | `club` | `squad` per il nome;
+  `current_team_id` | `team_id` | `club_id` per l'id da tradurre.
 - **Stato**: `status` | `type` | `injury_status` | `availability` |
   `designation` | `reason` | `description` | `detail` | `note` | `comment` |
   `injury`.
@@ -251,11 +300,13 @@ un oggetto viene letto dal suo `name` / `display_name` / `full_name` /
   `lineup: "start"`. Una riga senza nessuna delle due cose viene saltata: non si
   dà del titolare a nessuno per esclusione.
 
-Se **arrivano righe e nessuna è leggibile**, il pannello scrive quali chiavi ha
-davvero la prima riga:
+Ogni capacità scrive sempre nel pannello quante righe ha ricevuto e quante ne ha
+lette; se ne ha lette **zero**, elenca anche le chiavi della prima riga:
 
 ```
-indisponibili: 50 righe ricevute, nessuna leggibile · chiavi della prima riga: id, sport, league, home_team, away_team, start_time, status, confidence
+indisponibili: 37 righe ricevute, 37 lette
+calendario: 50 righe ricevute, 0 lette
+calendario: nessuna riga leggibile · chiavi della prima riga: id, sport, league, home, away, kickoff_utc, status, score, linescore, attendance, broadcast, round, has_odds
 ```
 
 È la riga che risolve il problema in un colpo solo: dice i nomi veri dei campi.
@@ -346,7 +397,14 @@ Martinez · Internazionale", il listone dice "Martinez Lau. · Inter".
    AS Roma→Roma, SSC Napoli→Napoli…).
 3. Altrimenti si cerca il cognome **dentro il club** (dall'ultimo token del nome
    API all'indietro).
-4. **Un solo candidato nel club giusto** → abbinamento `auto`, salvato per le
+4. Altrimenti, **solo il cognome**: BSD scrive "L. Balerdi", il listone scrive
+   "Balerdi". L'iniziale puntata iniziale viene tolta e si cerca il cognome
+   rimasto — unico **dentro il club** se il club si conosce, unico **in tutta la
+   lega** se non si conosce. Un abbinamento trovato così (o trovato senza poter
+   verificare il club) **viene applicato ma non memorizzato**: compare fra i
+   "Nomi da abbinare" come **da confermare**, con il calciatore già proposto.
+   Basta un clic per renderlo definitivo.
+5. **Un solo candidato nel club giusto** → abbinamento `auto`, salvato per le
    volte successive. **Più candidati o nessuno** → non si applica niente e il
    nome finisce nell'elenco "Nomi da abbinare" della pagina admin, dove l'admin
    sceglie il calciatore giusto (`admin_confirm_player_map`, confidenza
@@ -381,22 +439,26 @@ fornitore si leggerebbe come "sono guariti tutti".
 
 ## Verificato in produzione, e cosa resta da verificare (BSD)
 
-**Verificato il 2026-09-11**, due esecuzioni vere con la chiave dell'admin:
+**Verificato l'11 settembre 2026**, tre esecuzioni vere con la chiave
+dell'admin:
 
-- l'indirizzo base `https://api.bigballsdata.com` risponde, **la chiave è
-  valida** (quota dichiarata: 93, poi 82 richieste residue);
-- nessuno dei candidati indovinati esisteva: tutti `404 route_not_found`, con il
-  corpo che indica `GET /v1/` e `GET /openapi.json`;
-- la **scoperta funziona**: `/openapi.json` ha restituito **125 rotte**
-  ("Big Ball Sports API"; ogni risposta porta un punteggio di confidenza e
-  l'attribuzione della fonte; paginazione con `?limit=` / `?offset=` / `?page=`);
-- **`GET /v1/injuries` esiste** e risponde `400`
-  `"sport or league query param is required"` se chiamata senza parametri: da
-  qui il parametro `sport` (`BSD_SPORT`, default `soccer`) e la correzione
-  automatica dei parametri obbligatori;
-- **`GET /v1/matches?league=…&status=…` ha risposto `200` con 50 righe**, che
-  però il parser non sapeva leggere: da qui la lettura tollerante qui sopra e la
-  nota con le chiavi della prima riga;
+- indirizzo base `https://api.bigballsdata.com`, **chiave valida** (quota
+  dichiarata: 93 → 82 → 91 richieste residue);
+- nessuno dei percorsi indovinati esisteva (`404 route_not_found`), ma il corpo
+  indicava `GET /v1/` e `GET /openapi.json`: **la scoperta funziona** e ha
+  restituito **125 rotte** ("Big Ball Sports API"; ogni risposta porta un
+  punteggio di confidenza e l'attribuzione della fonte; paginazione con
+  `?limit=` / `?offset=` / `?page=`);
+- `GET /v1/injuries` senza parametri risponde `400`
+  `"sport or league query param is required"` → correzione automatica;
+- **lo sport che funziona è `football`**, non `soccer`;
+- **la Serie A si chiama `seriea`** (senza trattino): trovata da
+  `GET /v1/leagues?sport=football`, che risponde
+  `{"data":[{"id":"epl",…},{"id":"seriea","name":"Serie A","sport":"football","country":"italy"}…]}`;
+- con `sport=football&league=seriea` **entrambe le chiamate rispondono `200`**:
+  indisponibili e `/v1/matches` (50 righe);
+- la forma delle righe è quella descritta sopra (`data.<capacità>.value`,
+  `full_name` abbreviato, `current_team_id` opaco, `kickoff_utc`);
 - le rotte utili per il calcio, alla lettera: `/v1/injuries`, `/v1/matches`,
   `/v1/matches/{id}` (+ `events`, `odds`, `statistics`, `weather`),
   `/v1/live-stats/{sport}/{matchId}/players`, `/v1/stored_matches`,
@@ -409,30 +471,25 @@ fornitore si leggerebbe come "sono guariti tutti".
 
 **Resta da verificare al prossimo aggiornamento** (modalità diagnostica accesa):
 
-1. che `/v1/injuries?sport=soccer&league=serie-a` risponda `200` — e in caso
-   contrario cosa dice il `400`: la correzione automatica aggiunge i parametri
-   nominati nel messaggio, ma se il nome non somiglia a niente che conosciamo
-   va aggiunto in `PARAM_ALIASES`;
-2. **come si chiama la Serie A**: se `serie-a` viene rifiutata, il job legge
-   `/v1/leagues?sport=soccer` e usa l'id che trova, scrivendolo nel pannello; se
-   nemmeno lì c'è, va messo a mano in `BSD_LEAGUE`;
-3. **`soccer` o `football`**: il ripiego è automatico e viene memorizzato;
-4. **i nomi dei campi** delle righe di `/v1/matches` e `/v1/injuries`: la nota
-   "chiavi della prima riga" li elenca, vanno aggiunti alle liste in
-   `src/lib/availability/bsd.ts`;
-5. che l'**id della partita sia numerico**: se è un uuid, il calendario resta
-   vuoto e serve una migrazione per cambiare tipo;
-6. **le formazioni**: `/v1/stored_matches/<id>/lineups` esiste, ma resta da
+1. che gli indisponibili arrivino davvero sulle rose: guarda le righe
+   "indisponibili: N righe ricevute, N lette" e "abbinamenti: N riusciti, M da
+   confermare";
+2. che `GET /v1/teams?sport=football&league=seriea` risponda: senza la mappa dei
+   club tutti gli abbinamenti restano "da confermare" (e il pannello lo scrive);
+3. **i cognomi**: conferma le righe "da confermare" una volta — da lì in poi
+   l'abbinamento è memorizzato e non viene più indovinato;
+4. se qualche riga resta illeggibile, la nota con le **chiavi della prima riga**
+   dice quali nomi aggiungere alle liste in `src/lib/availability/bsd.ts`;
+5. **le formazioni**: `/v1/stored_matches/<id>/lineups` esiste, ma resta da
    vedere se l'id delle partite di `/v1/matches` è lo stesso di
    `stored_matches` e se il piano gratuito la copre;
-7. **il vocabolario degli stati** degli indisponibili: le parole vere vanno
-   aggiunte alla tabella qui sopra, altrimenti tutto finisce in `unavailable`;
-8. **l'id esterno del calciatore**: se le righe non ne hanno uno numerico
-   l'abbinamento manuale non è possibile (il pannello lo dice riga per riga);
-9. **la paginazione**: se le righe sono più di una pagina serve `?limit=`
+6. **il vocabolario degli stati**: se arrivano testi di stato veri (il primo
+   payload non ne aveva), vanno confrontati con la tabella qui sopra, altrimenti
+   finiscono in `unavailable` o in `injured`;
+7. **la paginazione**: se le righe sono più di una pagina serve `?limit=`
    (oggi si legge solo la prima);
-10. **la quota**: quale header dichiara le richieste residue e che non si
-    avvicini a zero (in quel caso allungare l'intervallo del job).
+8. **la quota**: quale header dichiara le richieste residue e che non si
+   avvicini a zero (in quel caso allungare l'intervallo del job).
 
 ## Da verificare in produzione (API-Football)
 

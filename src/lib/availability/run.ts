@@ -74,7 +74,12 @@ export interface UnmatchedName {
   external_id: number | null;
   name: string;
   team: string;
-  kind: "ambiguous" | "not_found";
+  /**
+   * `to_confirm` is a match we made but do not trust enough to write down: the
+   * club was unknown, or the name matched on the surname alone. The status is
+   * applied, the binding waits for the admin.
+   */
+  kind: "ambiguous" | "not_found" | "to_confirm";
   /** What the API said about them, so the admin can judge the binding. */
   detail: string;
   candidates: { id: number; name: string; team: string }[];
@@ -224,9 +229,11 @@ export async function runAvailabilitySync(
   const mapRows = new Map<number, FeedMapping>();
   const unmatched = new Map<string, UnmatchedName>();
 
+  let matched = 0;
+
   const report = (
     q: { externalId: number | null; name: string; teamName: string },
-    kind: "ambiguous" | "not_found",
+    kind: UnmatchedName["kind"],
     detail: string,
     candidates: ListonePlayer[],
   ) => {
@@ -260,7 +267,11 @@ export async function runAvailabilitySync(
         );
         continue;
       }
-      if (inj.externalId != null && found.via !== "map") {
+      matched += 1;
+      if (found.confirm) {
+        // Applied, but not bound: the admin says whether it is the right player.
+        report(q, "to_confirm", [inj.type, inj.reason].filter(Boolean).join(" · "), [found.player]);
+      } else if (inj.externalId != null && found.via !== "map") {
         mapRows.set(inj.externalId, {
           external_id: inj.externalId,
           player_id: found.player.id,
@@ -318,7 +329,9 @@ export async function runAvailabilitySync(
           report(q, found.status, `formazione ${out.fixture.label}`, found.candidates);
           continue;
         }
-        if (entry.externalId != null && found.via !== "map") {
+        if (found.confirm) {
+          report(q, "to_confirm", `formazione ${out.fixture.label}`, [found.player]);
+        } else if (entry.externalId != null && found.via !== "map") {
           mapRows.set(entry.externalId, {
             external_id: entry.externalId,
             player_id: found.player.id,
@@ -342,7 +355,13 @@ export async function runAvailabilitySync(
 
   out.requests = provider.budget.used;
   out.unparsed = provider.unparsed;
-  out.notes = provider.notes;
+  const confirmRows = [...unmatched.values()].filter((u) => u.kind === "to_confirm").length;
+  out.notes = [
+    ...provider.notes,
+    `abbinamenti: ${matched} riusciti, ${confirmRows} da confermare, ${
+      unmatched.size - confirmRows
+    } da abbinare a mano`,
+  ];
   out.rate_limit_remaining = provider.rateLimitRemaining;
   out.statuses = statuses.size;
   out.lineups = lineups.length;

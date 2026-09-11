@@ -29,8 +29,18 @@ import {
   requiredParams,
 } from "@/lib/availability/bsd-discovery";
 import { availabilityProviderFromEnv, selectedProviderName } from "@/lib/availability/provider";
-import { MAX_SAMPLE_BYTES, RequestBudget, capSamples } from "@/lib/availability/shared";
-import { runAvailabilitySync, type AvailabilityDb } from "@/lib/availability/run";
+import {
+  MAX_SAMPLE_BYTES,
+  RequestBudget,
+  capSamples,
+  rowsOf,
+  stableId,
+} from "@/lib/availability/shared";
+import {
+  runAvailabilitySync,
+  type AvailabilityDb,
+  type AvailabilityPayload,
+} from "@/lib/availability/run";
 import type { ListonePlayer } from "@/lib/import/name-matching";
 
 const FIXTURES = path.resolve(__dirname, "../fixtures");
@@ -443,6 +453,8 @@ describe("payload shapes", () => {
           "Alessandro Bastoni",
           "Nicolo Barella",
           "Paulo Dybala",
+          // No status at all, but the *injuries* endpoint reported them.
+          "Josep Martinez",
           "Giovanni Sconosciuto",
         ],
       ],
@@ -473,22 +485,26 @@ describe("payload shapes", () => {
     expect(bastoni).toMatchObject({ teamName: "Internazionale", kind: "suspended" });
   });
 
-  it("skips a row whose status it cannot read and counts it as unparsed", async () => {
+  it("treats a row without a status as an injury, and says how many", async () => {
     const { provider } = make({
       "/v1/football/injuries": { body: await fixture("injuries-data") },
     });
     const rows = await provider.injuries();
-    // Six rows in, five out: "Josep Martinez" has an empty status.
-    expect(rows).toHaveLength(5);
-    expect(rows.some((r) => r.playerName === "Josep Martinez")).toBe(false);
-    expect(provider.unparsed).toBe(1);
+    // Everything the injuries endpoint reports is an absence: a row with no
+    // status text is an injury, not a row to throw away. Only a row without a
+    // name is unreadable.
+    expect(rows).toHaveLength(6);
+    expect(rows.find((r) => r.playerName === "Josep Martinez")?.kind).toBe("injured");
+    expect(provider.unparsed).toBe(0);
     expect(rows.map((r) => r.kind)).toEqual([
       "injured",
       "suspended",
       "doubtful",
       "unavailable",
+      "injured",
       "doubtful",
     ]);
+    expect(provider.notes).toContain("1 righe senza stato: considerate infortunate");
   });
 
   it("reads the fixtures, drops the unreadable ones and honours `next`", async () => {
@@ -523,7 +539,7 @@ describe("payload shapes", () => {
 
 describe("the live API's own answers", () => {
   const BARE = "/v1/injuries";
-  const WITH_PARAMS = "/v1/injuries?sport=soccer&league=serie-a";
+  const WITH_PARAMS = "/v1/injuries?sport=football&league=serie-a";
 
   /** A previous run cached `/v1/injuries` with no parameters at all. */
   const bareRoute = { templates: {}, routes: { injuries: { path: BARE, params: {} } } };
@@ -540,7 +556,7 @@ describe("the live API's own answers", () => {
 
     expect(fetcher.urls).toEqual([
       "https://api.bigballsdata.com/v1/injuries",
-      "https://api.bigballsdata.com/v1/injuries?sport=soccer&league=serie-a",
+      "https://api.bigballsdata.com/v1/injuries?sport=football&league=serie-a",
     ]);
     expect(rows).toHaveLength(2);
     // Next run goes straight there, with the names the API itself asked for.
@@ -580,7 +596,7 @@ describe("the live API's own answers", () => {
 
     expect(fetcher.urls.map((u) => new URL(u).pathname + new URL(u).search)).toEqual([
       "/v1/injuries?league=serie-a",
-      "/v1/leagues?sport=soccer",
+      "/v1/leagues?sport=football",
       "/v1/injuries?league=it-serie-a",
     ]);
     expect(rows).toHaveLength(2);
@@ -600,8 +616,11 @@ describe("the live API's own answers", () => {
   it("tries the other spelling of the sport once, and keeps the one that works", async () => {
     const { provider, fetcher } = make(
       {
-        "/v1/injuries?sport=soccer": { status: 400, body: '{"error":{"message":"unknown sport"}}' },
-        "/v1/injuries?sport=football": { body: await fixture("injuries-root") },
+        "/v1/injuries?sport=football": {
+          status: 400,
+          body: '{"error":{"message":"unknown sport"}}',
+        },
+        "/v1/injuries?sport=soccer": { body: await fixture("injuries-root") },
       },
       {
         endpoints: {
@@ -612,11 +631,11 @@ describe("the live API's own answers", () => {
     );
     expect(await provider.injuries()).toHaveLength(2);
     expect(fetcher.urls.map((u) => new URL(u).pathname + new URL(u).search)).toEqual([
-      "/v1/injuries?sport=soccer",
-      "/v1/leagues?sport=soccer", // the league is checked first, and 404s here
       "/v1/injuries?sport=football",
+      "/v1/leagues?sport=football", // the league is checked first, and 404s here
+      "/v1/injuries?sport=soccer",
     ]);
-    expect(provider.resolvedEndpoints()).toMatchObject({ sport: "football" });
+    expect(provider.resolvedEndpoints()).toMatchObject({ sport: "soccer" });
   });
 
   it("reads /v1/matches rows in either shape", async () => {
@@ -658,13 +677,120 @@ describe("the live API's own answers", () => {
 
   it("lists the keys of the first row when rows arrive but none can be read", async () => {
     const { provider } = make({
-      "/v1/injuries?sport=soccer&league=serie-a": { body: await fixture("unreadable") },
+      "/v1/injuries?sport=football&league=serie-a": { body: await fixture("unreadable") },
     });
     expect(await provider.injuries()).toEqual([]);
     expect(provider.unparsed).toBe(2);
     expect(provider.notes.join(" · ")).toContain(
-      "indisponibili: 2 righe ricevute, nessuna leggibile · chiavi della prima riga: evt, prsn, sq, st, upd",
+      "indisponibili: nessuna riga leggibile · chiavi della prima riga: evt, prsn, sq, st, upd",
     );
+    expect(provider.notes).toContain("indisponibili: 2 righe ricevute, 0 lette");
+  });
+});
+
+describe("the payload production really sends", () => {
+  const LIVE = "/v1/injuries?sport=football&league=serie-a";
+
+  it("finds the rows under data.injuries.value", async () => {
+    const { provider } = make({ [LIVE]: { body: await fixture("injuries-live") } });
+    const rows = await provider.injuries();
+    expect(rows.map((r) => r.playerName)).toEqual(["L. Balerdi", "R. Lukaku", "A. Bastoni"]);
+    // No status field on the first two rows: the injuries endpoint reported
+    // them, so they are injured.
+    expect(rows.map((r) => r.kind)).toEqual(["injured", "injured", "suspended"]);
+    expect(provider.notes).toContain("2 righe senza stato: considerate infortunate");
+    expect(provider.notes).toContain("indisponibili: 3 righe ricevute, 3 lette");
+  });
+
+  it("turns bb_team_… into a club name through /v1/teams, once", async () => {
+    const { provider, fetcher } = make({
+      [LIVE]: { body: await fixture("injuries-live") },
+      "/v1/teams": { body: await fixture("teams") },
+    });
+    const rows = await provider.injuries();
+    expect(rows.map((r) => r.teamName)).toEqual(["", "Napoli", "Inter"]);
+    // One injuries call, one teams call, one refresh for the id nobody knows.
+    expect(fetcher.urls.map((u) => new URL(u).pathname)).toEqual([
+      "/v1/injuries",
+      "/v1/teams",
+      "/v1/teams",
+    ]);
+    expect(provider.resolvedEndpoints()).toMatchObject({
+      teams: { league: "serie-a", sport: "football", map: { bb_team_inter00001: "Inter" } },
+    });
+  });
+
+  it("reuses a cached team map, and throws it away when the league changed", async () => {
+    const cache = {
+      teams: { league: "serie-a", sport: "football", map: { bb_team_napoli00001: "Napoli" } },
+    };
+    const warm = make({ [LIVE]: { body: await fixture("injuries-live") } });
+    const withCache = bsdProvider(KEY, {
+      fetchImpl: warm.fetcher.impl,
+      season: 2026,
+      endpoints: parseEndpoints(cache),
+    });
+    expect((await withCache.injuries())[1]?.teamName).toBe("Napoli");
+
+    // Keyed on the path only, so it answers whatever league is asked for.
+    const stale = make({ "/v1/injuries": { body: await fixture("injuries-live") } });
+    const other = bsdProvider(KEY, {
+      fetchImpl: stale.fetcher.impl,
+      season: 2026,
+      league: "another-league",
+      endpoints: parseEndpoints(cache),
+    });
+    void (await other.injuries());
+    // The map belonged to another league: not reused, asked again.
+    expect(stale.fetcher.urls.some((u) => u.includes("/v1/teams"))).toBe(true);
+  });
+
+  it("keeps the row when /v1/teams does not answer", async () => {
+    const { provider } = make({ [LIVE]: { body: await fixture("injuries-live") } });
+    const rows = await provider.injuries();
+    expect(rows).toHaveLength(3);
+    expect(rows.every((r) => r.teamName === "")).toBe(true);
+    expect(provider.notes).toContain(
+      "elenco squadre non disponibile: i club restano da confermare",
+    );
+  });
+
+  it("hashes the opaque player id so the admin can still bind it", async () => {
+    const { provider } = make({ [LIVE]: { body: await fixture("injuries-live") } });
+    const rows = await provider.injuries();
+    expect(rows[0]!.externalId).toBe(stableId("bb_player_nuflljaiugdf"));
+    expect(rows[0]!.externalId).toBeGreaterThan(0);
+    // Stable: the same string always gives the same number.
+    expect(stableId("bb_player_nuflljaiugdf")).toBe(stableId("bb_player_nuflljaiugdf"));
+    expect(stableId("bb_player_puukfr2vbgpa")).not.toBe(stableId("bb_player_nuflljaiugdf"));
+  });
+
+  it("reads /v1/matches with kickoff_utc and the keys production sends", async () => {
+    const { provider } = make({ "/v1/matches": { body: await fixture("matches-live") } });
+    expect(await provider.fixtures(10)).toEqual([
+      {
+        id: 1208002,
+        kickoff: "2026-09-12T16:00:00Z",
+        status: "scheduled",
+        homeName: "Inter",
+        awayName: "Napoli",
+      },
+      {
+        id: 1208003,
+        kickoff: "2026-09-12T18:45:00Z",
+        status: "scheduled",
+        homeName: "Roma",
+        awayName: "Milan",
+      },
+    ]);
+    expect(provider.notes).toContain("calendario: 2 righe ricevute, 2 lette");
+  });
+
+  it("unwraps a single-key wrapper whatever it is called", () => {
+    expect(rowsOf({ data: { injuries: { value: [1, 2] } } })).toEqual([1, 2]);
+    expect(rowsOf({ payload: { whatever: { list: [3] } } })).toEqual([3]);
+    expect(rowsOf({ data: { matches: { value: [] }, meta: { total: 0 } } })).toEqual([]);
+    expect(rowsOf({ a: { b: { c: { d: [1] } } } })).toEqual([]); // deeper than three
   });
 });
 
@@ -810,12 +936,13 @@ describe("runAvailabilitySync with bsd", () => {
 
     expect(out.status).toBe("ok");
     expect(out.errors).toEqual([]);
-    // One injury row with no status, one fixture row with no id.
-    expect(out.unparsed).toBe(2);
+    // Only the fixture row with no id is unreadable now.
+    expect(out.unparsed).toBe(1);
     expect(out.requests_max).toBe(24);
     expect(out.fixture?.id).toBe(1208002);
-    // Lukaku infortunato, Bastoni squalificato, Barella in dubbio, Dybala fuori.
-    expect(out.statuses).toBe(4);
+    // Lukaku infortunato, Bastoni squalificato, Barella in dubbio, Dybala
+    // fuori, e Josep Martinez senza stato = infortunato.
+    expect(out.statuses).toBe(5);
     // The unknown "Giovanni Sconosciuto" is offered to the admin, not applied.
     expect(out.unmatched.map((u) => u.name)).toContain("Giovanni Sconosciuto");
     // The discovered path is written back for the next run; no raw body is
@@ -832,6 +959,41 @@ describe("runAvailabilitySync with bsd", () => {
         samples: [],
       },
     ]);
+  });
+
+  it("applies a club-less match but leaves the binding to the admin", async () => {
+    const { provider } = make({
+      "/v1/injuries": { body: await fixture("injuries-live") },
+      "/v1/matches": { body: await fixture("matches-live") },
+    });
+    const { db } = fakeDb();
+    const payloads: AvailabilityPayload[] = [];
+    const out = await runAvailabilitySync(
+      provider,
+      {
+        ...db,
+        applyFeed: async (payload) => {
+          payloads.push(payload);
+          return {};
+        },
+      },
+      () => {},
+      new Date("2026-09-11T10:00:00Z"),
+    );
+
+    // "R. Lukaku" and "A. Bastoni" are in the listone; the club came as an
+    // unresolved id, so the status is applied…
+    const applied = payloads[0]!.statuses.map((s2) => s2.player_id).sort((a, b) => a - b);
+    expect(applied).toEqual([103, 201]);
+    // …but nothing is written to external_player_map, and the admin is asked.
+    expect(payloads[0]!.map).toEqual([]);
+    expect(
+      out.unmatched
+        .filter((u) => u.kind === "to_confirm")
+        .map((u) => u.name)
+        .sort(),
+    ).toEqual(["A. Bastoni", "R. Lukaku"]);
+    expect(out.notes.at(-1)).toBe("abbinamenti: 2 riusciti, 2 da confermare, 1 da abbinare a mano");
   });
 
   it("saves the raw answers when the admin asks for them, and always on failure", async () => {

@@ -303,12 +303,22 @@ function squashKey(key: string): string {
 }
 
 /**
- * The array of rows inside an answer, wherever it is: the root itself, or one
- * of `LIST_KEYS`, or one nesting level deeper (`{data:{matches:[…]}}`).
+ * The keys a provider uses to wrap the rows themselves, once it has already
+ * named the thing: BSD answers `{"data":{"injuries":{"value":[…]}}}`.
  */
-export function rowsOf(payload: unknown, depth = 2): unknown[] {
+const WRAPPER_KEYS = ["value", "values", "items", "list", "records", "rows", "data"];
+
+/**
+ * The array of rows inside an answer, wherever it is. In order: the root
+ * itself; a known key holding an array; a known key holding another wrapper;
+ * a `value`/`values`/`items`/`list`/`records` array; an object with exactly one
+ * key; and finally any nested object that holds an array. Three levels deep at
+ * most, so a pathological payload cannot cost anything.
+ */
+export function rowsOf(payload: unknown, depth = 3): unknown[] {
   if (Array.isArray(payload)) return payload;
   if (!isRecord(payload) || depth <= 0) return [];
+
   for (const key of LIST_KEYS) {
     const value = lookup(payload, key);
     if (Array.isArray(value)) return value;
@@ -319,6 +329,20 @@ export function rowsOf(payload: unknown, depth = 2): unknown[] {
       const nested = rowsOf(value, depth - 1);
       if (nested.length > 0) return nested;
     }
+  }
+  const entries = Object.entries(payload);
+  for (const [key, value] of entries) {
+    if (Array.isArray(value) && WRAPPER_KEYS.includes(squashKey(key))) return value;
+  }
+  // A single-key object is a wrapper whatever it is called.
+  if (entries.length === 1 && entries[0]) {
+    const nested = rowsOf(entries[0][1], depth - 1);
+    if (nested.length > 0) return nested;
+  }
+  for (const [, value] of entries) {
+    if (!isRecord(value)) continue;
+    const nested = rowsOf(value, depth - 1);
+    if (nested.length > 0) return nested;
   }
   return [];
 }
@@ -459,6 +483,21 @@ export function pickBool(row: unknown, paths: string[]): boolean | null {
     }
   }
   return null;
+}
+
+/**
+ * A stable positive integer for an opaque id (`bb_player_nuflljaiugdf`), so a
+ * provider that names its players with strings can still be bound to the
+ * listone in `external_player_map`, whose key is an integer. FNV-1a, folded to
+ * 31 bits: same string, same number, for ever.
+ */
+export function stableId(text: string): number {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < text.length; i += 1) {
+    hash ^= text.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash & 0x7fffffff || 1;
 }
 
 /**
