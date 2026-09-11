@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore, type ComponentType } from "react";
-import { shouldPlayIntro, WELCOME_PARAM } from "@/lib/auth/welcome";
+import { Suspense, useEffect, useState, useSyncExternalStore, type ComponentType } from "react";
+import { useSearchParams } from "next/navigation";
+import { WELCOME_PARAM } from "@/lib/auth/welcome";
 import { INTRO_END, INTRO_REDUCED_END, INTRO_WIPE } from "@/components/motion/intro-timing";
 
 /**
@@ -13,6 +14,12 @@ import { INTRO_END, INTRO_REDUCED_END, INTRO_WIPE } from "@/components/motion/in
  * sign-in (the `?welcome=1` the sign-in redirect adds is consumed immediately
  * with `history.replaceState`, so a reload or a normal navigation never replays
  * it) and `prefers-reduced-motion` gets a still 200 ms fade instead.
+ *
+ * The sign-in redirect is a *client-side* navigation (a Server Action
+ * `redirect()`), so the new URL is committed to `window.location` only after
+ * this tree has rendered: the marker must be read through `useSearchParams`,
+ * which already reflects the destination, never through `location.search`
+ * during render — that is how the intro silently never played in production.
  */
 
 /** If the stage chunk is not there in time, the intro is skipped altogether.
@@ -23,10 +30,11 @@ const STAGE_BUDGET_MS = 2500;
 type StageComponent = ComponentType<{ reduced?: boolean }>;
 
 /**
- * Class the inline script below puts on <html> before the first paint, so the
- * page never flashes while React hydrates: it paints the same ground the
- * cinematic uses. `LoginIntro` removes it when the wipe starts, and the script
- * removes it by itself after 2.2 s if JavaScript for the overlay never runs.
+ * Class on <html> that paints the same ground the cinematic uses, so the page
+ * never flashes before the overlay is up. The inline script below adds it
+ * before the first paint on a full load (and removes it by itself after 2.2 s
+ * if JavaScript for the overlay never runs); on a client-side navigation
+ * `LoginIntro` adds it when it arms. Removed when the wipe starts.
  */
 const INTRO_CLASS = "intro-pending";
 
@@ -39,11 +47,11 @@ export function IntroScript() {
 
 /**
  * Tiny store around the one-shot marker, in the same shape as the theme store:
- * the overlay is "armed" when the sign-in marker is in the URL, and whoever
- * ends the cinematic (timer, tap, key) disarms it and notifies the subscribers.
+ * the overlay is "armed" by the sign-in marker (or the replay button), and
+ * whoever ends the cinematic (timer, tap, key) disarms it and notifies.
  */
 const listeners = new Set<() => void>();
-let armed: boolean | null = null;
+let armed = false;
 
 function subscribe(listener: () => void) {
   listeners.add(listener);
@@ -52,15 +60,25 @@ function subscribe(listener: () => void) {
   };
 }
 
-function isArmed(): boolean {
-  if (armed === null) armed = shouldPlayIntro(window.location.search);
+function getArmed(): boolean {
   return armed;
+}
+
+function notify() {
+  for (const listener of listeners) listener();
+}
+
+function arm() {
+  if (armed) return;
+  armed = true;
+  document.documentElement.classList.add(INTRO_CLASS);
+  notify();
 }
 
 function disarm() {
   if (!armed) return;
   armed = false;
-  for (const listener of listeners) listener();
+  notify();
 }
 
 /**
@@ -68,9 +86,7 @@ function disarm() {
  * show it to someone without signing out, and to check it after a deploy.
  */
 export function replayIntro() {
-  armed = true;
-  document.documentElement.classList.add(INTRO_CLASS);
-  for (const listener of listeners) listener();
+  arm();
 }
 
 /** `prefers-reduced-motion`, without pulling a motion library into the shell. */
@@ -86,18 +102,34 @@ function usePrefersReducedMotion(): boolean {
   return reduced;
 }
 
-export function LoginIntro() {
-  const reduced = usePrefersReducedMotion();
-  // Server and first hydration render nothing; the overlay appears right after.
-  const playing = useSyncExternalStore(subscribe, isArmed, () => false);
-
+/** Arms the store from the sign-in marker and consumes it right away. */
+function useWelcomeMarker() {
+  const params = useSearchParams();
+  const marker = params?.get(WELCOME_PARAM) === "1";
   useEffect(() => {
-    if (!playing) return;
+    if (!marker) return;
+    arm();
     // Consume the marker straight away: a reload must never replay the intro.
     const url = new URL(window.location.href);
     url.searchParams.delete(WELCOME_PARAM);
     window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
-  }, [playing]);
+  }, [marker]);
+}
+
+export function LoginIntro() {
+  // useSearchParams needs a Suspense boundary above it for prerendering.
+  return (
+    <Suspense fallback={null}>
+      <LoginIntroOverlay />
+    </Suspense>
+  );
+}
+
+function LoginIntroOverlay() {
+  useWelcomeMarker();
+  const reduced = usePrefersReducedMotion();
+  // Server and first hydration render nothing; the overlay appears right after.
+  const playing = useSyncExternalStore(subscribe, getArmed, () => false);
 
   // The choreography (and framer-motion with it) is loaded only when the
   // cinematic actually plays, so no other page pays for it. The timers start
@@ -156,7 +188,9 @@ export function LoginIntro() {
       className="intro-overlay fixed inset-0 z-50 overflow-hidden"
       data-testid="login-intro"
     >
-      {Stage && <Stage reduced={reduced} />}
+      {/* Plain ground until the stage chunk is here, so the page never shows
+          through on a client-side navigation. */}
+      {Stage ? <Stage reduced={reduced} /> : <div className="intro-ground absolute inset-0" />}
     </div>
   );
 }

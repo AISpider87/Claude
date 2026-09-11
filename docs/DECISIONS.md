@@ -564,3 +564,17 @@ listone,operazioni}`) con exceljs, letture paginate (`fetchAll`) sotto la
   tutta la pagina di login e su iOS l'autoplay non è garantito; lo si rivede
   nella galleria Higgsfield e si può integrare in seguito se l'admin lo vuole
   davvero (con un peso di ~400 KB a ogni accesso).
+
+- 2026-09-11 — **Perché l'intro non partiva al login (e come si è visto).**
+  Il redirect dopo l'accesso è una `redirect()` di Server Action, cioè una
+  navigazione **lato client**: quando l'albero della pagina di destinazione si
+  renderizza, `window.location` dice ancora `/login`, e l'URL nuovo viene
+  scritto solo dopo il commit. `LoginIntro` leggeva `location.search` durante
+  il render e metteva in cache "niente marker" per sempre: intro mai partita,
+  mentre a URL diretto (i miei screenshot) funzionava. Ora il marker arriva da
+  `useSearchParams` (che riflette già la destinazione), arma lo store in un
+  effetto, dipinge subito il fondo e consuma `?welcome=1`; il chunk della
+  coreografia viene prefetchato dal form di login mentre l'accesso è in corso.
+  Regola: mai leggere `window.location` durante il render per decidere cosa
+  mostrare dopo una navigazione App Router. Test jsdom che riproduce il caso
+  (`tests/unit/login-intro-arming.test.tsx`).

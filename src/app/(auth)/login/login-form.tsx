@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,12 @@ import { signIn } from "@/lib/auth/actions";
 
 export function LoginForm({ next }: { next: string }) {
   const [state, action, pending] = useActionState(signIn, undefined);
+
+  // While the sign-in is in flight, fetch the cinematic's chunk so it is in
+  // cache when the destination page mounts and the intro starts at once.
+  useEffect(() => {
+    if (pending) void import("@/components/motion/intro-stage");
+  }, [pending]);
 
   return (
     <form action={action} className="flex flex-col gap-4" noValidate>
