@@ -1,12 +1,20 @@
 import Link from "next/link";
 import { Users } from "lucide-react";
-import { RosterTable } from "@/components/roster/roster-table";
+import {
+  RosterPlayerList,
+  toPlayerStatus,
+  toRosterPlayer,
+  type RosterGroup,
+} from "@/components/roster/roster-player-row";
 import { TeamEmblem, TeamStats } from "@/components/roster/team-header";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FormMessage } from "@/components/ui/form-message";
 import { PageHeader } from "@/components/ui/page-header";
 import { requireUser } from "@/lib/auth/dal";
 import { getMarketSettings } from "@/lib/market/queries";
+import { getPlayerStatuses } from "@/lib/players/status";
+import { ROLE_ORDER } from "@/lib/roles";
 import {
   getMyTeam,
   getRosterComposition,
@@ -43,6 +51,18 @@ export default async function RosaPage() {
     getMarketSettings(),
   ]);
   const summary = summarizeRoster(roster);
+  const availability = await getPlayerStatuses(roster.map((r) => r.player.id));
+  const players = roster.map(toRosterPlayer);
+  const groups: RosterGroup[] = ROLE_ORDER.map((role) => ({
+    role,
+    target: composition[role],
+    items: players
+      .filter((p) => p.role === role)
+      .map((player) => ({
+        player,
+        status: toPlayerStatus(availability.get(player.id), player.outOfList),
+      })),
+  }));
 
   return (
     <>
@@ -63,7 +83,22 @@ export default async function RosaPage() {
               : `${summary.outOfList} calciatori della tua rosa sono usciti dalla Serie A: puoi sostituirli con cambi gratuiti.`}
           </FormMessage>
         )}
-        <RosterTable roster={roster} composition={composition} />
+        <Card>
+          <CardHeader>
+            <CardTitle>I tuoi giocatori</CardTitle>
+            <CardDescription>
+              Quotazione attuale, differenza rispetto al prezzo pagato e disponibilità di ogni
+              giocatore. Per svincolare e acquistare vai al{" "}
+              <Link href="/mercato" className="text-primary">
+                mercato
+              </Link>
+              .
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <RosterPlayerList groups={groups} />
+          </CardContent>
+        </Card>
         <p className="text-muted text-sm">
           <Link href="/squadre" className="text-primary">
             Vedi le squadre della lega

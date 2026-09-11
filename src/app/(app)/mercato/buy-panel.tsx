@@ -3,6 +3,7 @@
 import { useActionState, useId, useState } from "react";
 import { Check, Search, X } from "lucide-react";
 import { Reveal } from "@/components/motion/reveal";
+import { PlayerAvatar } from "@/components/players/player-avatar";
 import { RoleBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FormMessage } from "@/components/ui/form-message";
@@ -26,7 +27,7 @@ export interface BuyCandidate {
 
 const MAX_OPTIONS = 60;
 const tileClass =
-  "border-line flex min-h-12 w-full items-center gap-3 rounded-[var(--radius-control)] border px-3 text-left text-sm transition-colors";
+  "avatar-host border-line flex min-h-12 w-full items-center gap-2.5 rounded-[var(--radius-control)] border py-1.5 pr-3 pl-2 text-left text-sm transition-colors";
 
 /**
  * Free agents the team can buy right now: only the roles with a hole, searchable,
@@ -132,7 +133,16 @@ export function BuyPanel({
                       inId === c.id ? "border-primary bg-primary/10" : "hover:border-primary/50",
                     )}
                   >
-                    <RoleBadge role={c.role} className="size-5 text-[10px]" />
+                    <PlayerAvatar
+                      id={c.id}
+                      name={c.name}
+                      team={c.team}
+                      role={c.role}
+                      size="sm"
+                      showRole={false}
+                      idle={false}
+                    />
+                    <RoleBadge role={c.role} className="size-5 shrink-0 text-[10px]" />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-medium">{c.name}</span>
                       <span className="text-muted block text-xs">

@@ -103,8 +103,8 @@ describe("PlayerAvatar", () => {
       </>,
     );
     const ids = [...html.matchAll(/ id="([^"]+)"/g)].map((m) => m[1]);
-    // frame clip + head clip + jersey clip + skin gradient + jersey shading per avatar
-    expect(ids.length).toBe(50);
+    // frame/head/jersey clips + skin, hair, jersey, floor and vignette gradients per avatar
+    expect(ids.length).toBe(80);
     expect(new Set(ids).size).toBe(ids.length);
     for (const m of html.matchAll(/url\(#([^)]+)\)/g)) {
       expect(ids, m[1]).toContain(m[1]);
@@ -124,6 +124,10 @@ describe("PlayerAvatar", () => {
     expect(real).toContain('rx="24"');
     expect(real).toContain("<radialGradient");
     expect(real).toContain("<linearGradient");
+    // Depth cues: floor shadow + vignette (theme opacity in CSS), no filters.
+    expect(real).toContain('class="avatar-floor"');
+    expect(real).toContain('class="avatar-vignette"');
+    expect(real).not.toContain("<filter");
 
     const placeholder = renderToStaticMarkup(
       <PlayerAvatar id={-3} name="Partito" team="Fuori Serie A" role="A" size="sm" />,

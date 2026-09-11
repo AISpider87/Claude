@@ -318,3 +318,11 @@ listone,operazioni}`) con exceljs, letture paginate (`fetchAll`) sotto la
   parser dell'import. Pulsante di download nella pagina della sessione chiusa.
   Il foglio dettagliato si chiama ora "Dettaglio" (ExcelJS non distingue
   "Rose"/"ROSE").
+- 2026-09-11 · **Avatar con profondità e riga rosa attiva in Rosa e Mercato**
+  (ok dell'admin sullo stile, richiesta "leggermente 3D"): volume solo con
+  gradienti e ombre SVG (nessun `filter`, nessuna libreria), vignetta e ombra a
+  terra nella cornice, inclinazione di 3° al passaggio/focus solo con motion
+  consentita e puntatore hover. `RosterPlayerList` sostituisce la tabella nella
+  Rosa del manager; il pannello di svincolo del Mercato usa `RosterPlayerRow`
+  con lo stato (Indisponibili) e il pulsante nello slot azioni; avatar 32 px
+  nelle tessere di acquisto. `RosterTable` resta nelle pagine admin e squadra.

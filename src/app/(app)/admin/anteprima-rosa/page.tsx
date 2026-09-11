@@ -1,8 +1,10 @@
 import { CircleUserRound, LogOut } from "lucide-react";
 import { PlayerAvatar } from "@/components/players/player-avatar";
 import {
-  availabilityToStatus,
+  AVAILABLE_STATUS,
   RosterPlayerList,
+  toPlayerStatus,
+  toRosterPlayer,
   type PlayerStatus,
   type RosterGroup,
   type RosterPlayer,
@@ -32,8 +34,7 @@ export const metadata = { title: "Anteprima rosa" };
 const DEMO_SOURCE = { name: "esempio", url: "https://example.com/indisponibili" };
 const DEMO_UPDATED_AT = "2026-09-10T16:30:00Z";
 
-const DEMO_STATUS: Record<"ok" | "injured" | "doubtful" | "suspended", PlayerStatus> = {
-  ok: { kind: "ok", label: "Disponibile" },
+const DEMO_STATUS: Record<"injured" | "doubtful" | "suspended", PlayerStatus> = {
   injured: {
     kind: "injured",
     label: "Infortunato",
@@ -81,15 +82,7 @@ export default async function RosterPreviewPage() {
     traitOverrides(),
   ];
 
-  const players: RosterPlayer[] = roster.map((r) => ({
-    id: r.player.id,
-    name: r.player.name,
-    team: r.player.team,
-    role: r.player.role_classic,
-    qtA: r.player.qt_a,
-    pricePaid: r.pricePaid,
-    outOfList: r.player.status === "out_of_list",
-  }));
+  const players: RosterPlayer[] = roster.map(toRosterPlayer);
 
   // Real statuses first; demo ones (2 injured, 1 doubtful, 1 suspended) fill
   // the outfield players that have none, so the admin sees every chip.
@@ -100,10 +93,9 @@ export default async function RosterPreviewPage() {
   if (outfield[4]) demoStatus.set(outfield[4].id, DEMO_STATUS.doubtful);
   if (outfield[11]) demoStatus.set(outfield[11].id, DEMO_STATUS.suspended);
   const statusFor = (player: RosterPlayer): PlayerStatus | undefined => {
-    if (player.outOfList) return undefined;
-    const real = realStatuses.get(player.id);
-    if (real) return availabilityToStatus(real);
-    return demoStatus.get(player.id) ?? DEMO_STATUS.ok;
+    const real = toPlayerStatus(realStatuses.get(player.id), player.outOfList);
+    if (real !== AVAILABLE_STATUS) return real;
+    return demoStatus.get(player.id) ?? AVAILABLE_STATUS;
   };
 
   const groups: RosterGroup[] = ROLE_ORDER.map((role) => ({
@@ -127,7 +119,7 @@ export default async function RosterPreviewPage() {
     <>
       <PageHeader
         title="Anteprima rosa"
-        description="Come apparirà la rosa del manager nel mercato: avatar a mezzo busto, ruolo, club, quotazione e stato del giocatore. Da approvare prima dell'uso."
+        description="Riferimento grafico approvato: la riga giocatore con avatar a mezzo busto, ruolo, club, quotazione e stato è in uso nelle pagine Rosa e Mercato."
       />
 
       <div className="flex flex-col gap-6">
@@ -136,13 +128,13 @@ export default async function RosterPreviewPage() {
             <CardTitle>{team ? `Rosa di ${team.name}` : "Rosa"}</CardTitle>
             <CardDescription>
               {team
-                ? "Gli avatar compaiono solo qui, dove si svincola e si acquista: non nel listone."
+                ? "Questo design è attivo in Rosa (sola lettura) e in Mercato (svincoli e acquisti); nel listone restano le sole iniziali."
                 : "Nessuna squadra con una rosa importata."}{" "}
               <span className="text-foreground font-medium">
-                Stati di esempio (fonte &ldquo;esempio&rdquo;): la fonte reale sarà collegata dopo
-                l&rsquo;approvazione; gli stati già segnati in Admin → Indisponibili sono veri.
+                Stati di esempio (fonte &ldquo;esempio&rdquo;) solo qui: nell&rsquo;app compaiono
+                gli stati segnati in Admin → Indisponibili.
               </span>{" "}
-              I pulsanti &ldquo;Svincola&rdquo; sono disattivati: mostrano dove andranno le
+              I pulsanti &ldquo;Svincola&rdquo; sono disattivati: mostrano dove stanno le
               operazioni.
             </CardDescription>
           </CardHeader>

@@ -122,3 +122,35 @@ body {
     animation: avatar-bob 3.2s ease-in-out infinite;
   }
 }
+
+/* Depth cues of the avatar frame (floor shadow, inner vignette): softer on light. */
+.avatar-floor {
+  opacity: 0.75;
+}
+.avatar-vignette {
+  opacity: 0.5;
+}
+:root.light .avatar-floor {
+  opacity: 0.35;
+}
+:root.light .avatar-vignette {
+  opacity: 0.22;
+}
+
+/* Micro-tilt of the avatar when its row (`.avatar-host`) is hovered or focused. */
+.avatar-tilt {
+  transform-origin: 50% 60%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .avatar-tilt {
+    transition: transform 0.35s ease;
+  }
+  .avatar-host:focus-within .avatar-tilt {
+    transform: perspective(300px) rotateY(-3deg) rotateX(1.5deg);
+  }
+  @media (hover: hover) {
+    .avatar-host:hover .avatar-tilt {
+      transform: perspective(300px) rotateY(-3deg) rotateX(1.5deg);
+    }
+  }
+}

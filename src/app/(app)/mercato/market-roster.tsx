@@ -3,27 +3,21 @@
 import { useActionState, useId, useState } from "react";
 import { Check, LogOut, X } from "lucide-react";
 import { Reveal } from "@/components/motion/reveal";
-import { RoleBadge } from "@/components/ui/badge";
+import {
+  EmptyRoleNote,
+  RosterGroupHeading,
+  RosterPlayerRow,
+  type PlayerStatus,
+  type RosterPlayer,
+} from "@/components/roster/roster-player-row";
 import { Button } from "@/components/ui/button";
 import { FormMessage } from "@/components/ui/form-message";
 import type { FormState } from "@/lib/auth/schemas";
 import { formatDelta, formatInt } from "@/lib/format";
 import type { RoleClassic } from "@/lib/import/quotations-parser";
-import { ROLE_LABEL, ROLE_ORDER } from "@/lib/roles";
-import { cn } from "@/lib/utils";
+import { ROLE_LABEL_SINGULAR, ROLE_ORDER } from "@/lib/roles";
 
-export interface RosterOption {
-  id: number;
-  name: string;
-  team: string;
-  role: RoleClassic;
-  qtA: number;
-  pricePaid: number;
-  outOfList: boolean;
-}
-
-const rowClass =
-  "border-line flex min-h-12 w-full items-center gap-3 rounded-[var(--radius-control)] border px-3 text-sm";
+export type RosterOption = RosterPlayer;
 
 /**
  * The manager's roster during the market, grouped by role with the holes to
@@ -35,6 +29,7 @@ export function MarketRoster({
   teamId,
   credits,
   roster,
+  statuses = {},
   composition,
   slots,
   sessionOpen,
@@ -45,6 +40,8 @@ export function MarketRoster({
   teamId: string;
   credits: number;
   roster: RosterOption[];
+  /** Availability chip per player id (plain object: this is a client component). */
+  statuses?: Record<number, PlayerStatus>;
   composition: Record<RoleClassic, number>;
   slots: Record<RoleClassic, number>;
   sessionOpen: boolean;
@@ -71,69 +68,53 @@ export function MarketRoster({
     releaseState?.errors?.playerId?.[0];
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       {ROLE_ORDER.map((role) => {
         const players = roster.filter((r) => r.role === role);
-        const missing = slots[role];
         const headingId = `${uid}-${role}`;
         return (
           <section key={role} aria-labelledby={headingId}>
-            <h4
+            <RosterGroupHeading
               id={headingId}
-              className="text-muted mb-2 flex flex-wrap items-center gap-2 text-xs font-semibold uppercase"
-            >
-              <RoleBadge role={role} className="size-5 text-[10px]" />
-              {ROLE_LABEL[role]}
-              <span className="tabular">
-                {formatInt(players.length)}/{formatInt(composition[role])}
-              </span>
-              {missing > 0 && (
-                <span className="text-danger normal-case">
-                  {missing === 1 ? "1 posto da riempire" : `${missing} posti da riempire`}
-                </span>
-              )}
-              {missing < 0 && (
-                <span className="text-danger normal-case">{-missing} in più della regola</span>
-              )}
-            </h4>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {players.map((r) => {
-                const canSell = r.outOfList || sessionOpen;
-                const isChosen = selected === r.id;
-                return (
-                  <div
-                    key={r.id}
-                    className={cn(rowClass, isChosen && "border-primary bg-primary/10")}
-                  >
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-medium">{r.name}</span>
-                      <span className="text-muted block text-xs">
-                        {r.team} · pagato {formatInt(r.pricePaid)}
-                        {r.outOfList ? " · fuori lista" : ""}
-                      </span>
-                    </span>
-                    <span className="tabular font-semibold">{formatInt(r.qtA)}</span>
-                    {canSell && (
-                      <button
-                        type="button"
-                        onClick={() => setSelected(isChosen ? null : r.id)}
-                        aria-pressed={isChosen}
-                        aria-label={`${r.outOfList ? "Svincola gratis" : "Svincola"} ${r.name}`}
-                        className="text-primary inline-flex min-h-11 items-center gap-1 text-xs font-semibold"
-                      >
-                        <LogOut className="size-3.5" aria-hidden />
-                        {r.outOfList ? "Svincola gratis" : "Svincola"}
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-              {players.length === 0 && (
-                <p className="text-muted text-sm">
-                  Nessun {ROLE_LABEL[role].toLowerCase()} in rosa.
-                </p>
-              )}
-            </div>
+              role={role}
+              count={players.length}
+              target={composition[role]}
+              missing={slots[role]}
+            />
+            {players.length === 0 ? (
+              <EmptyRoleNote role={role} />
+            ) : (
+              <ul className="grid gap-2 lg:grid-cols-2">
+                {players.map((r) => {
+                  const canSell = r.outOfList || sessionOpen;
+                  const isChosen = selected === r.id;
+                  const label = r.outOfList ? "Svincola gratis" : "Svincola";
+                  return (
+                    <li key={r.id}>
+                      <RosterPlayerRow
+                        player={r}
+                        status={r.outOfList ? undefined : statuses[r.id]}
+                        className={isChosen ? "border-primary bg-primary/10" : undefined}
+                        actions={
+                          canSell ? (
+                            <button
+                              type="button"
+                              onClick={() => setSelected(isChosen ? null : r.id)}
+                              aria-pressed={isChosen}
+                              aria-label={`${label} ${r.name}`}
+                              className="text-primary focus-visible:ring-primary inline-flex min-h-11 items-center gap-1 rounded-[var(--radius-control)] px-2 text-xs font-semibold focus-visible:ring-2 focus-visible:outline-none"
+                            >
+                              <LogOut className="size-3.5" aria-hidden />
+                              {label}
+                            </button>
+                          ) : undefined
+                        }
+                      />
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </section>
         );
       })}
@@ -163,8 +144,8 @@ export function MarketRoster({
               </span>
             </p>
             <p className="text-muted mt-1 text-xs">
-              Poi dovrai prendere un {ROLE_LABEL[chosen.role].toLowerCase()} tra gli svincolati per
-              tornare in regola.
+              Poi dovrai prendere un {ROLE_LABEL_SINGULAR[chosen.role].toLowerCase()} tra gli
+              svincolati per tornare in regola.
             </p>
             <FormMessage className="mt-3">{message}</FormMessage>
             <div className="mt-3 flex flex-col gap-2 sm:flex-row">

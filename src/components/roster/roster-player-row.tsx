@@ -6,6 +6,7 @@ import { formatDate, formatDelta, formatInt } from "@/lib/format";
 import type { RoleClassic } from "@/lib/import/quotations-parser";
 import type { PlayerAvailability } from "@/lib/supabase/database.types";
 import { ROLE_LABEL, ROLE_LABEL_SINGULAR } from "@/lib/roles";
+import type { RosterRow } from "@/lib/teams/queries";
 import { cn } from "@/lib/utils";
 
 /**
@@ -23,6 +24,19 @@ export interface RosterPlayer {
   qtA: number;
   pricePaid: number;
   outOfList: boolean;
+}
+
+/** The row shape the pages get from `getTeamRoster`, as the row component expects it. */
+export function toRosterPlayer(row: RosterRow): RosterPlayer {
+  return {
+    id: row.player.id,
+    name: row.player.name,
+    team: row.player.team,
+    role: row.player.role_classic,
+    qtA: row.player.qt_a,
+    pricePaid: row.pricePaid,
+    outOfList: row.player.status === "out_of_list",
+  };
 }
 
 export type PlayerStatusKind = "ok" | "injured" | "doubtful" | "suspended" | "unavailable";
@@ -56,6 +70,20 @@ export function availabilityToStatus(row: PlayerAvailability): PlayerStatus {
     status.source = { name: row.source_name, url: row.source_url };
   }
   return status;
+}
+
+export const AVAILABLE_STATUS: PlayerStatus = { kind: "ok", label: PLAYER_STATUS_LABEL.ok };
+
+/**
+ * Chip of a roster player from the `player_status` table (missing row =
+ * available). Out-of-list players get none: the "fuori lista" badge says it all.
+ */
+export function toPlayerStatus(
+  row: PlayerAvailability | undefined,
+  outOfList: boolean,
+): PlayerStatus | undefined {
+  if (outOfList) return undefined;
+  return row ? availabilityToStatus(row) : AVAILABLE_STATUS;
 }
 
 export interface RosterPlayerRowProps {
@@ -139,7 +167,7 @@ export function RosterPlayerRow({ player, status, actions, className }: RosterPl
   return (
     <div
       className={cn(
-        "border-line bg-surface/60 flex flex-wrap items-start gap-x-3 gap-y-2 rounded-[var(--radius-control)] border p-3",
+        "avatar-host border-line bg-surface/60 flex flex-wrap items-start gap-x-3 gap-y-2 rounded-[var(--radius-control)] border p-3",
         className,
       )}
     >
@@ -188,6 +216,49 @@ export interface RosterGroup {
   items: Omit<RosterPlayerRowProps, "className">[];
 }
 
+/** "Difensori 6/7 · 1 posto da riempire": the header of a role section. */
+export function RosterGroupHeading({
+  id,
+  role,
+  count,
+  target,
+  missing = target - count,
+}: {
+  id: string;
+  role: RoleClassic;
+  count: number;
+  target: number;
+  /** Holes as the server computes them; defaults to `target - count`. */
+  missing?: number;
+}) {
+  return (
+    <h4
+      id={id}
+      className="text-muted mb-2 flex flex-wrap items-center gap-2 text-xs font-semibold uppercase"
+    >
+      <RoleBadge role={role} className="size-5 text-[10px]" />
+      {ROLE_LABEL[role]}
+      <span className="tabular">
+        {formatInt(count)}/{formatInt(target)}
+      </span>
+      {missing > 0 && (
+        <span className="text-danger normal-case">
+          · {missing === 1 ? "1 posto da riempire" : `${formatInt(missing)} posti da riempire`}
+        </span>
+      )}
+      {missing < 0 && (
+        <span className="text-danger normal-case">· {formatInt(-missing)} in più della regola</span>
+      )}
+    </h4>
+  );
+}
+
+export function EmptyRoleNote({ role }: { role: RoleClassic }) {
+  return (
+    <p className="text-muted text-sm">{`Nessun ${ROLE_LABEL_SINGULAR[role].toLowerCase()} in rosa.`}</p>
+  );
+}
+
 /** Roster sections per role with the "Difensori 6/7 · 1 posto da riempire" header. */
 export function RosterPlayerList({
   groups,
@@ -200,35 +271,12 @@ export function RosterPlayerList({
   return (
     <div className={cn("flex flex-col gap-5", className)}>
       {groups.map(({ role, target, items }) => {
-        const missing = target - items.length;
         const headingId = `${uid}-${role}`;
         return (
           <section key={role} aria-labelledby={headingId}>
-            <h4
-              id={headingId}
-              className="text-muted mb-2 flex flex-wrap items-center gap-2 text-xs font-semibold uppercase"
-            >
-              <RoleBadge role={role} className="size-5 text-[10px]" />
-              {ROLE_LABEL[role]}
-              <span className="tabular">
-                {formatInt(items.length)}/{formatInt(target)}
-              </span>
-              {missing > 0 && (
-                <span className="text-danger normal-case">
-                  ·{" "}
-                  {missing === 1
-                    ? "1 posto da riempire"
-                    : `${formatInt(missing)} posti da riempire`}
-                </span>
-              )}
-              {missing < 0 && (
-                <span className="text-danger normal-case">
-                  · {formatInt(-missing)} in più della regola
-                </span>
-              )}
-            </h4>
+            <RosterGroupHeading id={headingId} role={role} count={items.length} target={target} />
             {items.length === 0 ? (
-              <p className="text-muted text-sm">{`Nessun ${ROLE_LABEL_SINGULAR[role].toLowerCase()} in rosa.`}</p>
+              <EmptyRoleNote role={role} />
             ) : (
               <ul className="grid gap-2 lg:grid-cols-2">
                 {items.map((item) => (

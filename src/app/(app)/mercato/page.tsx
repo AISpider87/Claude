@@ -3,6 +3,11 @@ import { CalendarClock, Repeat } from "lucide-react";
 import { Countdown } from "@/components/market/countdown";
 import { LedgerTable } from "@/components/market/ledger-table";
 import { SwapDone } from "@/components/market/swap-done";
+import {
+  toPlayerStatus,
+  toRosterPlayer,
+  type PlayerStatus,
+} from "@/components/roster/roster-player-row";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FormMessage } from "@/components/ui/form-message";
@@ -22,6 +27,7 @@ import {
   listTransactions,
   type FreeAgentOption,
 } from "@/lib/market/queries";
+import { getPlayerStatuses } from "@/lib/players/status";
 import { ROLE_ORDER } from "@/lib/roles";
 import { getMyTeam, getRosterComposition, getTeamRoster } from "@/lib/teams/queries";
 import { BuyPanel, type BuyCandidate } from "./buy-panel";
@@ -54,15 +60,14 @@ export default async function MercatoPage({
   const [roster, state] = team
     ? await Promise.all([getTeamRoster(team.id), getTeamMarketState(team.id)])
     : [[], null];
-  const rosterOptions: RosterOption[] = roster.map((r) => ({
-    id: r.player.id,
-    name: r.player.name,
-    team: r.player.team,
-    role: r.player.role_classic,
-    qtA: r.player.qt_a,
-    pricePaid: r.pricePaid,
-    outOfList: r.player.status === "out_of_list",
-  }));
+  const rosterOptions: RosterOption[] = roster.map(toRosterPlayer);
+  // Availability chips (Admin → Indisponibili) as a plain object: the roster is a client component.
+  const availability = await getPlayerStatuses(rosterOptions.map((r) => r.id));
+  const statuses: Record<number, PlayerStatus> = {};
+  for (const r of rosterOptions) {
+    const status = toPlayerStatus(availability.get(r.id), r.outOfList);
+    if (status) statuses[r.id] = status;
+  }
   const slots = state?.slots ?? { P: 0, D: 0, C: 0, A: 0 };
   const freeSlots = state?.freeSlots ?? { P: 0, D: 0, C: 0, A: 0 };
   // Roles the team can buy for: a free slot (any time, current free agents) or a
@@ -170,6 +175,7 @@ export default async function MercatoPage({
                 teamId={team.id}
                 credits={team.credits}
                 roster={rosterOptions}
+                statuses={statuses}
                 composition={composition}
                 slots={slots}
                 sessionOpen={Boolean(session)}

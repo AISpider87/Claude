@@ -9,6 +9,13 @@ import { cn } from "@/lib/utils";
  * of the club jersey, cropped at the chest inside a rounded-square frame.
  * Pure SVG derived from `traits` + `clubKit`: no photos, no crests
  * (docs/DESIGN.md). Decorative — the surrounding text carries the name.
+ *
+ * Depth ("leggermente 3D", admin feedback) comes only from gradients and
+ * translucent shapes — no filters, no blur — so it stays cheap at 48 px:
+ * spherical head (radial light top-left, dark rim bottom-right), hair volume
+ * with a rim light and a shadow under the hairline, fabric shading with a few
+ * folds and an inner shadow under the collar, a cast shadow behind the bust,
+ * a floor shadow and an inner vignette on the frame.
  */
 
 export type AvatarSize = "sm" | "md" | "lg" | "xl";
@@ -147,38 +154,47 @@ function capGeometry(traits: PlayerTraits) {
       : "C63 31.5 56.5 28 50 28 C43.5 28 37 31.5 31.5 40 Z";
   const cap = `M${x0} ${yTemple} C${x0} ${c} ${x1} ${c} ${x1} ${yTemple} ${hairline}`;
 
-  // Two-tone highlight: a sliver that follows the arc on the top-left.
-  const outer: Pt[] = [];
-  const inner: Pt[] = [];
-  for (let i = 0; i <= 6; i++) {
-    const t = 0.13 + (i / 6) * 0.3;
-    const [x, y] = cubic(p0, p1, p2, p3, t);
-    const dx = 50 - x;
-    const dy = 42 - y;
-    const len = Math.hypot(dx, dy) || 1;
-    outer.push([x + (dx / len) * 2.2, y + (dy / len) * 2.2]);
-    inner.push([x + (dx / len) * 5.2, y + (dy / len) * 5.2]);
-  }
-  const highlight =
-    `M${outer.map(([x, y]) => `${fmt(x)} ${fmt(y)}`).join(" L")} ` +
-    `L${inner
-      .reverse()
-      .map(([x, y]) => `${fmt(x)} ${fmt(y)}`)
-      .join(" L")} Z`;
+  // Slivers that follow the arc, inset by `from`..`to` units: the two-tone
+  // highlight on the top-left and a thinner rim light on the top-right.
+  const sliver = (t0: number, t1: number, from: number, to: number) => {
+    const outer: Pt[] = [];
+    const inner: Pt[] = [];
+    for (let i = 0; i <= 6; i++) {
+      const t = t0 + (i / 6) * (t1 - t0);
+      const [x, y] = cubic(p0, p1, p2, p3, t);
+      const dx = 50 - x;
+      const dy = 42 - y;
+      const len = Math.hypot(dx, dy) || 1;
+      outer.push([x + (dx / len) * from, y + (dy / len) * from]);
+      inner.push([x + (dx / len) * to, y + (dy / len) * to]);
+    }
+    return (
+      `M${outer.map(([x, y]) => `${fmt(x)} ${fmt(y)}`).join(" L")} ` +
+      `L${inner
+        .reverse()
+        .map(([x, y]) => `${fmt(x)} ${fmt(y)}`)
+        .join(" L")} Z`
+    );
+  };
+  const highlight = sliver(0.13, 0.43, 2.2, 5.2);
+  const rim = sliver(0.62, 0.9, 0.9, 2.4);
 
   const bumps: Pt[] = [0.08, 0.22, 0.37, 0.5, 0.63, 0.78, 0.92].map((t) =>
     cubic(p0, p1, p2, p3, t),
   );
-  return { cap, highlight, bumps };
+  return { cap, highlight, rim, bumps };
 }
 
 function Hair({
   traits,
   headClip,
+  grad,
   layer,
 }: {
   traits: PlayerTraits;
   headClip: string;
+  /** Volume gradient (light top-left → dark bottom-right). */
+  grad: string;
   layer: "back" | "front";
 }) {
   if (traits.hair === "bald") {
@@ -194,12 +210,13 @@ function Hair({
     ) : null;
   }
   const hair = hairPalette(traits);
-  const { cap, highlight, bumps } = capGeometry(traits);
+  const { cap, highlight, rim, bumps } = capGeometry(traits);
+  const fill = `url(#${grad})`;
 
   if (layer === "back") {
     if (traits.hair === "afro")
       return (
-        <g fill={hair.base} {...OUTLINE}>
+        <g fill={fill} {...OUTLINE}>
           <circle cx={50} cy={31} r={26} />
           {bumps.map(([x, y], i) => (
             <circle key={i} cx={fmt(x)} cy={fmt(y)} r={6} />
@@ -210,15 +227,14 @@ function Hair({
       return (
         <path
           d="M31.5 36 L32.5 62 C38 60.5 44 62 50 65 C56 62 62 60.5 67.5 62 L68.5 36 Z"
-          fill={hair.base}
+          fill={fill}
           {...OUTLINE}
         />
       );
-    if (traits.hair === "bun")
-      return <circle cx={50} cy={12.5} r={6} fill={hair.base} {...OUTLINE} />;
+    if (traits.hair === "bun") return <circle cx={50} cy={12.5} r={6} fill={fill} {...OUTLINE} />;
     if (traits.hair === "curly")
       return (
-        <g fill={hair.base} {...OUTLINE}>
+        <g fill={fill} {...OUTLINE}>
           {bumps.map(([x, y], i) => (
             <circle key={i} cx={fmt(x)} cy={fmt(y)} r={4.6} />
           ))}
@@ -230,8 +246,17 @@ function Hair({
   const buzz = traits.hair === "buzz";
   return (
     <g>
-      <path d={cap} fill={hair.base} fillOpacity={buzz ? 0.85 : 1} {...OUTLINE} />
-      {!buzz && <path d={highlight} fill={hair.light} fillOpacity={0.75} />}
+      {/* Shadow the hair casts on the forehead: the cap shifted down, under it. */}
+      <path
+        d={cap}
+        transform="translate(0 2.8)"
+        clipPath={`url(#${headClip})`}
+        fill={INK}
+        fillOpacity={buzz ? 0.1 : 0.18}
+      />
+      <path d={cap} fill={fill} fillOpacity={buzz ? 0.85 : 1} {...OUTLINE} />
+      {!buzz && <path d={highlight} fill={hair.light} fillOpacity={0.7} />}
+      {!buzz && <path d={rim} fill={hair.light} fillOpacity={0.45} />}
       {buzz && (
         <g stroke={hair.dark} strokeOpacity={0.5} strokeWidth={0.8} strokeLinecap="round">
           <path d="M40 22 L41 24.5 M46 18.5 L47 21 M54 18.5 L53 21 M60 22 L59 24.5" />
@@ -246,7 +271,15 @@ function Hair({
   );
 }
 
-function Beard({ traits, headClip }: { traits: PlayerTraits; headClip: string }) {
+function Beard({
+  traits,
+  headClip,
+  grad,
+}: {
+  traits: PlayerTraits;
+  headClip: string;
+  grad: string;
+}) {
   if (traits.beard === "none") return null;
   const hair = hairPalette(traits);
   const skin = skinPalette(traits);
@@ -262,7 +295,7 @@ function Beard({ traits, headClip }: { traits: PlayerTraits; headClip: string })
     <g clipPath={`url(#${headClip})`}>
       <path
         d="M33.5 40 C34 50 40 57 50 57 C60 57 66 50 66.5 40 C64 46.5 58 48.8 50 48.8 C42 48.8 36 46.5 33.5 40 Z"
-        fill={hair.base}
+        fill={full ? `url(#${grad})` : hair.base}
         fillOpacity={full ? 1 : 0.38}
       />
       {full && <ellipse cx={50} cy={51.3} rx={5.4} ry={2.4} fill={skin.base} />}
@@ -296,6 +329,16 @@ function Face({ traits, seed }: { traits: PlayerTraits; seed: number }) {
 
   return (
     <g>
+      {/* Cheekbone and nose shading (light from the top-left: right side darker). */}
+      <g fill={INK}>
+        <ellipse cx={40.5} cy={46} rx={5.5} ry={3.2} fillOpacity={0.05} />
+        <ellipse cx={59.5} cy={46} rx={5.5} ry={3.2} fillOpacity={0.1} />
+        <path
+          d="M50.8 41 C52.1 43.8 52.9 45.8 52.5 47.3 C51.6 48 50.7 47.9 50.2 47.3 C50.8 45.3 50.8 43.1 50.8 41 Z"
+          fillOpacity={0.12}
+        />
+        <ellipse cx={50.2} cy={48.9} rx={2.3} ry={0.7} fillOpacity={0.12} />
+      </g>
       {/* Eyebrows */}
       <g stroke={browColor} strokeWidth={browWidth} strokeLinecap="round" fill="none">
         <path d={brows[0]} />
@@ -414,16 +457,43 @@ function Jersey({
           <path d="M22 70.5 C19.5 78 17.5 88 17 101" />
           <path d="M78 70.5 C80.5 78 82.5 88 83 101" />
         </g>
-        {/* Shading: light from the top-left, shadow bottom-right. */}
+        {/* Fabric volume: lit on the upper-left chest, darker at the sides and under the arms. */}
         <rect x={0} y={56} width={100} height={46} fill={`url(#${shade})`} />
-        {/* Fold under the collar */}
+        {/* Sleeve shadows along the seams (heavier on the far side) and a rim light on the near shoulder. */}
+        <g fill={INK}>
+          <path
+            d="M22 70.5 C19.5 78 17.5 88 17 101 L21 101 C21.5 88 23.5 78 26 71.5 Z"
+            fillOpacity={0.12}
+          />
+          <path
+            d="M78 70.5 C80.5 78 82.5 88 83 101 L79 101 C78.5 88 76.5 78 74 71.5 Z"
+            fillOpacity={0.2}
+          />
+        </g>
         <path
-          d="M44 79 C47 81 53 81 56 79"
+          d="M13 77.5 C18 71.5 27 66.5 38 64.5"
+          fill="none"
+          stroke="#FFFFFF"
+          strokeOpacity={0.22}
+          strokeWidth={1.8}
+          strokeLinecap="round"
+        />
+        {/* Folds: under the collar and from the armpits toward the chest. */}
+        <g fill="none" stroke={INK} strokeLinecap="round" strokeWidth={1}>
+          <path d="M44 79 C47 81 53 81 56 79" strokeOpacity={0.14} />
+          <path d="M31 83 C36 88 40 94 41 101" strokeOpacity={0.1} />
+          <path d="M69 83 C64 88 60 94 59 101" strokeOpacity={0.14} />
+        </g>
+        {/* Inner shadow under the collar band */}
+        <path
+          d={collarPath}
+          transform="translate(0 2.4)"
           fill="none"
           stroke={INK}
-          strokeOpacity={0.14}
-          strokeWidth={1}
+          strokeOpacity={0.26}
+          strokeWidth={4}
           strokeLinecap="round"
+          strokeLinejoin="round"
         />
       </g>
       {/* Collar */}
@@ -444,6 +514,17 @@ function Jersey({
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeDasharray={kit.dashed ? "2 1.5" : undefined}
+      />
+      {/* Sheen on the collar band */}
+      <path
+        d={collarPath}
+        transform="translate(0 -0.5)"
+        fill="none"
+        stroke="#FFFFFF"
+        strokeOpacity={0.22}
+        strokeWidth={0.9}
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </>
   );
@@ -481,11 +562,15 @@ export function PlayerAvatar({
   const jerseyClip = `${uid}-j`;
   const skinGrad = `${uid}-s`;
   const shadeGrad = `${uid}-g`;
+  const hairGrad = `${uid}-r`;
+  const floorGrad = `${uid}-o`;
+  const vignetteGrad = `${uid}-v`;
   const placeholder = outOfList || team === OUT_OF_SERIE_A_TEAM;
   const kit = placeholder ? OUT_OF_LIST_KIT : clubKit(team);
   const traits = traitsFor(id, name);
   const seed = traitSeed(id, name);
   const skin = skinPalette(traits);
+  const hair = hairPalette(traits);
   const collar: "round" | "v" = (seed >>> 9) % 3 === 0 ? "v" : "round";
   const px = SIZE_PX[size];
   // Desync the bob across a grid of avatars.
@@ -498,6 +583,11 @@ export function PlayerAvatar({
     <g fill={skin.base} {...OUTLINE}>
       <ellipse cx={33} cy={39} rx={3.2} ry={4.4} />
       <ellipse cx={67} cy={39} rx={3.2} ry={4.4} />
+      {/* Concha shading: the far ear sits in the shadow of the head. */}
+      <g stroke="none">
+        <ellipse cx={33.4} cy={39.8} rx={2} ry={3} fill={skin.dark} fillOpacity={0.45} />
+        <ellipse cx={66.6} cy={39.8} rx={2} ry={3} fill={skin.shadow} fillOpacity={0.6} />
+      </g>
       <g fill="none" stroke={INK} strokeOpacity={0.35} strokeWidth={0.8}>
         <path d="M32.4 36.8 C34.2 36.6 34.6 39.2 33.2 41.2" />
         <path d="M67.6 36.8 C65.8 36.6 65.4 39.2 66.8 41.2" />
@@ -510,7 +600,7 @@ export function PlayerAvatar({
       viewBox="0 0 100 100"
       width={px}
       height={px}
-      className={cn("text-foreground shrink-0 overflow-visible", className)}
+      className={cn("avatar-tilt text-foreground shrink-0 overflow-visible", className)}
       aria-hidden
       focusable="false"
     >
@@ -530,16 +620,33 @@ export function PlayerAvatar({
         <clipPath id={jerseyClip}>
           <path d={collar === "v" ? JERSEY_V : JERSEY_ROUND} />
         </clipPath>
-        <radialGradient id={skinGrad} cx="42%" cy="30%" r="80%">
+        {/* Head as a sphere: light top-left, base, dark rim bottom-right. */}
+        <radialGradient id={skinGrad} cx="38%" cy="28%" r="82%">
           <stop offset="0" stopColor={skin.light} />
-          <stop offset="0.5" stopColor={skin.base} />
-          <stop offset="1" stopColor={skin.dark} />
+          <stop offset="0.38" stopColor={skin.base} />
+          <stop offset="0.82" stopColor={skin.dark} />
+          <stop offset="1" stopColor={skin.shadow} />
         </radialGradient>
-        <linearGradient id={shadeGrad} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#FFFFFF" stopOpacity={0.22} />
-          <stop offset="0.45" stopColor="#FFFFFF" stopOpacity={0} />
-          <stop offset="1" stopColor="#000000" stopOpacity={0.3} />
+        <linearGradient id={hairGrad} x1="0" y1="0" x2="0.9" y2="1">
+          <stop offset="0" stopColor={mix(hair.base, hair.light, 0.45)} />
+          <stop offset="0.45" stopColor={hair.base} />
+          <stop offset="1" stopColor={hair.dark} />
         </linearGradient>
+        {/* Fabric: lit on the upper-left chest, darker toward the sides and the bottom. */}
+        <radialGradient id={shadeGrad} cx="40%" cy="22%" r="78%">
+          <stop offset="0" stopColor="#FFFFFF" stopOpacity={0.2} />
+          <stop offset="0.38" stopColor="#FFFFFF" stopOpacity={0} />
+          <stop offset="0.72" stopColor="#000000" stopOpacity={0.1} />
+          <stop offset="1" stopColor="#000000" stopOpacity={0.42} />
+        </radialGradient>
+        <radialGradient id={floorGrad}>
+          <stop offset="0" stopColor="#000000" stopOpacity={0.7} />
+          <stop offset="1" stopColor="#000000" stopOpacity={0} />
+        </radialGradient>
+        <radialGradient id={vignetteGrad} cx="50%" cy="42%" r="70%">
+          <stop offset="0.55" stopColor="#000000" stopOpacity={0} />
+          <stop offset="1" stopColor="#000000" stopOpacity={0.65} />
+        </radialGradient>
       </defs>
 
       <rect
@@ -548,40 +655,79 @@ export function PlayerAvatar({
         width={FRAME.size}
         height={FRAME.size}
         rx={FRAME.rx}
-        className="fill-surface-2 stroke-line"
-        strokeWidth={1}
+        className="fill-surface-2"
       />
 
       <g clipPath={`url(#${frameClip})`}>
+        {/* Floor shadow: the bust "stands" in the frame (opacity per theme in globals.css). */}
+        <ellipse
+          cx={50}
+          cy={96}
+          rx={52}
+          ry={22}
+          fill={`url(#${floorGrad})`}
+          className="avatar-floor"
+        />
         {/* The bust is drawn around (50, 40) and enlarged to fill the frame. */}
-        <g
-          className={idle ? "avatar-idle" : undefined}
-          style={idleStyle}
-          transform="translate(-7 -3.5) scale(1.14)"
-        >
-          <Hair traits={traits} headClip={headClip} layer="back" />
-          {/* Neck + trapezius, shaded under the chin */}
-          <path d={NECK_PATH} fill={skin.dark} {...OUTLINE} />
-          <path
-            d="M43 48 L57 48 L57 58 C54 60.5 46 60.5 43 58 Z"
-            fill={skin.shadow}
-            fillOpacity={0.55}
-          />
-          <Jersey kit={kit} clip={jerseyClip} shade={shadeGrad} collar={collar} />
-          {!earsInFront && ears}
-          {/* Head */}
-          <path d={HEAD_PATH} fill={`url(#${skinGrad})`} {...OUTLINE} />
-          {earsInFront && ears}
-          <Beard traits={traits} headClip={headClip} />
-          <Hair traits={traits} headClip={headClip} layer="front" />
-          {traits.headband && (
-            <g clipPath={`url(#${headClip})`}>
-              <rect x={28} y={26.5} width={44} height={4.6} fill="#F3F4F6" {...OUTLINE} />
+        <g className={idle ? "avatar-idle" : undefined} style={idleStyle}>
+          <g transform="translate(-7 -3.5) scale(1.14)">
+            {/* Cast shadow of the bust, offset away from the light. */}
+            <g transform="translate(2.2 2.6)" fill={INK} opacity={0.26}>
+              <path d={collar === "v" ? JERSEY_V : JERSEY_ROUND} />
+              <path d={NECK_PATH} />
+              <path d={HEAD_PATH} />
             </g>
-          )}
-          <Face traits={traits} seed={seed} />
+            <Hair traits={traits} headClip={headClip} grad={hairGrad} layer="back" />
+            {/* Neck + trapezius, shaded under the chin (two bands: a soft falloff) */}
+            <path d={NECK_PATH} fill={skin.dark} {...OUTLINE} />
+            <path
+              d="M43 48 L57 48 L57 59 C54 61.5 46 61.5 43 59 Z"
+              fill={skin.shadow}
+              fillOpacity={0.4}
+            />
+            <path
+              d="M43 48 L57 48 L57 53.5 C54 55.5 46 55.5 43 53.5 Z"
+              fill={skin.shadow}
+              fillOpacity={0.5}
+            />
+            <Jersey kit={kit} clip={jerseyClip} shade={shadeGrad} collar={collar} />
+            {!earsInFront && ears}
+            {/* Head */}
+            <path d={HEAD_PATH} fill={`url(#${skinGrad})`} {...OUTLINE} />
+            {earsInFront && ears}
+            <Beard traits={traits} headClip={headClip} grad={hairGrad} />
+            <Hair traits={traits} headClip={headClip} grad={hairGrad} layer="front" />
+            {traits.headband && (
+              <g clipPath={`url(#${headClip})`}>
+                <rect x={28} y={26.5} width={44} height={4.6} fill="#F3F4F6" {...OUTLINE} />
+                <rect x={28} y={29.9} width={44} height={1.2} fill={INK} fillOpacity={0.18} />
+              </g>
+            )}
+            <Face traits={traits} seed={seed} />
+          </g>
         </g>
+        {/* Inner vignette: darker edges pull the figure into the frame. */}
+        <rect
+          x={FRAME.x}
+          y={FRAME.y}
+          width={FRAME.size}
+          height={FRAME.size}
+          fill={`url(#${vignetteGrad})`}
+          className="avatar-vignette"
+        />
       </g>
+
+      {/* Theme-aware frame outline, on top of the vignette. */}
+      <rect
+        x={FRAME.x}
+        y={FRAME.y}
+        width={FRAME.size}
+        height={FRAME.size}
+        rx={FRAME.rx}
+        fill="none"
+        className="stroke-line"
+        strokeWidth={1}
+      />
 
       {showRole && (
         <g>
