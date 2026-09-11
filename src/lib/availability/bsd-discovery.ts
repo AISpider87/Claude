@@ -485,9 +485,9 @@ export function errorMessageOf(body: string): string {
 
 const REQUIRED_PATTERNS = [
   // "sport or league query param is required"
-  /([\w .,'"`\-]*?)\s(?:query\s|url\s)?param(?:eter)?s?\s(?:is|are)\srequired/i,
+  /([\w .,'"`\-]{0,80}?)\s(?:query\s|url\s)?param(?:eter)?s?\s(?:is|are)\srequired/i,
   // "Missing required parameter: sport", "required: sport, league"
-  /(?:missing|required)[^:]{0,40}:\s*([\w ,'"`\-]+)/i,
+  /(?:missing|required)[^:]{0,40}:\s*([\w ,'"`\-]{1,120})/i,
 ];
 
 /**
@@ -495,8 +495,12 @@ const REQUIRED_PATTERNS = [
  * `{"error":{"code":"bad_request","message":"sport or league query param is required"}}`,
  * so the retry knows exactly what to add instead of guessing again.
  */
+/** Only the head of a body is ever scanned: the patterns are linear, not the input. */
+const REQUIRED_SCAN_CHARS = 2000;
+
 export function requiredParams(body: string): string[] {
-  const message = errorMessageOf(body);
+  // A hostile (or merely huge) body must never become regex work: scan the head only.
+  const message = errorMessageOf(body).slice(0, REQUIRED_SCAN_CHARS);
   for (const pattern of REQUIRED_PATTERNS) {
     const match = pattern.exec(message);
     if (!match?.[1]) continue;

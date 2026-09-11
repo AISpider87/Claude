@@ -108,3 +108,57 @@ begin
   if not found then raise exception 'closing audit should report the auto-confirmed rows'; end if;
   perform auth.test_logout();
 end $$;
+
+-- Security review H1/L13: undoing a release whose seat was refilled would leave
+-- the roster over the composition; undo and confirm need an open session.
+do $$
+declare
+  v_admin uuid; v_mario uuid; v_a uuid; v_s uuid; v_sell uuid; v_count int;
+begin
+  alter table public.transactions disable trigger trg_transactions_guard;
+  delete from public.transactions; delete from public.session_free_agents; delete from public.market_sessions;
+  delete from public.roster_players; delete from public.teams; delete from public.players;
+  alter table public.transactions enable trigger trg_transactions_guard;
+  insert into public.league_settings (key, value) values ('roster_composition', '{"P":0,"D":2,"C":0,"A":0}')
+  on conflict (key) do update set value = excluded.value;
+  insert into public.players (id, name, team, role_classic, qt_a, qt_i, diff) values
+    (1, 'Def1', 'Roma', 'D', 6, 6, 0), (2, 'Def2', 'Inter', 'D', 8, 8, 0), (3, 'Def3', 'Como', 'D', 5, 5, 0);
+  select user_id into v_admin from public.profiles where role = 'admin' limit 1;
+  if v_admin is null then
+    insert into auth.users (email, raw_user_meta_data) values ('admin2@superlega.local', '{"display_name": "D", "league_code": "superlega-dev"}') returning id into v_admin;
+  end if;
+  insert into auth.users (email, raw_user_meta_data) values ('mario2@example.com', '{"display_name": "M", "league_code": "SUPERLEGA-DEV"}') returning id into v_mario;
+
+  perform auth.test_login(v_admin, 'authenticated');
+  v_a := public.admin_upsert_team(null, 'Alpha');
+  perform public.admin_set_team_owner(v_a, v_mario);
+  perform public.admin_assign_player(v_a, 1, 6);
+  perform public.admin_assign_player(v_a, 2, 8);
+  perform public.admin_set_team_credits(v_a, 50, 'test');
+  v_s := public.admin_create_session('Uno', now() - interval '1 minute', now() + interval '1 hour', 0);
+  perform public.open_market_session(v_s);
+  perform auth.test_logout();
+
+  perform auth.test_login(v_mario, 'authenticated');
+  v_sell := public.sell_player(v_a, 1);     -- D hole
+  perform public.buy_player(v_a, 3);        -- hole filled (pending)
+  begin
+    perform public.undo_pending_operation(v_sell);
+    raise exception 'undo of a refilled release accepted (roster would exceed the composition)';
+  exception when invalid_parameter_value then null;  -- NO_ROLE_SLOT
+  end;
+  select count(*) into v_count from public.roster_players r join public.players p on p.id = r.player_id
+  where r.team_id = v_a and r.released_at is null and p.role_classic = 'D';
+  if v_count <> 2 then raise exception 'composition broken: % defenders', v_count; end if;
+  perform auth.test_logout();
+
+  -- once the window is over, neither undo nor confirm works
+  update public.market_sessions set closes_at = now() - interval '1 second' where id = v_s;
+  perform auth.test_login(v_mario, 'authenticated');
+  begin
+    perform public.confirm_pending_operations(v_a);
+    raise exception 'confirm accepted after the session window';
+  exception when object_not_in_prerequisite_state then null;
+  end;
+  perform auth.test_logout();
+end $$;

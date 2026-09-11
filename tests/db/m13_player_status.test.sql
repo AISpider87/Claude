@@ -25,7 +25,7 @@ begin
   begin
     perform public.admin_set_player_status(1, 'injured', null, 'x', 'javascript:alert(1)');
     raise exception 'non-http source url accepted';
-  exception when check_violation then null;
+  exception when invalid_parameter_value or check_violation then null;
   end;
   begin
     perform public.admin_set_player_status(999, 'injured', null, null, null);
@@ -51,5 +51,29 @@ begin
   perform public.admin_set_player_status(1, 'ok', null, null, null);
   perform 1 from public.player_status where player_id = 1;
   if found then raise exception 'ok did not clear the status'; end if;
+  perform auth.test_logout();
+end $$;
+
+-- Security review M6: a source link may only be http(s); the database refuses
+-- the rest even if the app ever stopped checking.
+do $$
+declare v_admin uuid;
+begin
+  select user_id into v_admin from public.profiles where role = 'admin' limit 1;
+  perform auth.test_login(v_admin, 'authenticated');
+  begin
+    perform public.admin_set_player_status(1, 'injured', null, 'x', 'javascript:alert(1)');
+    raise exception 'javascript: source url accepted';
+  exception when invalid_parameter_value or check_violation then null;
+  end;
+  begin
+    perform public.admin_set_player_status(1, 'injured', null, 'x', 'data:text/html,<script>1</script>');
+    raise exception 'data: source url accepted';
+  exception when invalid_parameter_value or check_violation then null;
+  end;
+  perform public.admin_set_player_status(1, 'injured', null, 'Fonte', 'https://example.com/x');
+  perform 1 from public.player_status where player_id = 1 and origin = 'manual';
+  if not found then raise exception 'manual status not stored'; end if;
+  perform public.admin_set_player_status(1, 'ok', null, null, null);
   perform auth.test_logout();
 end $$;

@@ -204,7 +204,16 @@ const playerStatusSchema = z.object({
   note: z.string().trim().max(200, { error: "Massimo 200 caratteri." }).optional(),
   sourceName: z.string().trim().max(60, { error: "Massimo 60 caratteri." }).optional(),
   sourceUrl: z
-    .union([z.literal(""), z.url({ error: "Indirizzo non valido (deve iniziare con https://)." })])
+    .union([
+      z.literal(""),
+      z
+        .url({ error: "Indirizzo non valido (deve iniziare con https://)." })
+        // z.url() accepts javascript: and data:, which would be rendered as a
+        // link in every manager's roster: only http(s) may be stored.
+        .refine((value) => /^https?:\/\//i.test(value), {
+          error: "Indirizzo non valido (deve iniziare con https://).",
+        }),
+    ])
     .optional(),
 });
 

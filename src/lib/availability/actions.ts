@@ -27,6 +27,16 @@ function revalidateAll() {
  */
 export async function runAvailabilityNow(_prev: FormState, formData: FormData): Promise<FormState> {
   await requireAdmin();
+  {
+    // Repeated clicks would spend the provider's daily quota (security review L8).
+    const client = await createClient();
+    const { error } = await client.rpc("consume_rate_limit", { p_bucket: "import" });
+    if (error)
+      return {
+        status: "error",
+        message: "Troppi aggiornamenti in poco tempo: riprova tra qualche minuto.",
+      };
+  }
   // "Modalità diagnostica": keep the raw answers even when the run succeeds.
   const diagnostics = formData.get("diagnostics") === "on";
   const name = selectedProviderName();

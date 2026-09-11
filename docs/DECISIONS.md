@@ -442,3 +442,17 @@ listone,operazioni}`) con exceljs, letture paginate (`fetchAll`) sotto la
   tutta la lega quando il club è ignoto), altrimenti resta ambiguo. Gli id
   opachi dei calciatori sono ridotti a un intero stabile (FNV-1a a 31 bit)
   perché `external_player_map.external_id` è un intero.
+- 2026-09-11 · **Correzioni della revisione di sicurezza del feed e del mercato
+  v2.1** (migrazione `20260909300000`): annullare uno svincolo il cui posto è
+  già stato riempito ora è rifiutato (`NO_ROLE_SLOT`: prima la rosa poteva
+  restare a 24); `undo`/`confirm` richiedono la sessione aperta e passano dal
+  limitatore di operazioni; `claim_availability_refresh` revocata ad
+  `authenticated` (la chiamava già il service role); `set_player_status`
+  rifiuta le fonti non `http(s)` anche a livello DB e lo Zod dell'admin non
+  accetta più `javascript:`/`data:`; le espressioni regolari che leggono i
+  messaggi d'errore del fornitore hanno quantificatori limitati e leggono solo
+  i primi 2000 caratteri (ReDoS misurata: 200 KB = 19,8 s di CPU bloccata);
+  `clear_missing` solo quando qualche riga è stata davvero letta, così una
+  risposta illeggibile non cancella gli stati; testi d'errore del fornitore
+  ripuliti dalle chiavi prima di finire nel database; "Aggiorna adesso"
+  limitato per non bruciare la quota.

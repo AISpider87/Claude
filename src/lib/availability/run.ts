@@ -8,6 +8,7 @@
  * the admin reads it in Admin → Indisponibili.
  */
 
+import { redactSecrets } from "@/lib/availability/shared";
 import {
   type AvailabilityProvider,
   type ProviderFixture,
@@ -356,6 +357,9 @@ export async function runAvailabilitySync(
   out.requests = provider.budget.used;
   out.unparsed = provider.unparsed;
   const confirmRows = [...unmatched.values()].filter((u) => u.kind === "to_confirm").length;
+  // Provider text can echo the key back ("API key 'xyz' is invalid"): redact it
+  // before it reaches the database, the admin panel or a backup.
+  out.errors = out.errors.map((e) => redactSecrets(e, [...provider.secrets]));
   out.notes = [
     ...provider.notes,
     `abbinamenti: ${matched} riusciti, ${confirmRows} da confermare, ${
@@ -380,7 +384,9 @@ export async function runAvailabilitySync(
     })),
     lineups,
     map: [...mapRows.values()],
-    clear_missing: injuriesOk,
+    // A 200 we could not read (renamed wrapper, hostile answer) must never be
+    // taken as "everyone recovered": only clear when we actually read rows.
+    clear_missing: injuriesOk && (statuses.size > 0 || provider.unparsed === 0),
     run: {
       status: injuriesOk ? (out.errors.length > 0 ? "partial" : "ok") : "failed",
       provider_label: provider.label,

@@ -166,6 +166,7 @@ export function apiFootballProvider(key: string, opts: ApiFootballOptions = {}) 
     lastSamples: () => samples.all(),
     // Fixed paths, documented and stable: nothing to discover or to report.
     notes: [],
+    secrets: [key],
     resolvedEndpoints: () => null,
 
     async injuries(): Promise<ProviderInjury[]> {

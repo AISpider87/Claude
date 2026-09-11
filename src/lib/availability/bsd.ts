@@ -826,6 +826,7 @@ export function bsdProvider(key: string, opts: BsdOptions = {}) {
       return unparsed;
     },
     lastSamples: () => samples.all(),
+    secrets: [key],
     get notes() {
       return summary();
     },

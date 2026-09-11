@@ -90,6 +90,8 @@ export interface AvailabilityProvider {
    * substitute, a capability no route matched.
    */
   readonly notes: string[];
+  /** The secrets to strip from anything shown or stored (the API key). */
+  readonly secrets: readonly (string | undefined)[];
   /**
    * Paths and routes that answered this run, to be remembered for the next one,
    * or null when there is nothing to learn (a provider with fixed paths). The
