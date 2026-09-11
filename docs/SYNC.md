@@ -118,11 +118,17 @@ Al primo `200` con JSON valido ci si ferma.
 
 ### Candidati statici
 
-| Capacità      | Candidati provati in ordine                                                                                              |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| indisponibili | `/v1/football/injuries?league=…` · `/football/injuries?league=…` · `/v1/soccer/injuries?league=…` · `/injuries?league=…` |
-| calendario    | `/v1/football/fixtures?league=…&status=upcoming` · `/football/fixtures?league=…` · `/v1/soccer/fixtures?league=…`        |
-| formazioni    | `/v1/football/lineups?fixture=<id>` · `/football/fixtures/<id>/lineups` · `/v1/soccer/lineups?fixture=<id>`              |
+I primi di ogni elenco sono le **rotte vere**, lette dall'elenco del fornitore
+il 2026-09-11; gli altri restano come rete di sicurezza.
+
+| Capacità      | Candidati provati in ordine                                                                                                                                            |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| indisponibili | `/v1/injuries?sport=…&league=…` · `/v1/injuries?league=…` · poi i vecchi tentativi (`/v1/football/injuries`, `/football/injuries`, `/v1/soccer/injuries`, `/injuries`) |
+| calendario    | `/v1/matches?league=…&status=upcoming` · `/v1/matches?sport=…&league=…` · poi i vecchi tentativi                                                                       |
+| formazioni    | `/v1/stored_matches/<id>/lineups` · `/v1/live-stats/<sport>/<id>/players` · poi i vecchi tentativi                                                                     |
+
+**Non** esiste `/v1/matches/{id}/lineups`: le formazioni stanno sotto
+`stored_matches`, i giocatori in campo sotto `live-stats`.
 
 ### Scelta della rotta nell'elenco
 
@@ -159,12 +165,36 @@ configurato (`BSD_LEAGUE`) non è fra quelli, si usa la voce dell'enum che
 somiglia a "serie a" (es. `serie-a` → `it-serie-a`) e la sostituzione viene
 scritta nel riepilogo dell'esecuzione.
 
+### Correzioni automatiche (400, lega, sport)
+
+Il fornitore dice cosa manca: `/v1/injuries` chiamata senza parametri risponde
+`400` con `{"error":{"message":"sport or league query param is required"}}`.
+Ogni chiamata può quindi correggersi da sola, **una volta per tipo di
+correzione**, contando ogni tentativo nel budget e registrandolo nella risposta
+grezza:
+
+1. **parametri obbligatori**: dal messaggio del `400` si leggono i nomi
+   (`sport or league query param is required`, `Missing required parameter: x`,
+   `league and season parameters are required`) e si riprova la stessa rotta con
+   quei parametri, riempiti con quello che sappiamo (sport, lega, stagione,
+   partita);
+2. **lega sbagliata** (400 che non chiede parametri, o `200` senza righe):
+   `GET /v1/leagues?sport=<sport>` una sola volta per esecuzione, si cerca la
+   voce che si legge come "serie a" (preferendo quella italiana) e si riprova
+   con il suo id;
+3. **sport sbagliato**: si riprova una volta con `football` al posto di
+   `soccer` (o viceversa).
+
+Il set di parametri che ha funzionato, la lega e lo sport accettati finiscono
+nella cache: le correzioni si pagano una volta sola.
+
 ### Cache e budget
 
 - Rotta scelta, nomi dei parametri ed eventuale valore di lega sostituito
   finiscono in `league_settings.availability_endpoints`
   (`save_availability_diagnostics`, riservata al service role), sotto la chiave
-  `routes`; i vecchi candidati salvati (`{"injuries": "/…"}`) continuano a
+  `routes`, insieme alla lega (`league`) e allo sport (`sport`) che l'API ha
+  accettato; i vecchi candidati salvati (`{"injuries": "/…"}`) continuano a
   essere letti. **Dalla esecuzione successiva si va dritti alla rotta**: una
   richiesta per capacità, zero per la scoperta. Una sola lettura e al massimo
   una scrittura di impostazioni per esecuzione.
@@ -180,24 +210,55 @@ scritta nel riepilogo dell'esecuzione.
 
 ## BSD: lettura tollerante del payload
 
-Neanche la forma del payload è verificata, quindi il parser accetta molte
-varianti e **salta** (contandola) qualunque riga che non riesce a leggere —
-meglio uno stato mancante che uno stato sbagliato sulla rosa di qualcuno.
+La prima esecuzione vera ha ricevuto **50 righe da `/v1/matches` e non ne ha
+letta nessuna**: la forma non è quella che immaginavamo. Il parser accetta
+quindi molte varianti e **salta** (contandola) qualunque riga che non riesce a
+leggere — meglio uno stato mancante che uno stato sbagliato sulla rosa di
+qualcuno.
+
+Ogni nome di campo è cercato **ignorando maiuscole, trattini e underscore**
+(`home_team`, `homeTeam` e `HomeTeam` sono la stessa cosa), con percorsi
+puntati (`teams.home.name`) e indici (`competitors[0]`). Un campo che contiene
+un oggetto viene letto dal suo `name` / `display_name` / `full_name` /
+`short_name` / `abbreviation`.
 
 - **Dove sono le righe**: alla radice, oppure sotto `data`, `response`,
-  `results`, `items`, `rows`, `records` (anche annidati di un livello).
-- **Nome del calciatore**: `player.name` | `player` (stringa) | `name` |
-  `playerName` | `athlete.name`.
-- **Club**: `team.name` | `team` (stringa) | `club` | `teamName`.
-- **Stato**: `status` | `type` | `injuryStatus` | `availability` | `reason` |
-  `description`.
-- **Rientro previsto**: `expectedReturn` | `returnDate` | `until` (finisce nella
-  nota, non nella logica).
-- **Formazioni**: una riga per squadra con `startXI`/`starters`/`lineup` e
-  `substitutes`/`bench` (le voci possono essere oggetti o nomi nudi), **oppure**
-  una riga per calciatore con `isStarter` / `starting` / `startXI` /
+  `results`, `items`, `rows`, `records`, `matches`, `fixtures`, `injuries`,
+  `players`, `lineups`, `events` — anche annidati di un livello
+  (`data.matches`, `data.items`).
+- **Id della partita**: `id` | `match_id` | `fixture_id` | `game_id` |
+  `event_id` | `uuid` (ci serve **numerico**: un id testuale non è memorizzabile
+  e la riga viene saltata).
+- **Calcio d'inizio**: `start_time` | `commence_time` | `scheduled` |
+  `scheduled_at` | `kickoff` | `date` | `datetime` | `utc_date` | `start` |
+  `starts_at`; stringa ISO **oppure** epoch in secondi o millisecondi.
+- **Stato della partita**: `status` | `state` | `match_status`, stringa oppure
+  oggetto (`status.short`, `status.long`, `status.type`).
+- **Squadre**: `home_team` | `home` | `teams.home` | `competitors[0]` (e gli
+  equivalenti away), stringa oppure oggetto.
+- **Nome del calciatore**: `player` | `player_name` | `athlete` | `name` |
+  `full_name` | `display_name`.
+- **Club**: `team` | `team_name` | `club` | `squad`.
+- **Stato**: `status` | `type` | `injury_status` | `availability` |
+  `designation` | `reason` | `description` | `detail` | `note` | `comment` |
+  `injury`.
+- **Rientro previsto**: `expected_return` | `return_date` | `until` | `eta`
+  (finisce nella nota, non nella logica).
+- **Formazioni**: una riga per squadra con `startXI` / `starting_xi` /
+  `starters` / `lineup` / `starting_lineup` e `substitutes` / `subs` / `bench`
+  (le voci possono essere oggetti o nomi nudi), **oppure** una riga per
+  calciatore con `is_starter` / `starter` / `starting` / `start` /
   `lineup: "start"`. Una riga senza nessuna delle due cose viene saltata: non si
   dà del titolare a nessuno per esclusione.
+
+Se **arrivano righe e nessuna è leggibile**, il pannello scrive quali chiavi ha
+davvero la prima riga:
+
+```
+indisponibili: 50 righe ricevute, nessuna leggibile · chiavi della prima riga: id, sport, league, home_team, away_team, start_time, status, confidence
+```
+
+È la riga che risolve il problema in un colpo solo: dice i nomi veri dei campi.
 
 ### Parole chiave → stato salvato (BSD)
 
@@ -320,39 +381,56 @@ fornitore si leggerebbe come "sono guariti tutti".
 
 ## Verificato in produzione, e cosa resta da verificare (BSD)
 
-**Verificato il 2026-09-11**, prima esecuzione vera con la chiave dell'admin:
+**Verificato il 2026-09-11**, due esecuzioni vere con la chiave dell'admin:
 
-- l'indirizzo base `https://api.bigballsdata.com` risponde e **la chiave è
-  valida** (l'API ha dichiarato 93 richieste residue);
-- **nessuno dei candidati statici esiste**: tutti `404 route_not_found`, con il
-  corpo che indica `GET /v1/` e `GET /openapi.json` — da qui la scoperta
-  automatica delle rotte.
+- l'indirizzo base `https://api.bigballsdata.com` risponde, **la chiave è
+  valida** (quota dichiarata: 93, poi 82 richieste residue);
+- nessuno dei candidati indovinati esisteva: tutti `404 route_not_found`, con il
+  corpo che indica `GET /v1/` e `GET /openapi.json`;
+- la **scoperta funziona**: `/openapi.json` ha restituito **125 rotte**
+  ("Big Ball Sports API"; ogni risposta porta un punteggio di confidenza e
+  l'attribuzione della fonte; paginazione con `?limit=` / `?offset=` / `?page=`);
+- **`GET /v1/injuries` esiste** e risponde `400`
+  `"sport or league query param is required"` se chiamata senza parametri: da
+  qui il parametro `sport` (`BSD_SPORT`, default `soccer`) e la correzione
+  automatica dei parametri obbligatori;
+- **`GET /v1/matches?league=…&status=…` ha risposto `200` con 50 righe**, che
+  però il parser non sapeva leggere: da qui la lettura tollerante qui sopra e la
+  nota con le chiavi della prima riga;
+- le rotte utili per il calcio, alla lettera: `/v1/injuries`, `/v1/matches`,
+  `/v1/matches/{id}` (+ `events`, `odds`, `statistics`, `weather`),
+  `/v1/live-stats/{sport}/{matchId}/players`, `/v1/stored_matches`,
+  `/v1/stored_matches/{id}` (+ `lineups`, `plays`, `stats`),
+  `/v1/stored_players`, `/v1/stored_standings`, `/v1/leagues`,
+  `/v1/leagues/{id}`, `/v1/players`, `/v1/players/{id}` (+ `profile`),
+  `/v1/teams`, `/v1/teams/{id}` (+ `season`, `stats`), `/v1/sports`,
+  `/v1/coverage`. **Le formazioni stanno sotto `stored_matches`**, non sotto
+  `matches`.
 
-**Resta da verificare al primo aggiornamento con la scoperta attiva** (modalità
-diagnostica accesa):
+**Resta da verificare al prossimo aggiornamento** (modalità diagnostica accesa):
 
-1. che `/openapi.json` (o `/v1/`) risponda davvero e in un formato riconosciuto:
-   la riga "Rotte del fornitore" dice quante rotte sono state trovate e quali
-   sono state scelte; se dice "formato non riconosciuto", serve il corpo grezzo;
-2. che le **parole chiave** peschino la rotta giusta: se una capacità non trova
-   niente, il pannello elenca le parole cercate — vanno confrontate con
-   l'elenco vero delle rotte;
-3. che i **nomi dei parametri** presi dal documento siano quelli giusti e che
-   non ne manchi uno obbligatorio (un `400` invece di un `404` è il sintomo);
-4. **come si chiama la Serie A**: se il documento dichiara l'enum delle leghe la
-   sostituzione è automatica ed è scritta nel pannello, altrimenti va messo il
-   valore giusto in `BSD_LEAGUE`;
-5. **come si autentica**: mandiamo `Authorization: Bearer` **e** `x-api-key`; se
-   il servizio volesse la chiave in query string va cambiato il codice;
-6. **i nomi dei campi** di ogni riga (calciatore, club, stato, rientro) e il
-   punto in cui stanno le righe nel payload;
-7. **il vocabolario degli stati**: le parole vere vanno aggiunte alla tabella
-   qui sopra, altrimenti tutto finisce in `unavailable`;
-8. **l'id esterno**: se le righe non hanno un id numerico per calciatore
-   l'abbinamento manuale non è possibile (il pannello lo dice riga per riga) e
-   restano solo i nomi;
-9. **le formazioni**: se la rotta non esiste sul piano gratuito, restano gli
-   indisponibili e gli stati manuali;
+1. che `/v1/injuries?sport=soccer&league=serie-a` risponda `200` — e in caso
+   contrario cosa dice il `400`: la correzione automatica aggiunge i parametri
+   nominati nel messaggio, ma se il nome non somiglia a niente che conosciamo
+   va aggiunto in `PARAM_ALIASES`;
+2. **come si chiama la Serie A**: se `serie-a` viene rifiutata, il job legge
+   `/v1/leagues?sport=soccer` e usa l'id che trova, scrivendolo nel pannello; se
+   nemmeno lì c'è, va messo a mano in `BSD_LEAGUE`;
+3. **`soccer` o `football`**: il ripiego è automatico e viene memorizzato;
+4. **i nomi dei campi** delle righe di `/v1/matches` e `/v1/injuries`: la nota
+   "chiavi della prima riga" li elenca, vanno aggiunti alle liste in
+   `src/lib/availability/bsd.ts`;
+5. che l'**id della partita sia numerico**: se è un uuid, il calendario resta
+   vuoto e serve una migrazione per cambiare tipo;
+6. **le formazioni**: `/v1/stored_matches/<id>/lineups` esiste, ma resta da
+   vedere se l'id delle partite di `/v1/matches` è lo stesso di
+   `stored_matches` e se il piano gratuito la copre;
+7. **il vocabolario degli stati** degli indisponibili: le parole vere vanno
+   aggiunte alla tabella qui sopra, altrimenti tutto finisce in `unavailable`;
+8. **l'id esterno del calciatore**: se le righe non ne hanno uno numerico
+   l'abbinamento manuale non è possibile (il pannello lo dice riga per riga);
+9. **la paginazione**: se le righe sono più di una pagina serve `?limit=`
+   (oggi si legge solo la prima);
 10. **la quota**: quale header dichiara le richieste residue e che non si
     avvicini a zero (in quel caso allungare l'intervallo del job).
 

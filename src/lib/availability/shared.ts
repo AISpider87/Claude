@@ -273,26 +273,48 @@ export function readRateLimit(res: Response): number | null {
 // ---------------------------------------------------------------------------
 
 /** The keys a payload may hide its rows under, besides the root. */
-const LIST_KEYS = ["data", "response", "results", "items", "rows", "records"];
+/**
+ * Where a payload may keep its rows, besides the root. Generic wrappers first,
+ * then the names the provider uses for the thing itself (`/v1/matches` answers
+ * `{matches:[…]}` or `{data:{matches:[…]}}`, depending on the endpoint).
+ */
+const LIST_KEYS = [
+  "data",
+  "response",
+  "results",
+  "items",
+  "rows",
+  "records",
+  "matches",
+  "fixtures",
+  "injuries",
+  "players",
+  "lineups",
+  "events",
+];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/** Lowercase, letters and digits only: `home_team`, `homeTeam` and `HomeTeam` meet. */
+function squashKey(key: string): string {
+  return key.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
 /**
- * The array of rows inside an answer, wherever it is: the root itself, or
- * `data` / `response` / `results` / `items`, one nesting level deep
- * (`{data:{items:[…]}}` happens).
+ * The array of rows inside an answer, wherever it is: the root itself, or one
+ * of `LIST_KEYS`, or one nesting level deeper (`{data:{matches:[…]}}`).
  */
 export function rowsOf(payload: unknown, depth = 2): unknown[] {
   if (Array.isArray(payload)) return payload;
   if (!isRecord(payload) || depth <= 0) return [];
   for (const key of LIST_KEYS) {
-    const value = payload[key];
+    const value = lookup(payload, key);
     if (Array.isArray(value)) return value;
   }
   for (const key of LIST_KEYS) {
-    const value = payload[key];
+    const value = lookup(payload, key);
     if (isRecord(value)) {
       const nested = rowsOf(value, depth - 1);
       if (nested.length > 0) return nested;
@@ -301,20 +323,56 @@ export function rowsOf(payload: unknown, depth = 2): unknown[] {
   return [];
 }
 
-/** Follows a dotted path (`player.name`) without ever throwing. */
+/** One key of an object, exact first, then ignoring case, `_` and `-`. */
+function lookup(row: Record<string, unknown>, key: string): unknown {
+  if (key in row) return row[key];
+  const target = squashKey(key);
+  for (const candidate of Object.keys(row)) {
+    if (squashKey(candidate) === target) return row[candidate];
+  }
+  return undefined;
+}
+
+/**
+ * Follows a path without ever throwing: dots for nesting, numbers (or
+ * `competitors[0]`) for array positions, and every key matched ignoring case,
+ * underscores and dashes — `teams.home.name`, `home_team`, `competitors[1]`.
+ */
 export function at(row: unknown, path: string): unknown {
   let current: unknown = row;
-  for (const part of path.split(".")) {
+  for (const part of path.split(/[.[\]]+/).filter(Boolean)) {
+    if (Array.isArray(current)) {
+      const index = Number.parseInt(part, 10);
+      if (!Number.isInteger(index)) return undefined;
+      current = current[index];
+      continue;
+    }
     if (!isRecord(current)) return undefined;
-    current = current[part];
+    current = lookup(current, part);
+    if (current === undefined) return undefined;
   }
   return current;
 }
 
+/** The fields that hold the name of a thing, when a path lands on an object. */
+const NAME_KEYS = [
+  "name",
+  "display_name",
+  "displayName",
+  "full_name",
+  "fullName",
+  "short_name",
+  "shortName",
+  "abbreviation",
+  "title",
+  "value",
+  "text",
+];
+
 /**
  * The first non-empty string among the given paths. A path that lands on an
- * object also accepts its `name` (so `team` works for both `"Inter"` and
- * `{name:"Inter"}`).
+ * object also accepts its name-ish field, so `team` works for `"Inter"`,
+ * `{name:"Inter"}` and `{display_name:"Inter"}` alike.
  */
 export function pickString(row: unknown, paths: string[]): string {
   for (const path of paths) {
@@ -322,24 +380,71 @@ export function pickString(row: unknown, paths: string[]): string {
     if (typeof value === "string" && value.trim()) return value.trim();
     if (typeof value === "number" && Number.isFinite(value)) return String(value);
     if (isRecord(value)) {
-      const name = value.name ?? value.fullName ?? value.displayName;
-      if (typeof name === "string" && name.trim()) return name.trim();
+      for (const key of NAME_KEYS) {
+        const name = lookup(value, key);
+        if (typeof name === "string" && name.trim()) return name.trim();
+        if (typeof name === "number" && Number.isFinite(name)) return String(name);
+      }
     }
   }
   return "";
 }
 
-/** The first finite integer among the given paths, or null. */
-export function pickInt(row: unknown, paths: string[]): number | null {
+/** The first finite number among the given paths, or null. */
+export function pickNumber(row: unknown, paths: string[]): number | null {
   for (const path of paths) {
     const value = at(row, path);
-    if (typeof value === "number" && Number.isInteger(value)) return value;
-    if (typeof value === "string" && /^\d{1,15}$/.test(value.trim())) {
-      return Number.parseInt(value, 10);
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    if (typeof value === "string" && /^-?\d+(\.\d+)?$/.test(value.trim())) {
+      const parsed = Number(value.trim());
+      if (Number.isFinite(parsed)) return parsed;
     }
   }
   return null;
 }
+
+/** The first finite integer among the given paths, or null. */
+export function pickInt(row: unknown, paths: string[]): number | null {
+  for (const path of paths) {
+    const value = pickNumber(row, [path]);
+    if (value !== null && Number.isInteger(value)) return value;
+  }
+  return null;
+}
+
+/**
+ * The first usable date among the given paths, as a string: an ISO date is kept
+ * verbatim (the provider's own spelling of the time zone is information), an
+ * epoch in seconds or milliseconds becomes ISO.
+ */
+export function pickDate(row: unknown, paths: string[]): string {
+  for (const path of paths) {
+    const value = at(row, path);
+    if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+      const iso = fromEpoch(value);
+      if (iso) return iso;
+    }
+    if (typeof value === "string" && value.trim()) {
+      const text = value.trim();
+      if (/^\d{9,14}$/.test(text)) {
+        const iso = fromEpoch(Number(text));
+        if (iso) return iso;
+      }
+      if (!Number.isNaN(Date.parse(text))) return text;
+    }
+  }
+  return "";
+}
+
+/** Under ~1e11 it can only be seconds (year 5138 otherwise). */
+function fromEpoch(value: number): string | null {
+  const ms = value < 1e11 ? value * 1000 : value;
+  const date = new Date(ms);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+const TRUTHY = ["true", "yes", "y", "1", "start", "starter", "starting", "startxi", "xi"];
+const FALSY = ["false", "no", "n", "0", "bench", "sub", "substitute", "substitutes"];
 
 /** The first boolean-ish value among the given paths, or null when absent. */
 export function pickBool(row: unknown, paths: string[]): boolean | null {
@@ -348,14 +453,21 @@ export function pickBool(row: unknown, paths: string[]): boolean | null {
     if (typeof value === "boolean") return value;
     if (typeof value === "number") return value !== 0;
     if (typeof value === "string") {
-      const v = value.trim().toLowerCase();
-      if (["true", "yes", "y", "1", "start", "starter", "starting", "startxi"].includes(v)) {
-        return true;
-      }
-      if (["false", "no", "n", "0", "bench", "sub", "substitute"].includes(v)) return false;
+      const v = squashKey(value);
+      if (TRUTHY.includes(v)) return true;
+      if (FALSY.includes(v)) return false;
     }
   }
   return null;
+}
+
+/**
+ * The keys of a row, for the diagnostics: when rows arrive and none of them can
+ * be read, this is what says which field names the provider really uses.
+ */
+export function rowKeys(row: unknown, max = 30): string[] {
+  if (!isRecord(row)) return [];
+  return Object.keys(row).slice(0, max);
 }
 
 /** The array at the first of the given paths that holds one, or []. */

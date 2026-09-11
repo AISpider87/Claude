@@ -22,7 +22,12 @@ import {
   mapBsdStatus,
   parseEndpoints,
 } from "@/lib/availability/bsd";
-import { chooseRoute, parseRouteIndex } from "@/lib/availability/bsd-discovery";
+import {
+  chooseRoute,
+  parseRouteIndex,
+  pickSerieA,
+  requiredParams,
+} from "@/lib/availability/bsd-discovery";
 import { availabilityProviderFromEnv, selectedProviderName } from "@/lib/availability/provider";
 import { MAX_SAMPLE_BYTES, RequestBudget, capSamples } from "@/lib/availability/shared";
 import { runAvailabilitySync, type AvailabilityDb } from "@/lib/availability/run";
@@ -30,6 +35,14 @@ import type { ListonePlayer } from "@/lib/import/name-matching";
 
 const FIXTURES = path.resolve(__dirname, "../fixtures");
 const KEY = "bsd-secret-key-0123456789";
+
+/** The static candidates this file leans on, by name rather than by position. */
+const T = {
+  v1Injuries: "/v1/injuries?sport={sport}&league={league}",
+  footballInjuries: "/football/injuries?league={league}",
+  soccerInjuries: "/v1/soccer/injuries?league={league}",
+  footballLineups: "/football/fixtures/{fixture}/lineups",
+} as const;
 
 async function fixture(name: string): Promise<string> {
   return readFile(path.join(FIXTURES, `bsd-${name}.json`), "utf8");
@@ -57,8 +70,13 @@ function fakeFetch(byPath: Record<string, Answer>) {
     const url = String(input);
     urls.push(url);
     headers.push((init?.headers ?? {}) as Record<string, string>);
-    const pathname = new URL(url).pathname;
-    const match = Object.entries(byPath).find(([p]) => p === pathname);
+    const parsed = new URL(url);
+    const withQuery = `${parsed.pathname}${parsed.search}`;
+    // The most specific key wins, so a fixture can answer one thing to
+    // `/v1/injuries` and another to `/v1/injuries?sport=soccer&league=serie-a`.
+    const match = Object.entries(byPath)
+      .filter(([p]) => p === parsed.pathname || p === withQuery)
+      .sort((a, b) => b[0].length - a[0].length)[0];
     const answer: Answer = match?.[1] ?? {
       status: 404,
       body: '{"error":"not found","path":"unknown"}',
@@ -145,22 +163,21 @@ describe("candidate paths", () => {
     // The real order: first guess, then the provider's own route list (which
     // does not answer either, here), then the remaining guesses.
     expect(fetcher.urls.map((u) => new URL(u).pathname)).toEqual([
-      "/v1/football/injuries",
-      "/openapi.json",
+      "/v1/injuries", // the route the live API really has, with sport+league
+      "/openapi.json", // no answer: ask the provider for its route list
       "/v1/",
-      "/football/injuries",
+      "/v1/injuries", // the same route without the sport
+      "/v1/football/injuries",
+      "/football/injuries", // this one answers
     ]);
     expect(rows.map((r) => r.playerName)).toEqual(["Romelu Lukaku", "Alessandro Bastoni"]);
-    expect(provider.resolvedEndpoints()).toEqual({
-      injuries: BSD_CANDIDATES.injuries[1],
-      routes: {},
-    });
+    expect(provider.resolvedEndpoints()).toEqual({ injuries: T.footballInjuries, routes: {} });
   });
 
   it("goes straight to the path it was given, without trying the others", async () => {
     const { provider, fetcher } = make(
       { "/football/injuries": { body: await fixture("injuries-root") } },
-      { endpoints: { templates: { injuries: BSD_CANDIDATES.injuries[1] }, routes: {} } },
+      { endpoints: { templates: { injuries: T.footballInjuries }, routes: {} } },
     );
     await provider.injuries();
     expect(fetcher.urls).toHaveLength(1);
@@ -187,10 +204,7 @@ describe("candidate paths", () => {
     });
     const rows = await provider.injuries();
     expect(rows).toHaveLength(2);
-    expect(provider.resolvedEndpoints()).toEqual({
-      injuries: BSD_CANDIDATES.injuries[2],
-      routes: {},
-    });
+    expect(provider.resolvedEndpoints()).toEqual({ injuries: T.soccerInjuries, routes: {} });
   });
 
   it("stops at the budget instead of hammering the free tier", async () => {
@@ -252,7 +266,7 @@ describe("self-discovery", () => {
     const rows = await provider.injuries();
 
     expect(fetcher.urls.map((u) => new URL(u).pathname)).toEqual([
-      "/v1/football/injuries", // the first guess, 404
+      "/v1/injuries", // the first guess, 404 in this fake
       "/openapi.json", // the route list the 404 body points at
       "/v1/soccer/injuries", // what the list says
     ]);
@@ -333,7 +347,7 @@ describe("self-discovery", () => {
 
     expect(fetcher.urls.map((u) => new URL(u).pathname)).toEqual([
       "/v1/soccer/injuries-old", // cached, now 404
-      "/v1/football/injuries", // first guess, 404
+      "/v1/injuries", // first guess, 404
       "/openapi.json", // the list again
       "/v1/soccer/injuries", // the route that exists today
     ]);
@@ -371,8 +385,10 @@ describe("self-discovery", () => {
   });
 
   it("never goes over the budget, discovery included", async () => {
-    const budget = new RequestBudget(16);
-    const { provider } = make({}, { budget });
+    // Nothing answers at all: every candidate of every capability, the two
+    // discovery attempts and the corrections must still stop at the budget.
+    const budget = new RequestBudget(12);
+    const { provider, fetcher } = make({}, { budget });
     for (const run of [
       () => provider.injuries(),
       () => provider.fixtures(10),
@@ -380,8 +396,9 @@ describe("self-discovery", () => {
     ]) {
       await expect(run()).rejects.toThrow(/endpoint non trovato|budget esaurito/);
     }
-    expect(budget.used).toBeLessThanOrEqual(16);
-    expect(budget.used).toBe(4 + 2 + 3 + 3); // candidates + the two discovery calls
+    expect(budget.used).toBe(12);
+    expect(budget.left).toBe(0);
+    expect(fetcher.urls).toHaveLength(12);
   });
 
   it("reads a route list that is not an OpenAPI document at all", () => {
@@ -504,6 +521,153 @@ describe("payload shapes", () => {
   });
 });
 
+describe("the live API's own answers", () => {
+  const BARE = "/v1/injuries";
+  const WITH_PARAMS = "/v1/injuries?sport=soccer&league=serie-a";
+
+  /** A previous run cached `/v1/injuries` with no parameters at all. */
+  const bareRoute = { templates: {}, routes: { injuries: { path: BARE, params: {} } } };
+
+  it("adds the parameters an HTTP 400 says are required, and remembers them", async () => {
+    const { provider, fetcher } = make(
+      {
+        [BARE]: { status: 400, body: await fixture("bad-request") },
+        [WITH_PARAMS]: { body: await fixture("injuries-root") },
+      },
+      { endpoints: bareRoute },
+    );
+    const rows = await provider.injuries();
+
+    expect(fetcher.urls).toEqual([
+      "https://api.bigballsdata.com/v1/injuries",
+      "https://api.bigballsdata.com/v1/injuries?sport=soccer&league=serie-a",
+    ]);
+    expect(rows).toHaveLength(2);
+    // Next run goes straight there, with the names the API itself asked for.
+    expect(provider.resolvedEndpoints()).toMatchObject({
+      routes: { injuries: { path: BARE, params: { sport: "sport", league: "league" } } },
+    });
+  });
+
+  it("reads the parameter names out of any phrasing", () => {
+    expect(
+      requiredParams('{"error":{"message":"sport or league query param is required"}}'),
+    ).toEqual(["sport", "league"]);
+    expect(requiredParams("league and season parameters are required")).toEqual([
+      "league",
+      "season",
+    ]);
+    expect(requiredParams('{"message":"Missing required parameter: sport"}')).toEqual(["sport"]);
+    expect(requiredParams('{"error":{"message":"not found"}}')).toEqual([]);
+    expect(requiredParams("<html>502</html>")).toEqual([]);
+  });
+
+  it("asks /v1/leagues what it calls Serie A when ours is refused", async () => {
+    const { provider, fetcher } = make(
+      {
+        "/v1/injuries?league=serie-a": { status: 400, body: await fixture("league-unknown") },
+        "/v1/leagues": { body: await fixture("leagues") },
+        "/v1/injuries?league=it-serie-a": { body: await fixture("injuries-root") },
+      },
+      {
+        endpoints: {
+          templates: {},
+          routes: { injuries: { path: BARE, params: { league: "league" } } },
+        },
+      },
+    );
+    const rows = await provider.injuries();
+
+    expect(fetcher.urls.map((u) => new URL(u).pathname + new URL(u).search)).toEqual([
+      "/v1/injuries?league=serie-a",
+      "/v1/leagues?sport=soccer",
+      "/v1/injuries?league=it-serie-a",
+    ]);
+    expect(rows).toHaveLength(2);
+    expect(provider.notes.join(" · ")).toContain(
+      '"serie-a" sostituita con "it-serie-a" (Serie A, da /v1/leagues)',
+    );
+    // Cached, so no other run has to ask again.
+    expect(provider.resolvedEndpoints()).toMatchObject({ league: "it-serie-a" });
+  });
+
+  it("prefers the Italian Serie A over the Brazilian one", async () => {
+    const rows = JSON.parse(await fixture("leagues")) as { data: unknown[] };
+    expect(pickSerieA(rows.data)).toEqual({ id: "it-serie-a", label: "Serie A" });
+    expect(pickSerieA([{ id: "x", name: "Premier League" }])).toBeNull();
+  });
+
+  it("tries the other spelling of the sport once, and keeps the one that works", async () => {
+    const { provider, fetcher } = make(
+      {
+        "/v1/injuries?sport=soccer": { status: 400, body: '{"error":{"message":"unknown sport"}}' },
+        "/v1/injuries?sport=football": { body: await fixture("injuries-root") },
+      },
+      {
+        endpoints: {
+          templates: {},
+          routes: { injuries: { path: BARE, params: { sport: "sport" } } },
+        },
+      },
+    );
+    expect(await provider.injuries()).toHaveLength(2);
+    expect(fetcher.urls.map((u) => new URL(u).pathname + new URL(u).search)).toEqual([
+      "/v1/injuries?sport=soccer",
+      "/v1/leagues?sport=soccer", // the league is checked first, and 404s here
+      "/v1/injuries?sport=football",
+    ]);
+    expect(provider.resolvedEndpoints()).toMatchObject({ sport: "football" });
+  });
+
+  it("reads /v1/matches rows in either shape", async () => {
+    for (const name of ["matches-snake", "matches-nested"]) {
+      const { provider } = make({ "/v1/matches": { body: await fixture(name) } });
+      const fixtures = await provider.fixtures(10);
+      expect(fixtures.slice(0, 2), name).toEqual([
+        {
+          id: 1208002,
+          kickoff: "2026-09-12T16:00:00.000Z",
+          status: name === "matches-snake" ? "scheduled" : "NS",
+          homeName: "Inter",
+          awayName: "Napoli",
+        },
+        {
+          id: 1208003,
+          kickoff: name === "matches-snake" ? "2026-09-12T18:45:00Z" : "2026-09-12T18:45:00+00:00",
+          status: name === "matches-snake" ? "scheduled" : "NS",
+          homeName: "Roma",
+          awayName: "Milan",
+        },
+      ]);
+    }
+  });
+
+  it("reads the line-ups of /v1/stored_matches/{id}/lineups", async () => {
+    const { provider, fetcher } = make({
+      "/v1/stored_matches/1208002/lineups": { body: await fixture("stored-lineups") },
+    });
+    expect(await provider.lineups(1208002)).toEqual([
+      { externalId: 2870, playerName: "Nicolo Barella", teamName: "Inter", state: "starting" },
+      { externalId: null, playerName: "Alessandro Bastoni", teamName: "Inter", state: "starting" },
+      { externalId: 1100, playerName: "Josep Martinez", teamName: "Inter", state: "bench" },
+      { externalId: null, playerName: "Romelu Lukaku", teamName: "Napoli", state: "starting" },
+    ]);
+    // First candidate, no discovery needed: it is the route the API really has.
+    expect(fetcher.urls).toHaveLength(1);
+  });
+
+  it("lists the keys of the first row when rows arrive but none can be read", async () => {
+    const { provider } = make({
+      "/v1/injuries?sport=soccer&league=serie-a": { body: await fixture("unreadable") },
+    });
+    expect(await provider.injuries()).toEqual([]);
+    expect(provider.unparsed).toBe(2);
+    expect(provider.notes.join(" · ")).toContain(
+      "indisponibili: 2 righe ricevute, nessuna leggibile · chiavi della prima riga: evt, prsn, sq, st, upd",
+    );
+  });
+});
+
 describe("lineups", () => {
   it("reads a startXI/substitutes pair, with entries as objects or bare names", async () => {
     const { provider } = make({
@@ -536,10 +700,7 @@ describe("lineups", () => {
     });
     await provider.lineups(1208002);
     expect(fetcher.urls.at(-1)).toContain("/football/fixtures/1208002/lineups");
-    expect(provider.resolvedEndpoints()).toEqual({
-      lineups: BSD_CANDIDATES.lineups[1],
-      routes: {},
-    });
+    expect(provider.resolvedEndpoints()).toEqual({ lineups: T.footballLineups, routes: {} });
   });
 });
 
@@ -553,14 +714,18 @@ describe("diagnostics", () => {
     await provider.injuries();
     const samples = provider.lastSamples();
 
-    // The failed guess, the two discovery attempts, then the answer.
+    // Every attempt is kept: the guesses, the two discovery calls, the answer,
+    // and the `/v1/leagues` check that an empty answer triggers.
     expect(samples.map((s2) => `${s2.endpoint}:${s2.status}`)).toEqual([
       "injuries:404",
       "discovery:404",
       "discovery:404",
+      "injuries:404",
+      "injuries:404",
       "injuries:200",
+      "leagues:404",
     ]);
-    expect(samples.at(-1)!.body).toContain('"echo"');
+    expect(samples.find((s2) => s2.status === 200)!.body).toContain('"echo"');
     // The key travels in both headers, and in neither the URL nor the samples.
     expect(fetcher.headers[0]!.authorization).toBe(`Bearer ${KEY}`);
     expect(fetcher.headers[0]!["x-api-key"]).toBe(KEY);
@@ -576,7 +741,8 @@ describe("diagnostics", () => {
       },
     });
     await provider.injuries();
-    expect(provider.lastSamples()[0]!.body).toHaveLength(1500);
+    const sample = provider.lastSamples().find((s2) => s2.status === 200)!;
+    expect(sample.body).toHaveLength(1500);
   });
 
   it("never stores more than 4 KB of diagnostics", () => {
@@ -646,7 +812,7 @@ describe("runAvailabilitySync with bsd", () => {
     expect(out.errors).toEqual([]);
     // One injury row with no status, one fixture row with no id.
     expect(out.unparsed).toBe(2);
-    expect(out.requests_max).toBe(16);
+    expect(out.requests_max).toBe(24);
     expect(out.fixture?.id).toBe(1208002);
     // Lukaku infortunato, Bastoni squalificato, Barella in dubbio, Dybala fuori.
     expect(out.statuses).toBe(4);
@@ -658,9 +824,9 @@ describe("runAvailabilitySync with bsd", () => {
       {
         provider: "bsd",
         endpoints: {
-          injuries: BSD_CANDIDATES.injuries[1],
-          fixtures: BSD_CANDIDATES.fixtures[0],
-          lineups: BSD_CANDIDATES.lineups[0],
+          injuries: T.footballInjuries,
+          fixtures: "/v1/football/fixtures?league={league}&status=upcoming",
+          lineups: "/v1/football/lineups?fixture={fixture}",
           routes: {},
         },
         samples: [],
@@ -682,7 +848,17 @@ describe("runAvailabilitySync with bsd", () => {
       { diagnostics: true },
     );
     const saved = ok.diagnostics[0] as { samples: { endpoint: string }[] };
-    expect(saved.samples.map((s) => s.endpoint)).toEqual(["injuries", "fixtures"]);
+    // Every call of the run, guesses and route list included, in order.
+    expect(saved.samples.map((s) => s.endpoint)).toEqual([
+      "injuries",
+      "discovery",
+      "discovery",
+      "injuries",
+      "injuries",
+      "fixtures",
+      "fixtures",
+      "fixtures",
+    ]);
 
     // Nothing answers: the run fails, and the bodies are kept without asking.
     const broken = make({});

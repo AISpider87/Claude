@@ -1,0 +1,7 @@
+{
+  "_comment": "Rows arrive but nothing in them is a name we know: this is what the diagnostics note must describe, key by key.",
+  "data": [
+    { "evt": 991, "prsn": "Romelu Lukaku", "sq": "Napoli", "st": "out", "upd": "2026-09-11" },
+    { "evt": 992, "prsn": "Alessandro Bastoni", "sq": "Inter", "st": "out" }
+  ]
+}

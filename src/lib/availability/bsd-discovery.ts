@@ -38,6 +38,7 @@ export interface DiscoveredRoute {
 
 /** Our concepts mapped onto the names this route actually declares. */
 export interface BsdRouteParams {
+  sport?: string;
   league?: string;
   season?: string;
   fixture?: string;
@@ -60,6 +61,10 @@ export interface BsdEndpoints {
   /** Legacy: the static candidate that worked, per capability. */
   templates: Partial<Record<BsdCapability, string>>;
   routes: Partial<Record<BsdCapability, BsdRoute>>;
+  /** The league id/slug the API accepted (from `/v1/leagues` when needed). */
+  league?: string;
+  /** The sport value the API accepted: `soccer` or `football`. */
+  sport?: string;
 }
 
 /** Where the provider says its route list is, in the order we try them. */
@@ -97,8 +102,24 @@ export const CAPABILITY_KEYWORDS: Record<BsdCapability, { primary: string[]; fal
     },
   };
 
+/**
+ * The routes the live API really has (route list of 2026-09-11, 125 routes):
+ * a path that matches one of these is the right one for that capability, even
+ * when its name does not contain the obvious word — `/v1/live-stats/{sport}/{matchId}/players`
+ * is where the line-ups of a running match are.
+ */
+export const PREFERRED_ROUTES: Record<BsdCapability, RegExp[]> = {
+  injuries: [/^\/v\d+\/injuries$/],
+  fixtures: [/^\/v\d+\/matches$/],
+  lineups: [
+    /^\/v\d+\/stored_matches\/\{[^}]+\}\/lineups$/,
+    /^\/v\d+\/live-stats\/\{[^}]+\}\/\{[^}]+\}\/players$/,
+  ],
+};
+
 /** The parameter names we accept for each of our concepts, best first. */
 export const PARAM_ALIASES = {
+  sport: ["sport", "sport_id", "sportId", "sport_key", "sportKey"],
   league: [
     "league",
     "league_id",
@@ -276,9 +297,12 @@ const FIXTURE_WORDS = /fixture|match|game|^id$|_id$/i;
 export function scoreRoute(route: DiscoveredRoute, what: BsdCapability): number | null {
   if (route.methods.length > 0 && !route.methods.includes("GET")) return null;
   const path = route.path.toLowerCase();
+  // A route we have seen in the live list beats anything the keywords find.
+  const preferred = PREFERRED_ROUTES[what].findIndex((re) => re.test(route.path));
   const { primary, fallback } = CAPABILITY_KEYWORDS[what];
   let score: number;
-  if (primary.some((word) => path.includes(word))) score = 100;
+  if (preferred >= 0) score = 400 - 50 * preferred;
+  else if (primary.some((word) => path.includes(word))) score = 100;
   else if (fallback.some((word) => path.includes(word))) score = 60;
   else return null;
 
@@ -292,7 +316,7 @@ export function scoreRoute(route: DiscoveredRoute, what: BsdCapability): number 
     const byQuery = findParam(route, PARAM_ALIASES.fixture);
     if (!byPath && !byQuery) return null;
     if (byPath) score += 10;
-  } else if (placeholders.length > 0) {
+  } else if (preferred < 0 && placeholders.length > 0) {
     // A template we would have to fill blind is worse than a plain path.
     score -= 15 * placeholders.length;
   }
@@ -331,6 +355,8 @@ export function chooseRoute(
 
   const route = best.route;
   const params: BsdRouteParams = {};
+  const sportParam = findParam(route, PARAM_ALIASES.sport);
+  if (sportParam) params.sport = sportParam;
   const leagueParam = findParam(route, PARAM_ALIASES.league);
   if (leagueParam) params.league = leagueParam;
   const seasonParam = findParam(route, PARAM_ALIASES.season);
@@ -376,6 +402,12 @@ export function parseEndpoints(value: unknown): BsdEndpoints {
       out.templates[what] = legacy;
     }
   }
+  for (const key of ["league", "sport"] as const) {
+    const stored = value[key];
+    if (typeof stored === "string" && stored.trim() && stored.length <= 60) {
+      out[key] = stored.trim();
+    }
+  }
   const routes = value.routes;
   if (isRecord(routes)) {
     for (const what of ["injuries", "fixtures", "lineups"] as BsdCapability[]) {
@@ -385,7 +417,7 @@ export function parseEndpoints(value: unknown): BsdEndpoints {
       if (typeof path !== "string" || !path.startsWith("/") || path.length > 300) continue;
       const params: BsdRouteParams = {};
       if (isRecord(entry.params)) {
-        for (const concept of ["league", "season", "fixture", "status"] as const) {
+        for (const concept of ["sport", "league", "season", "fixture", "status"] as const) {
           const name = entry.params[concept];
           if (typeof name === "string" && name.trim() && name.length <= 60) {
             params[concept] = name.trim();
@@ -399,4 +431,129 @@ export function parseEndpoints(value: unknown): BsdEndpoints {
     }
   }
   return out;
+}
+
+// ---------------------------------------------------------------------------
+// what the API says when a call is missing something
+// ---------------------------------------------------------------------------
+/** The human message inside an error body, whatever it wraps it in. */
+export function errorMessageOf(body: string): string {
+  try {
+    const json: unknown = JSON.parse(body);
+    if (typeof json === "string") return json;
+    if (isRecord(json)) {
+      const error = json.error;
+      const fromError = isRecord(error)
+        ? (error.message ?? error.detail ?? error.description)
+        : error;
+      for (const value of [fromError, json.message, json.detail, json.description]) {
+        if (typeof value === "string" && value.trim()) return value;
+      }
+    }
+  } catch {
+    // not JSON: the raw body is the message
+  }
+  return body;
+}
+
+const REQUIRED_PATTERNS = [
+  // "sport or league query param is required"
+  /([\w .,'"`\-]*?)\s(?:query\s|url\s)?param(?:eter)?s?\s(?:is|are)\srequired/i,
+  // "Missing required parameter: sport", "required: sport, league"
+  /(?:missing|required)[^:]{0,40}:\s*([\w ,'"`\-]+)/i,
+];
+
+/**
+ * The parameter names an HTTP 400 says are missing. The live API answers
+ * `{"error":{"code":"bad_request","message":"sport or league query param is required"}}`,
+ * so the retry knows exactly what to add instead of guessing again.
+ */
+export function requiredParams(body: string): string[] {
+  const message = errorMessageOf(body);
+  for (const pattern of REQUIRED_PATTERNS) {
+    const match = pattern.exec(message);
+    if (!match?.[1]) continue;
+    const names = match[1]
+      .split(/\bor\b|\band\b|[,/]/i)
+      .map((name) => name.replace(/["'`]/g, "").trim().toLowerCase())
+      .filter((name) => /^[a-z][a-z0-9_.-]{1,40}$/.test(name));
+    if (names.length > 0) return [...new Set(names)];
+  }
+  return [];
+}
+
+/** Our concept behind a parameter name the API asked for, if we know one. */
+export function conceptOf(name: string): keyof typeof PARAM_ALIASES | "season" | null {
+  const squashed = squash(name);
+  for (const [concept, aliases] of Object.entries(PARAM_ALIASES)) {
+    if (aliases.some((alias) => squash(alias) === squashed)) {
+      return concept as keyof typeof PARAM_ALIASES;
+    }
+  }
+  if (/^(sport|sports)/.test(squashed)) return "sport";
+  if (/^(league|competition|tournament)/.test(squashed)) return "league";
+  if (/^(season|year)/.test(squashed)) return "season";
+  if (/^(fixture|match|game|event)/.test(squashed)) return "fixture";
+  return null;
+}
+
+/** The names a league row may carry, and where its country hides. */
+const LEAGUE_NAME_KEYS = [
+  "name",
+  "slug",
+  "title",
+  "display_name",
+  "full_name",
+  "short_name",
+  "code",
+  "abbreviation",
+  "key",
+];
+const LEAGUE_ID_KEYS = ["id", "league_id", "slug", "key", "code", "uuid"];
+const LEAGUE_COUNTRY_KEYS = ["country", "country_name", "country_code", "region", "nation", "area"];
+
+export interface LeagueMatch {
+  /** What to send as the league parameter from now on. */
+  id: string;
+  /** What the API calls it, for the note the admin reads. */
+  label: string;
+}
+
+function readField(row: unknown, keys: string[]): string {
+  if (!isRecord(row)) return "";
+  for (const key of keys) {
+    for (const actual of Object.keys(row)) {
+      if (squash(actual) !== squash(key)) continue;
+      const value = row[actual];
+      if (typeof value === "string" && value.trim()) return value.trim();
+      if (typeof value === "number" && Number.isFinite(value)) return String(value);
+      if (isRecord(value)) {
+        const nested = value.name ?? value.code ?? value.slug;
+        if (typeof nested === "string" && nested.trim()) return nested.trim();
+      }
+    }
+  }
+  return "";
+}
+
+/**
+ * Serie A among the rows of `/v1/leagues`: the entry whose name or slug reads
+ * as "serie a", preferring an Italian one when the row says which country it
+ * is. Returns what to send as the league parameter, or null.
+ */
+export function pickSerieA(rows: unknown[]): LeagueMatch | null {
+  let best: { row: unknown; score: number } | null = null;
+  for (const row of rows) {
+    const name = squash(readField(row, LEAGUE_NAME_KEYS));
+    if (!name.includes("serie")) continue;
+    let score = name.includes("seriea") ? 100 : 50;
+    const country = squash(readField(row, LEAGUE_COUNTRY_KEYS));
+    if (country.includes("ital") || country === "it") score += 30;
+    if (!best || score > best.score) best = { row, score };
+  }
+  if (!best) return null;
+  const id = readField(best.row, LEAGUE_ID_KEYS);
+  const label = readField(best.row, LEAGUE_NAME_KEYS);
+  if (!id) return null;
+  return { id, label: label || id };
 }

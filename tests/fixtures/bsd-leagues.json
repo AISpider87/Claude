@@ -1,0 +1,9 @@
+{
+  "_comment": "GET /v1/leagues?sport=soccer — hypothesis of the league list used to translate our slug into the provider's own id.",
+  "data": [
+    { "id": "eng-premier-league", "name": "Premier League", "country": "England" },
+    { "id": "it-serie-a", "name": "Serie A", "country": "Italy", "tier": 1 },
+    { "id": "it-serie-b", "name": "Serie B", "country": "Italy", "tier": 2 },
+    { "id": "bra-serie-a", "name": "Serie A", "country": "Brazil" }
+  ]
+}

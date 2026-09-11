@@ -1,0 +1,19 @@
+{
+  "_comment": "Same endpoint, the other plausible shape: rows under data, teams nested, kick-off in milliseconds, status as an object.",
+  "data": {
+    "items": [
+      {
+        "match_id": 1208002,
+        "commence_time": 1789228800000,
+        "status": { "short": "NS", "long": "Not Started" },
+        "teams": { "home": { "name": "Inter" }, "away": { "name": "Napoli" } }
+      },
+      {
+        "match_id": 1208003,
+        "scheduled": "2026-09-12T18:45:00+00:00",
+        "status": { "short": "NS" },
+        "competitors": [{ "name": "Roma" }, { "name": "Milan" }]
+      }
+    ]
+  }
+}

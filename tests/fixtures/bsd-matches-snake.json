@@ -1,0 +1,24 @@
+{
+  "_comment": "GET /v1/matches?league=…&status=upcoming — the shape that answered 200 with 50 rows in production, as we guess it: snake_case, epoch seconds, teams as objects with display_name.",
+  "matches": [
+    {
+      "id": 1208002,
+      "sport": "soccer",
+      "league": "it-serie-a",
+      "start_time": 1789228800,
+      "status": "scheduled",
+      "home_team": { "id": 505, "display_name": "Inter", "abbreviation": "INT" },
+      "away_team": { "id": 492, "display_name": "Napoli" },
+      "confidence": 0.98,
+      "source": "official"
+    },
+    {
+      "id": 1208003,
+      "start_time": "2026-09-12T18:45:00Z",
+      "status": "scheduled",
+      "home_team": "Roma",
+      "away_team": "Milan"
+    },
+    { "id": 1208004, "status": "final", "home_team": "Lazio", "away_team": "Torino" }
+  ]
+}

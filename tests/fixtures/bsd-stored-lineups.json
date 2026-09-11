@@ -1,0 +1,18 @@
+{
+  "_comment": "GET /v1/stored_matches/{id}/lineups — the route the live list really has, with starters/bench arrays per team.",
+  "data": [
+    {
+      "team": { "id": 505, "name": "Inter" },
+      "starters": [
+        { "player": { "id": 2870, "full_name": "Nicolo Barella" } },
+        { "player_name": "Alessandro Bastoni" }
+      ],
+      "bench": [{ "player": { "id": 1100, "display_name": "Josep Martinez" } }]
+    },
+    {
+      "team": "Napoli",
+      "starters": [{ "name": "Romelu Lukaku" }],
+      "bench": []
+    }
+  ]
+}

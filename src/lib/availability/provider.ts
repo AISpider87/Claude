@@ -26,6 +26,7 @@ import {
   BSD_SOURCE_NAME,
   bsdLeague,
   bsdProvider,
+  bsdSport,
   parseEndpoints,
 } from "@/lib/availability/bsd";
 import { currentSeason, type AvailabilityProvider } from "@/lib/availability/shared";
@@ -42,6 +43,7 @@ export {
 export {
   BSD_BASE_URL,
   BSD_DEFAULT_LEAGUE,
+  BSD_DEFAULT_SPORT,
   BSD_DOCS_URL,
   BSD_PROVIDER,
   BSD_SOURCE_NAME,
@@ -120,6 +122,7 @@ export function availabilityProviderFromEnv(
     return bsdProvider(key, {
       baseUrl: env.BSD_BASE_URL?.trim() || undefined,
       league: bsdLeague(env),
+      sport: bsdSport(env),
       season: currentSeason(new Date(), env),
       endpoints: parseEndpoints(opts.endpoints),
     });

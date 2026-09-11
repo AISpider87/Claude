@@ -81,22 +81,23 @@ Tutte le chiavi vanno **solo** nelle impostazioni di Vercel/Supabase, mai nel re
    (branch principale). Framework: Next.js (rilevato). Piano Hobby.
 2. **Environment Variables** (Production; le `NEXT_PUBLIC_*` anche in Preview):
 
-   | Variabile                       | Valore                                                                                                 |
-   | ------------------------------- | ------------------------------------------------------------------------------------------------------ |
-   | `NEXT_PUBLIC_SUPABASE_URL`      | Project URL di Supabase                                                                                |
-   | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | anon public key                                                                                        |
-   | `NEXT_PUBLIC_SITE_URL`          | `https://<app>.vercel.app` (o il dominio)                                                              |
-   | `SUPABASE_SERVICE_ROLE_KEY`     | service_role key (solo server)                                                                         |
-   | `CRON_SECRET`                   | stringa casuale lunga (`openssl rand -hex 32`)                                                         |
-   | `RESEND_API_KEY`                | chiave Resend (vuota = email saltate)                                                                  |
-   | `EMAIL_FROM`                    | mittente, es. `SuperLega <lega@tuodominio.it>`                                                         |
-   | `QUOTATIONS_SOURCE_URL`         | **vuota** finché non verifichi Fantacalcio.it (docs/SYNC.md)                                           |
-   | `AVAILABILITY_PROVIDER`         | `bsd` (consigliato) oppure `api-football`                                                              |
-   | `BSD_API_KEY`                   | chiave di bigballsdata.com, piano gratuito (vuota = feed spento)                                       |
-   | `BSD_BASE_URL`                  | **facoltativa**: altro indirizzo base, default `https://api.bigballsdata.com`                          |
-   | `BSD_LEAGUE`                    | **facoltativa**: come il fornitore chiama la Serie A, default `serie-a` (accetta anche un id numerico) |
-   | `API_FOOTBALL_KEY`              | solo se usi `api-football`: chiave di api-sports.io                                                    |
-   | `API_FOOTBALL_SEASON`           | **facoltativa**: solo con `api-football`, per forzare la stagione                                      |
+   | Variabile                       | Valore                                                                                                                                                                |
+   | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+   | `NEXT_PUBLIC_SUPABASE_URL`      | Project URL di Supabase                                                                                                                                               |
+   | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | anon public key                                                                                                                                                       |
+   | `NEXT_PUBLIC_SITE_URL`          | `https://<app>.vercel.app` (o il dominio)                                                                                                                             |
+   | `SUPABASE_SERVICE_ROLE_KEY`     | service_role key (solo server)                                                                                                                                        |
+   | `CRON_SECRET`                   | stringa casuale lunga (`openssl rand -hex 32`)                                                                                                                        |
+   | `RESEND_API_KEY`                | chiave Resend (vuota = email saltate)                                                                                                                                 |
+   | `EMAIL_FROM`                    | mittente, es. `SuperLega <lega@tuodominio.it>`                                                                                                                        |
+   | `QUOTATIONS_SOURCE_URL`         | **vuota** finché non verifichi Fantacalcio.it (docs/SYNC.md)                                                                                                          |
+   | `AVAILABILITY_PROVIDER`         | `bsd` (consigliato) oppure `api-football`                                                                                                                             |
+   | `BSD_API_KEY`                   | chiave di bigballsdata.com, piano gratuito (vuota = feed spento)                                                                                                      |
+   | `BSD_BASE_URL`                  | **facoltativa**: altro indirizzo base, default `https://api.bigballsdata.com`                                                                                         |
+   | `BSD_LEAGUE`                    | **facoltativa**: come il fornitore chiama la Serie A, default `serie-a` (accetta anche un id numerico); se l'API la rifiuta, il job la cerca da solo in `/v1/leagues` |
+   | `BSD_SPORT`                     | **facoltativa**: lo sport come lo chiama il fornitore, default `soccer` (in alternativa prova `football` da solo)                                                     |
+   | `API_FOOTBALL_KEY`              | solo se usi `api-football`: chiave di api-sports.io                                                                                                                   |
+   | `API_FOOTBALL_SEASON`           | **facoltativa**: solo con `api-football`, per forzare la stagione                                                                                                     |
 
    Il piano **gratuito di API-Football non copre la stagione in corso**
    ("Free plans do not have access to this season, try from 2022 to 2024"):

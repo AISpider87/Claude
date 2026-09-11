@@ -412,3 +412,21 @@ listone,operazioni}`) con exceljs, letture paginate (`fetchAll`) sotto la
   trovate, quali scelte, quali parole cercate invano) e le risposte grezze della
   scoperta. Nessuna migrazione nuova: cambia solo il contenuto della chiave già
   esistente.
+- 2026-09-11 · **Rotte BSD vere, parametro `sport` e correzione automatica delle
+  chiamate**: l'elenco del fornitore (125 rotte da `/openapi.json`) dice che gli
+  indisponibili stanno in `/v1/injuries`, il calendario in `/v1/matches` e le
+  formazioni in `/v1/stored_matches/{id}/lineups` (non esiste
+  `/v1/matches/{id}/lineups`): sono ora i primi candidati statici, così un
+  ambiente nuovo funziona senza scoperta. `/v1/injuries` risponde `400`
+  _"sport or league query param is required"_, quindi ogni chiamata sa
+  correggersi da sola una volta per tipo — legge dal messaggio i parametri
+  obbligatori e li riempie, chiede a `/v1/leagues?sport=…` come si chiama la
+  Serie A quando la nostra lega è rifiutata, e prova `football` se `soccer` non
+  va (`BSD_SPORT`, default `soccer`) — memorizzando ogni volta quello che ha
+  funzionato. `/v1/matches` ha risposto 200 con 50 righe che il parser non
+  sapeva leggere: la lettura delle righe è ora insensibile a maiuscole,
+  underscore e trattini, accetta percorsi puntati e indici, epoch in secondi o
+  millisecondi, squadre come stringa o oggetto, e quando arrivano righe ma
+  nessuna è leggibile il pannello elenca **le chiavi della prima riga** — così
+  i nomi veri dei campi si scoprono in un giro solo. Budget per esecuzione
+  16 → **24**. Nessuna migrazione nuova.

@@ -1,0 +1,4 @@
+{
+  "error": { "code": "bad_request", "message": "league \"serie-a\" not found for sport soccer" },
+  "docs_url": "https://bigballsdata.com/docs/endpoints"
+}
