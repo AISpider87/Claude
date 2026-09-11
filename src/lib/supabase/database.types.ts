@@ -42,14 +42,47 @@ type ProfileRow = {
 };
 
 export type PlayerStatusKind = "injured" | "doubtful" | "suspended" | "unavailable";
+/** Who wrote the row: the admin by hand, or the automatic feed (M15). */
+export type PlayerStatusOrigin = "manual" | "feed";
 type PlayerStatusRow = {
   player_id: number;
   kind: PlayerStatusKind;
   note: string | null;
   source_name: string | null;
   source_url: string | null;
+  origin: PlayerStatusOrigin;
   updated_by: string | null;
   updated_at: string;
+};
+
+export type LineupState = "starting" | "bench";
+type PlayerLineupRow = {
+  player_id: number;
+  state: LineupState;
+  fixture_id: number | null;
+  kickoff: string | null;
+  updated_at: string;
+};
+
+type ExternalPlayerMapRow = {
+  provider: string;
+  external_id: number;
+  player_id: number;
+  external_name: string | null;
+  confidence: "auto" | "confirmed";
+  created_at: string;
+};
+
+type ExternalMapEntry = {
+  provider: string;
+  external_id: number;
+  external_name: string | null;
+  player_id: number;
+  player_name: string;
+  team: string;
+  role_classic: string;
+  confidence: "auto" | "confirmed";
+  created_at: string;
 };
 
 type NotificationRow = {
@@ -239,6 +272,8 @@ export type Database = {
       audit_log: ReadOnlyTable<AuditLogRow>;
       notifications: ReadOnlyTable<NotificationRow>;
       player_status: ReadOnlyTable<PlayerStatusRow>;
+      player_lineup_status: ReadOnlyTable<PlayerLineupRow>;
+      external_player_map: ReadOnlyTable<ExternalPlayerMapRow>;
     };
     Views: {
       free_agents: { Row: PlayerRow; Relationships: [] };
@@ -370,6 +405,18 @@ export type Database = {
         };
         Returns: undefined;
       };
+      sync_availability: { Args: { p_payload: Json }; Returns: Json };
+      claim_availability_refresh: { Args: { p_max_age_seconds?: number }; Returns: boolean };
+      admin_external_map: { Args: { p_provider?: string }; Returns: ExternalMapEntry[] };
+      admin_confirm_player_map: {
+        Args: {
+          p_player_id: number;
+          p_provider: string;
+          p_external_id: number;
+          p_external_name?: string | null;
+        };
+        Returns: undefined;
+      };
       log_notification: {
         Args: {
           p_kind: string;
@@ -398,5 +445,7 @@ export type RosterPlayer = Tables<"roster_players">;
 export type Transaction = Tables<"transactions">;
 export type Notification = Tables<"notifications">;
 export type PlayerAvailability = Tables<"player_status">;
+export type PlayerLineup = Tables<"player_lineup_status">;
+export type ExternalPlayerMap = Tables<"external_player_map">;
 export type AdminUser = AdminUserRow;
 export type AuditEntry = AuditEntryRow;

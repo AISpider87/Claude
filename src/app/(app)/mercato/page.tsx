@@ -13,6 +13,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { FormMessage } from "@/components/ui/form-message";
 import { PageHeader } from "@/components/ui/page-header";
 import { Stat } from "@/components/ui/stat";
+import { getPlayerLineups } from "@/lib/availability/queries";
 import { requireUser } from "@/lib/auth/dal";
 import { formatDateTime, formatInt } from "@/lib/format";
 import type { RoleClassic } from "@/lib/import/quotations-parser";
@@ -65,10 +66,14 @@ export default async function MercatoPage({
     : [[], null];
   const rosterOptions: RosterOption[] = roster.map(toRosterPlayer);
   // Availability chips (Admin → Indisponibili) as a plain object: the roster is a client component.
-  const availability = await getPlayerStatuses(rosterOptions.map((r) => r.id));
+  const rosterIds = rosterOptions.map((r) => r.id);
+  const [availability, lineups] = await Promise.all([
+    getPlayerStatuses(rosterIds),
+    getPlayerLineups(rosterIds),
+  ]);
   const statuses: Record<number, PlayerStatus> = {};
   for (const r of rosterOptions) {
-    const status = toPlayerStatus(availability.get(r.id), r.outOfList);
+    const status = toPlayerStatus(availability.get(r.id), r.outOfList, lineups.get(r.id));
     if (status) statuses[r.id] = status;
   }
   const slots = state?.slots ?? { P: 0, D: 0, C: 0, A: 0 };

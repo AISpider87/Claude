@@ -340,3 +340,22 @@ listone,operazioni}`) con exceljs, letture paginate (`fetchAll`) sotto la
   acquisti: tutti gli svincolati della sessione, con motivo di blocco per
   ruolo sulle tessere non acquistabili (prima erano nascosti e sembravano
   mancanti). Migrazione `20260909260000`.
+- 2026-09-11 · **Feed automatico indisponibili e titolarità da API-Football**
+  (piano gratuito, 0 €): nuovo `player_status.origin manual|feed` con la regola
+  **il manuale batte il feed** (una riga scritta dall'admin non viene mai
+  sovrascritta né cancellata), nuove tabelle `player_lineup_status` (chip
+  Titolare/In panchina entro 12 ore dal calcio d'inizio) e
+  `external_player_map` (l'abbinamento nome API ↔ listone si indovina una volta
+  sola e l'admin lo corregge). Scrittura solo dal service role
+  (`sync_availability`); l'abbinamento ambiguo **non si applica** e finisce
+  nell'elenco "Nomi da abbinare" — meglio uno stato mancante che uno sbagliato.
+  Budget rigido di **3 richieste per esecuzione** (indisponibili + calendario +
+  formazioni solo se una partita inizia entro 3 ore) sulle 100 al giorno del
+  piano gratuito. Cadenza ogni 15 minuti con **pg_cron + pg_net su Supabase**
+  (Vercel Hobby dà un solo cron al giorno, già speso per le quotazioni):
+  l'admin esegue una volta `supabase/deploy/updates/2026-09-11-availability-cron.sql`;
+  rete di sicurezza sulle visite alle pagine con una prenotazione atomica in
+  `league_settings`. `api-sports.io` non è raggiungibile dall'ambiente di
+  sviluppo: parsing tollerante, errori del fornitore riportati alla lettera nel
+  pannello admin, fixture scritte a mano per i test e checklist di verifica in
+  produzione in docs/SYNC.md. Migrazione `20260909270000`.

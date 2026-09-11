@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { EmptyState } from "@/components/ui/empty-state";
 import { FormMessage } from "@/components/ui/form-message";
 import { PageHeader } from "@/components/ui/page-header";
+import { getPlayerLineups } from "@/lib/availability/queries";
 import { requireUser } from "@/lib/auth/dal";
 import { getMarketSettings } from "@/lib/market/queries";
 import { getPlayerStatuses } from "@/lib/players/status";
@@ -51,7 +52,13 @@ export default async function RosaPage() {
     getMarketSettings(),
   ]);
   const summary = summarizeRoster(roster);
-  const availability = await getPlayerStatuses(roster.map((r) => r.player.id));
+  const playerIds = roster.map((r) => r.player.id);
+  // Availability (manual or from the feed) and the published lineup of the
+  // fixture about to start, when there is one.
+  const [availability, lineups] = await Promise.all([
+    getPlayerStatuses(playerIds),
+    getPlayerLineups(playerIds),
+  ]);
   const players = roster.map(toRosterPlayer);
   const groups: RosterGroup[] = ROLE_ORDER.map((role) => ({
     role,
@@ -60,7 +67,11 @@ export default async function RosaPage() {
       .filter((p) => p.role === role)
       .map((player) => ({
         player,
-        status: toPlayerStatus(availability.get(player.id), player.outOfList),
+        status: toPlayerStatus(
+          availability.get(player.id),
+          player.outOfList,
+          lineups.get(player.id),
+        ),
       })),
   }));
 

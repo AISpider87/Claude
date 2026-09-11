@@ -1,0 +1,27 @@
+{
+  "get": "fixtures/lineups",
+  "parameters": { "fixture": "1208002" },
+  "errors": [],
+  "results": 2,
+  "response": [
+    {
+      "team": { "id": 505, "name": "Inter", "colors": null },
+      "formation": "3-5-2",
+      "coach": { "id": 1, "name": "Allenatore" },
+      "startXI": [
+        { "player": { "id": 5116, "name": "Josep Martinez", "number": 13, "pos": "G", "grid": "1:1" } },
+        { "player": { "id": 1100, "name": "Nicolo Barella", "number": 23, "pos": "M", "grid": "3:1" } }
+      ],
+      "substitutes": [
+        { "player": { "id": 3000, "name": "Lautaro Martinez", "number": 10, "pos": "F" } },
+        { "player": { "id": null, "name": null, "number": null, "pos": null } }
+      ]
+    },
+    {
+      "team": { "id": 492, "name": "SSC Napoli" },
+      "formation": "4-3-3",
+      "startXI": [{ "player": { "id": 30411, "name": "Romelu Lukaku", "number": 90, "pos": "F" } }],
+      "substitutes": []
+    }
+  ]
+}

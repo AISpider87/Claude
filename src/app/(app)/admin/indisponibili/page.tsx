@@ -1,12 +1,17 @@
 import { Badge, RoleBadge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { FormMessage } from "@/components/ui/form-message";
 import { PageHeader } from "@/components/ui/page-header";
+import { Stat } from "@/components/ui/stat";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { requireAdmin } from "@/lib/auth/dal";
-import { formatDateTime } from "@/lib/format";
+import { API_FOOTBALL_PROVIDER } from "@/lib/availability/provider";
+import { getAvailabilityFeedState } from "@/lib/availability/queries";
+import { formatDateTime, formatInt } from "@/lib/format";
 import { listPlayerStatuses, STATUS_LABEL } from "@/lib/players/status";
 import { fetchAll } from "@/lib/supabase/fetch-all";
 import { createClient } from "@/lib/supabase/server";
+import { MapRowForm, RunFeedButton, type UnmatchedRow } from "./feed-panel";
 import { ClearStatusButton, StatusForm } from "./status-form";
 
 export const metadata = { title: "Indisponibili" };
@@ -18,10 +23,16 @@ const KIND_VARIANT = {
   unavailable: "muted",
 } as const;
 
+const RUN_LABEL: Record<string, string> = {
+  ok: "riuscito",
+  partial: "riuscito con avvisi",
+  failed: "non riuscito",
+};
+
 export default async function AdminPlayerStatusPage() {
   await requireAdmin();
   const supabase = await createClient();
-  const [statuses, players] = await Promise.all([
+  const [statuses, players, feed] = await Promise.all([
     listPlayerStatuses(),
     fetchAll(() =>
       supabase
@@ -30,7 +41,33 @@ export default async function AdminPlayerStatusPage() {
         .eq("status", "active")
         .order("name"),
     ),
+    getAvailabilityFeedState(),
   ]);
+
+  const playerOptions = players.map((p) => ({
+    id: p.id,
+    name: p.name,
+    team: p.team,
+    role: p.role_classic,
+  }));
+  const byId = new Map(playerOptions.map((p) => [p.id, p]));
+  const run = feed.lastRun;
+  const runStatus = typeof run?.status === "string" ? run.status : null;
+  const errors = Array.isArray(run?.errors) ? run.errors : [];
+  const unmatched: UnmatchedRow[] = (Array.isArray(run?.unmatched) ? run.unmatched : []).map(
+    (u) => ({
+      externalId: u.external_id ?? null,
+      name: u.name,
+      team: u.team,
+      kind: u.kind === "ambiguous" ? "ambiguous" : "not_found",
+      detail: u.detail ?? "",
+      suggestions: (u.candidates ?? []).flatMap((c) => {
+        const p = byId.get(c.id);
+        return p ? [p] : [];
+      }),
+    }),
+  );
+  const manualCount = statuses.filter((s) => s.origin === "manual").length;
 
   return (
     <>
@@ -41,21 +78,105 @@ export default async function AdminPlayerStatusPage() {
       <div className="flex flex-col gap-6">
         <Card>
           <CardHeader>
+            <CardTitle>Feed automatico (API-Football)</CardTitle>
+            <CardDescription>
+              Ogni 15 minuti il feed aggiorna indisponibili e formazioni ufficiali. Gli stati che
+              scrivi tu a mano non vengono mai sovrascritti:{" "}
+              <strong>il manuale batte il feed</strong>. Per togliere uno stato messo dal feed,
+              segna il calciatore come &quot;Disponibile&quot;: tornerà solo se l&apos;API lo
+              riporta.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            {!feed.configured && (
+              <FormMessage tone="info">
+                Nessuna chiave <code>API_FOOTBALL_KEY</code> configurata su questo ambiente: il feed
+                è spento e restano solo gli stati manuali.
+              </FormMessage>
+            )}
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <Stat
+                label="Ultimo aggiornamento"
+                value={feed.syncedAt ? formatDateTime(feed.syncedAt) : "mai"}
+                className="col-span-2"
+              />
+              <Stat
+                label="Esito"
+                value={runStatus ? (RUN_LABEL[runStatus] ?? runStatus) : "—"}
+                tone={runStatus === "ok" ? "primary" : runStatus ? "danger" : "neutral"}
+              />
+              <Stat label="Richieste API" value={`${formatInt(run?.requests ?? 0)}/3`} />
+              <Stat label="Stati dal feed" value={formatInt(run?.statuses_applied ?? 0)} />
+              <Stat
+                label="Stati manuali tenuti"
+                value={formatInt(run?.statuses_kept_manual ?? 0)}
+              />
+              <Stat label="Rientri (stato tolto)" value={formatInt(run?.statuses_cleared ?? 0)} />
+              <Stat label="In formazione" value={formatInt(run?.lineups ?? 0)} />
+            </div>
+            {run?.fixture && (
+              <p className="text-muted text-sm">
+                Formazioni lette per {run.fixture.label} delle {formatDateTime(run.fixture.kickoff)}
+                .
+              </p>
+            )}
+            {typeof run?.rate_limit_remaining === "number" && (
+              <p className="text-muted text-sm">
+                Quota giornaliera residua dichiarata dall&apos;API:{" "}
+                {formatInt(run.rate_limit_remaining)}.
+              </p>
+            )}
+            {errors.length > 0 && (
+              <div className="flex flex-col gap-1">
+                <p className="text-danger text-sm font-semibold">
+                  Errori dell&apos;ultimo tentativo
+                </p>
+                <ul className="text-danger list-disc pl-5 text-sm">
+                  {errors.map((e, i) => (
+                    <li key={i} className="break-words">
+                      {e}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <RunFeedButton disabled={!feed.configured} />
+          </CardContent>
+        </Card>
+
+        {unmatched.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Nomi da abbinare ({unmatched.length})</CardTitle>
+              <CardDescription>
+                L&apos;API usa nomi diversi dal listone. Questi non sono stati applicati: scegli tu
+                il calciatore giusto e l&apos;abbinamento resta valido per i prossimi aggiornamenti.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {unmatched.map((row) => (
+                <MapRowForm
+                  key={`${row.externalId ?? "?"}-${row.name}`}
+                  row={row}
+                  players={playerOptions}
+                  provider={API_FOOTBALL_PROVIDER}
+                />
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
+        <Card>
+          <CardHeader>
             <CardTitle>Segna un calciatore</CardTitle>
             <CardDescription>
               Indica sempre la fonte: compare accanto allo stato, con la data
-              dell&apos;aggiornamento.
+              dell&apos;aggiornamento. Quello che scrivi qui vince sul feed automatico e resta
+              finché non lo cambi tu.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <StatusForm
-              players={players.map((p) => ({
-                id: p.id,
-                name: p.name,
-                team: p.team,
-                role: p.role_classic,
-              }))}
-            />
+            <StatusForm players={playerOptions} />
           </CardContent>
         </Card>
 
@@ -63,8 +184,11 @@ export default async function AdminPlayerStatusPage() {
           <CardHeader>
             <CardTitle>Stati attivi ({statuses.length})</CardTitle>
             <CardDescription>
-              &quot;Disponibile&quot; rimuove lo stato. Gli stati non scadono da soli: aggiornali
-              quando il calciatore rientra.
+              {manualCount > 0
+                ? `${manualCount} scritti a mano (il feed non li tocca), gli altri dal feed automatico. `
+                : "Tutti dal feed automatico. "}
+              &quot;Disponibile&quot; rimuove lo stato. Gli stati manuali non scadono da soli:
+              aggiornali quando il calciatore rientra.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -76,6 +200,7 @@ export default async function AdminPlayerStatusPage() {
                   <TR>
                     <TH>Calciatore</TH>
                     <TH>Stato</TH>
+                    <TH>Origine</TH>
                     <TH>Fonte</TH>
                     <TH>Aggiornato</TH>
                     <TH className="text-right">Azioni</TH>
@@ -93,6 +218,11 @@ export default async function AdminPlayerStatusPage() {
                       <TD>
                         <Badge variant={KIND_VARIANT[s.kind]}>{STATUS_LABEL[s.kind]}</Badge>
                         {s.note && <span className="text-muted block text-xs">{s.note}</span>}
+                      </TD>
+                      <TD>
+                        <Badge variant={s.origin === "manual" ? "primary" : "muted"}>
+                          {s.origin === "manual" ? "manuale" : "feed"}
+                        </Badge>
                       </TD>
                       <TD className="text-sm">
                         {s.source_url ? (

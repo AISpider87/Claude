@@ -1,0 +1,40 @@
+{
+  "get": "fixtures",
+  "parameters": { "league": "135", "season": "2026", "next": "10" },
+  "errors": [],
+  "results": 3,
+  "paging": { "current": 1, "total": 1 },
+  "response": [
+    {
+      "fixture": {
+        "id": 1208002,
+        "referee": null,
+        "timezone": "UTC",
+        "date": "2026-09-12T16:00:00+00:00",
+        "timestamp": 1789574400,
+        "status": { "long": "Not Started", "short": "NS", "elapsed": null }
+      },
+      "league": { "id": 135, "name": "Serie A", "season": 2026, "round": "Regular Season - 3" },
+      "teams": {
+        "home": { "id": 505, "name": "Inter", "winner": null },
+        "away": { "id": 492, "name": "Napoli", "winner": null }
+      },
+      "goals": { "home": null, "away": null }
+    },
+    {
+      "fixture": {
+        "id": 1208003,
+        "date": "2026-09-13T18:45:00+00:00",
+        "status": { "long": "Not Started", "short": "NS", "elapsed": null }
+      },
+      "teams": {
+        "home": { "id": 497, "name": "AS Roma" },
+        "away": { "id": 489, "name": "AC Milan" }
+      }
+    },
+    {
+      "fixture": { "id": 1208004, "date": "2026-09-14T13:00:00+00:00", "status": { "short": "NS" } },
+      "teams": { "home": { "id": 496, "name": "Juventus" }, "away": { "id": 499, "name": "Atalanta" } }
+    }
+  ]
+}

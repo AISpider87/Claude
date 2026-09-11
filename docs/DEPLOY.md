@@ -81,16 +81,18 @@ Tutte le chiavi vanno **solo** nelle impostazioni di Vercel/Supabase, mai nel re
    (branch principale). Framework: Next.js (rilevato). Piano Hobby.
 2. **Environment Variables** (Production; le `NEXT_PUBLIC_*` anche in Preview):
 
-   | Variabile                       | Valore                                                       |
-   | ------------------------------- | ------------------------------------------------------------ |
-   | `NEXT_PUBLIC_SUPABASE_URL`      | Project URL di Supabase                                      |
-   | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | anon public key                                              |
-   | `NEXT_PUBLIC_SITE_URL`          | `https://<app>.vercel.app` (o il dominio)                    |
-   | `SUPABASE_SERVICE_ROLE_KEY`     | service_role key (solo server)                               |
-   | `CRON_SECRET`                   | stringa casuale lunga (`openssl rand -hex 32`)               |
-   | `RESEND_API_KEY`                | chiave Resend (vuota = email saltate)                        |
-   | `EMAIL_FROM`                    | mittente, es. `SuperLega <lega@tuodominio.it>`               |
-   | `QUOTATIONS_SOURCE_URL`         | **vuota** finché non verifichi Fantacalcio.it (docs/SYNC.md) |
+   | Variabile                       | Valore                                                        |
+   | ------------------------------- | ------------------------------------------------------------- |
+   | `NEXT_PUBLIC_SUPABASE_URL`      | Project URL di Supabase                                       |
+   | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | anon public key                                               |
+   | `NEXT_PUBLIC_SITE_URL`          | `https://<app>.vercel.app` (o il dominio)                     |
+   | `SUPABASE_SERVICE_ROLE_KEY`     | service_role key (solo server)                                |
+   | `CRON_SECRET`                   | stringa casuale lunga (`openssl rand -hex 32`)                |
+   | `RESEND_API_KEY`                | chiave Resend (vuota = email saltate)                         |
+   | `EMAIL_FROM`                    | mittente, es. `SuperLega <lega@tuodominio.it>`                |
+   | `QUOTATIONS_SOURCE_URL`         | **vuota** finché non verifichi Fantacalcio.it (docs/SYNC.md)  |
+   | `API_FOOTBALL_KEY`              | chiave di api-sports.io, piano gratuito (vuota = feed spento) |
+   | `API_FOOTBALL_SEASON`           | **facoltativa**: solo se il piano gratuito non copre il 2026  |
 
 3. **Branch di produzione**: se il repository ha come branch predefinito uno
    diverso da `main`, in Vercel vai su _Settings → Environments → Production →
@@ -105,7 +107,38 @@ Tutte le chiavi vanno **solo** nelle impostazioni di Vercel/Supabase, mai nel re
    consente Hobby) chiama `/api/cron/sync-quotations` con `CRON_SECRET`:
    fa da keep-alive per Supabase Free (che altrimenti si pausa dopo 7 giorni
    di inattività) e, se configurata una sorgente, importa le quotazioni.
-5. Dominio personalizzato (facoltativo): _Settings → Domains_; aggiorna poi
+5. **Feed indisponibili/formazioni ogni 15 minuti (da fare una volta)**. Il
+   piano Hobby dà **un solo cron al giorno**, già usato per le quotazioni: la
+   pianificazione del feed sta quindi su Supabase, con pg_cron + pg_net, e
+   **non è attiva finché non la esegui tu**.
+   - Apri Supabase → _SQL Editor → New query_, incolla
+     `supabase/deploy/updates/2026-09-11-availability-cron.sql`, sostituisci i
+     due segnaposto `<SITO>` (l'URL pubblico dell'app, senza barra finale) e
+     `<CRON_SECRET>` (lo stesso valore messo su Vercel) e premi **Run**.
+   - In sintesi il file fa questo:
+
+     ```sql
+     create extension if not exists pg_cron;
+     create extension if not exists pg_net;
+     select cron.schedule(
+       'superlega-availability',
+       '*/15 * * * *',
+       $$select net.http_get(
+          url := '<SITO>/api/cron/sync-availability',
+          headers := jsonb_build_object('Authorization', 'Bearer <CRON_SECRET>')
+        );$$
+     );
+     ```
+
+   - Per annullare: `select cron.unschedule('superlega-availability');`
+   - Verifica: `select * from cron.job;`, poi in _Admin → Indisponibili_ che
+     "Ultimo aggiornamento" si muova. Senza `API_FOOTBALL_KEY` il job gira ma
+     non fa nulla (nessun errore).
+   - Anche senza pianificazione il feed si aggiorna da solo quando qualcuno
+     apre l'app e sono passati più di 15 minuti dall'ultima volta: la
+     pianificazione serve perché le formazioni siano pronte anche se nessuno
+     sta guardando.
+6. Dominio personalizzato (facoltativo): _Settings → Domains_; aggiorna poi
    `NEXT_PUBLIC_SITE_URL` e gli URL in Supabase Auth.
 
 ## 4. Smoke test in produzione (10 minuti)
@@ -158,6 +191,12 @@ Tutte le chiavi vanno **solo** nelle impostazioni di Vercel/Supabase, mai nel re
   pochi secondi).
 - **Resend Free**: 100 email/giorno, 3.000/mese; dominio verificato necessario
   per inviare a indirizzi diversi dal tuo.
+- **API-Football Free**: 100 richieste al giorno. Il feed ne usa al massimo 3 per
+  esecuzione (2 quando non c'è una partita imminente): con il job ogni 15 minuti
+  il consumo tipico sta dentro la quota, ma nei giorni di campionato va tenuto
+  d'occhio (la quota residua è scritta in _Admin → Indisponibili_). Se si
+  esaurisce, allunga l'intervallo del job (docs/SYNC.md).
+- **pg_cron/pg_net su Supabase Free**: inclusi, vanno abilitati una volta (§3.5).
 
 ## 8. Aggiornamenti
 

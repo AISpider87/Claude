@@ -117,6 +117,7 @@ describe("availabilityToStatus", () => {
       note: null,
       source_name: "Fantacalcio.it",
       source_url: "https://example.com/s",
+      origin: "manual" as const,
       updated_by: null,
       updated_at: "2026-09-10T10:00:00Z",
     };

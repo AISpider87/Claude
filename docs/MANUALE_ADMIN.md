@@ -178,9 +178,57 @@ lo stato dei suoi calciatori, con la fonte della notizia.
    mercato, con "fonte: … ↗" e la data dell'aggiornamento. Ogni modifica è
    nell'audit log (`player.status`).
 
-Fonte automatica: prevista come sorgente collegabile (stesso schema del sync
-quotazioni), da attivare solo dopo aver verificato termini d'uso o piano
-gratuito del fornitore; finché non c'è, l'aggiornamento è manuale.
+#### Feed automatico (API-Football)
+
+In cima alla pagina c'è il riquadro **Feed automatico (API-Football)**. Ogni 15
+minuti il feed legge indisponibili e formazioni ufficiali della Serie A e
+aggiorna le rose da solo. Il riquadro mostra:
+
+- **Ultimo aggiornamento** ed **Esito** (riuscito / riuscito con avvisi / non
+  riuscito);
+- **Richieste API** usate nell'ultima esecuzione (al massimo 3 su 100 al
+  giorno) e la quota residua dichiarata dal fornitore;
+- quanti **stati dal feed**, quanti **stati manuali tenuti**, quanti **rientri**
+  (stato tolto perché l'API non lo segnala più), quanti giocatori **in
+  formazione**;
+- gli **errori dell'ultimo tentativo**, riportati alla lettera come li manda
+  l'API (chiave sbagliata, limiti di piano, stagione non coperta…).
+
+**Aggiorna adesso** lancia subito la stessa procedura e mostra il risultato. È
+disattivato se sul server non c'è la chiave `API_FOOTBALL_KEY` (in quel caso il
+feed è spento e restano solo gli stati manuali: tutto funziona come prima).
+
+> La pianificazione ogni 15 minuti **non si attiva da sola**: va eseguita una
+> volta in Supabase → SQL Editor il file
+> `supabase/deploy/updates/2026-09-11-availability-cron.sql` (vedi docs/DEPLOY.md).
+
+#### Il manuale batte il feed
+
+Quello che scrivi tu con **Segna un calciatore** non viene **mai** sovrascritto
+né cancellato dal feed: nella tabella **Stati attivi** la colonna **Origine**
+dice se una riga è `manuale` o `feed`. Se il feed sbaglia su un calciatore,
+segnalo tu a mano: da quel momento la tua riga vince. Per tornare al comando
+automatico su quel calciatore, premi **Disponibile**: la riga manuale sparisce e
+il feed potrà riscriverla al prossimo giro (se l'API lo segnala ancora).
+
+#### Nomi da abbinare
+
+L'API usa nomi diversi dal listone ("Lautaro Martinez" contro "Martinez Lau.").
+Quando l'abbinamento è **ambiguo o impossibile**, lo stato **non viene
+applicato** e il nome compare nel riquadro **Nomi da abbinare**: scegli dal menu
+il calciatore giusto e premi **Abbina**. L'abbinamento resta valido per tutti
+gli aggiornamenti successivi e il feed non lo cambia più. Se un nome non ha un
+id dell'API non è abbinabile e lo si segna a mano.
+
+#### Titolare / In panchina
+
+Quando escono le formazioni ufficiali (circa un'ora prima del calcio d'inizio) i
+manager vedono nella propria rosa e nel mercato il chip **Titolare** o **In
+panchina**, con la fonte "API-Football" e l'ora della partita. Il chip compare
+solo nelle 12 ore prima del calcio d'inizio e sparisce da solo.
+
+Dettagli tecnici (endpoint, budget delle richieste, mappatura degli stati, cosa
+succede senza chiave): `docs/SYNC.md`, sezione "Indisponibili e titolarità".
 
 ## 4. Import delle rose (export "Rose" di Leghe Fantacalcio)
 

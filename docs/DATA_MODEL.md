@@ -87,10 +87,13 @@ un trigger `forbid_change` che blocca anche le funzioni security definer.
 ### player_status
 
 `player_id int PK → players`, `kind check (injured|doubtful|suspended|unavailable)`,
-`note`, `source_name`, `source_url` (solo `http(s)://`), `updated_by`, `updated_at`.
-Solo righe "non disponibile": lo stato "ok" cancella la riga. Lettura per tutti i
-membri; scrittura via `admin_set_player_status(player, kind, note, source_name,
-source_url)` (admin, audit) o `private.set_player_status(...)` per un futuro sync.
+`note`, `source_name`, `source_url` (solo `http(s)://`), `origin check (manual|feed)`
+(M15), `updated_by`, `updated_at`. Solo righe "non disponibile": lo stato "ok"
+cancella la riga. Lettura per tutti i membri; scrittura via
+`admin_set_player_status(player, kind, note, source_name, source_url)` (admin,
+audit, sempre `origin='manual'`) o dal feed automatico via `sync_availability`
+(solo `origin='feed'`). **Il manuale batte il feed**: una riga `manual` non viene
+mai sovrascritta né cancellata dal feed.
 
 ### audit_log
 
@@ -196,3 +199,59 @@ recipients()`, `admin_audit_log(limit)`.
 - `admin_set_setting(key, value)` valida forma e intervallo per ogni chiave nota
   e rifiuta le chiavi sconosciute; nuova chiave `notifications_enabled`.
 - Indice unico `teams_short_name_key`.
+
+## Aggiunte M15 (feed indisponibili e formazioni)
+
+### player_lineup_status
+
+`player_id int PK → players`, `state check (starting|bench)`, `fixture_id int`,
+`kickoff timestamptz`, `updated_at`. Formazione ufficiale della partita
+imminente, così com'è pubblicata dal fornitore. Lettura per i membri della lega,
+nessuna scrittura diretta. Le righe di una partita vengono sostituite in blocco a
+ogni esecuzione e quelle più vecchie di un giorno cancellate; la UI mostra il
+chip "Titolare"/"In panchina" solo entro 12 ore dal calcio d'inizio.
+
+### external_player_map
+
+`provider text`, `external_id int`, `player_id int → players`, `external_name`,
+`confidence check (auto|confirmed)`, `created_at`; PK `(provider, external_id)`,
+unico `(provider, player_id)`. Tiene l'abbinamento fra l'id del fornitore e l'id
+del listone, così il nome si indovina una volta sola. Lettura solo admin
+(policy), scrittura dal feed (`auto`) o dall'admin (`confirmed`, mai
+sovrascritto dal feed).
+
+### Funzioni
+
+- `public.sync_availability(payload jsonb) → jsonb` — **solo service role**
+  (`private.is_service_role()`, `FORBIDDEN` per chiunque altro, nessun grant a
+  `anon`/`authenticated`). Delega a `private.apply_availability_feed(payload)`,
+  che in una sola transazione: fa l'upsert degli stati `feed` **saltando le
+  righe `manual`**; con `clear_missing` cancella le righe `feed` non più
+  segnalate; sostituisce le formazioni delle partite indicate e pota quelle
+  vecchie; salva gli abbinamenti `auto` (senza toccare i `confirmed`); scrive
+  `league_settings.availability_synced_at` e `availability_last_run`; registra
+  `availability.feed` nell'audit. Ritorna il riepilogo
+  (`statuses_applied`, `statuses_kept_manual`, `statuses_cleared`, `lineups`,
+  `mappings`).
+  Payload: `{"provider","statuses":[{player_id,kind,note,source_name,source_url}],
+"lineups":[{player_id,state,fixture_id,kickoff}],
+"map":[{external_id,player_id,external_name}],"clear_missing","run"}` — i
+  player_id sconosciuti e i valori fuori dominio vengono scartati, non è un errore.
+- `public.claim_availability_refresh(max_age_seconds default 900) → boolean` —
+  guardia anti-doppione per il fallback sulle visite: un unico upsert atomico su
+  `league_settings.availability_refresh_claimed_at`, quindi due richieste
+  simultanee non possono ottenere entrambe il permesso. Riservata agli utenti
+  autenticati e al service role.
+- `public.admin_external_map(provider default 'api-football')` — elenco degli
+  abbinamenti con nome/club del listone (solo admin).
+- `public.admin_confirm_player_map(player_id, provider, external_id, external_name)`
+  — solo admin: lega l'id del fornitore al calciatore giusto con confidenza
+  `confirmed` (sostituisce l'abbinamento precedente di entrambi i lati), audit
+  `availability.map`.
+
+### Impostazioni
+
+Nuove chiavi in `league_settings` scritte solo dalle funzioni del feed (non da
+`admin_set_setting`): `availability_synced_at`, `availability_last_run` (l'esito
+completo dell'ultima esecuzione, mostrato in Admin → Indisponibili),
+`availability_refresh_claimed_at`.

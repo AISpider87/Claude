@@ -2,9 +2,9 @@ import { useId } from "react";
 import { ArrowDownRight, ArrowUpRight, ExternalLink, Minus } from "lucide-react";
 import { PlayerAvatar } from "@/components/players/player-avatar";
 import { Badge, RoleBadge } from "@/components/ui/badge";
-import { formatDate, formatDelta, formatInt } from "@/lib/format";
+import { formatDate, formatDelta, formatInt, formatTime } from "@/lib/format";
 import type { RoleClassic } from "@/lib/import/quotations-parser";
-import type { PlayerAvailability } from "@/lib/supabase/database.types";
+import type { PlayerAvailability, PlayerLineup } from "@/lib/supabase/database.types";
 import { ROLE_LABEL, ROLE_LABEL_SINGULAR } from "@/lib/roles";
 import type { RosterRow } from "@/lib/teams/queries";
 import { cn } from "@/lib/utils";
@@ -41,6 +41,14 @@ export function toRosterPlayer(row: RosterRow): RosterPlayer {
 
 export type PlayerStatusKind = "ok" | "injured" | "doubtful" | "suspended" | "unavailable";
 
+export interface PlayerLineupState {
+  state: "starting" | "bench";
+  /** ISO timestamp (UTC) of the kick-off; rendered in Europe/Rome. */
+  kickoff: string;
+  /** Who published the lineup ("API-Football"). */
+  sourceName: string;
+}
+
 export interface PlayerStatus {
   kind: PlayerStatusKind;
   /** Short Italian label shown in the chip ("Infortunato", "In dubbio"…). */
@@ -48,7 +56,14 @@ export interface PlayerStatus {
   source?: { name: string; url: string };
   /** ISO timestamp (UTC) of the last update; rendered in Europe/Rome. */
   updatedAt?: string;
+  /** Official lineup of the imminent fixture, when one has been published. */
+  lineup?: PlayerLineupState;
 }
+
+export const LINEUP_LABEL: Record<PlayerLineupState["state"], string> = {
+  starting: "Titolare",
+  bench: "In panchina",
+};
 
 /** Chip labels; the DB kinds mirror `STATUS_LABEL` in `@/lib/players/status`. */
 export const PLAYER_STATUS_LABEL: Record<PlayerStatusKind, string> = {
@@ -74,16 +89,29 @@ export function availabilityToStatus(row: PlayerAvailability): PlayerStatus {
 
 export const AVAILABLE_STATUS: PlayerStatus = { kind: "ok", label: PLAYER_STATUS_LABEL.ok };
 
+/** A `player_lineup_status` row as the chip expects it (null = nothing to show). */
+export function toLineupState(
+  row: PlayerLineup | undefined,
+  sourceName = "API-Football",
+): PlayerLineupState | undefined {
+  if (!row?.kickoff) return undefined;
+  return { state: row.state, kickoff: row.kickoff, sourceName };
+}
+
 /**
  * Chip of a roster player from the `player_status` table (missing row =
  * available). Out-of-list players get none: the "fuori lista" badge says it all.
+ * The optional lineup row adds "Titolare"/"In panchina" for the next fixture.
  */
 export function toPlayerStatus(
   row: PlayerAvailability | undefined,
   outOfList: boolean,
+  lineup?: PlayerLineup,
 ): PlayerStatus | undefined {
   if (outOfList) return undefined;
-  return row ? availabilityToStatus(row) : AVAILABLE_STATUS;
+  const status = row ? availabilityToStatus(row) : { ...AVAILABLE_STATUS };
+  const state = toLineupState(lineup);
+  return state ? { ...status, lineup: state } : status;
 }
 
 export interface RosterPlayerRowProps {
@@ -143,6 +171,16 @@ export function PlayerStatusChip({
       )}
       {status.updatedAt && (
         <span className="text-muted">aggiornato il {formatDate(status.updatedAt)}</span>
+      )}
+      {status.lineup && (
+        <span className="flex flex-wrap items-center gap-x-1.5">
+          <Badge variant={status.lineup.state === "starting" ? "primary" : "muted"}>
+            {LINEUP_LABEL[status.lineup.state]}
+          </Badge>
+          <span className="text-muted whitespace-nowrap">
+            {status.lineup.sourceName} · ore {formatTime(status.lineup.kickoff)}
+          </span>
+        </span>
       )}
     </span>
   );

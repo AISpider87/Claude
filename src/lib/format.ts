@@ -16,6 +16,12 @@ const dateFormatter = new Intl.DateTimeFormat("it-IT", {
   year: "numeric",
 });
 
+const timeFormatter = new Intl.DateTimeFormat("it-IT", {
+  timeZone: TIME_ZONE,
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
 const intFormatter = new Intl.NumberFormat("it-IT", { maximumFractionDigits: 0 });
 
 /** UTC timestamp (ISO string or Date) → "gg/mm/aaaa, hh:mm" in Europe/Rome. */
@@ -27,6 +33,12 @@ export function formatDateTime(value: string | Date | null | undefined): string 
 export function formatDate(value: string | Date | null | undefined): string {
   if (!value) return "—";
   return dateFormatter.format(typeof value === "string" ? new Date(value) : value);
+}
+
+/** UTC timestamp → "hh:mm" in Europe/Rome (kick-off times). */
+export function formatTime(value: string | Date | null | undefined): string {
+  if (!value) return "—";
+  return timeFormatter.format(typeof value === "string" ? new Date(value) : value);
 }
 
 export function formatInt(value: number | null | undefined): string {
