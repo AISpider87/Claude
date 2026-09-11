@@ -21,7 +21,11 @@ Tutte le chiavi vanno **solo** nelle impostazioni di Vercel/Supabase, mai nel re
    vai su **SQL Editor → New query**, incolla e premi **Run** (in basso a
    destra; ci vogliono pochi secondi). Deve finire con "Success. No rows
    returned". Eseguilo **una sola volta**. Il file è generato dalle migrazioni
-   con `scripts/build-deploy-sql.sh`.
+   con `scripts/build-deploy-sql.sh`; gli aggiornamenti successivi stanno in
+   `supabase/deploy/updates/` e si rigenerano con
+   `scripts/build-deploy-update.sh`. I file di aggiornamento sono
+   **rieseguibili**: se non sei sicuro di averli già incollati, incollali di
+   nuovo senza rischi.
    **Opzione B — con la Supabase CLI** (per chi ha Node installato):
    ```bash
    supabase login

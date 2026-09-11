@@ -235,28 +235,56 @@ end;
 $$;
 revoke all on function public.sync_market_sessions() from public, anon;
 grant execute on function public.sync_market_sessions() to authenticated;
-do $$ begin
+do $do$
+declare
+  v_signature text;
+begin
   if exists (select 1 from pg_roles where rolname = 'service_role') then
     grant execute on function public.sync_market_sessions() to service_role;
-    grant execute on function public.admin_notification_recipients() to service_role;
     grant execute on function public.log_notification(text, text, integer, text, text) to service_role;
     grant execute on function public.consume_rate_limit(text) to service_role;
+    -- admin_notification_recipients() gained an argument in a later migration,
+    -- so its signature depends on how far the database has been migrated: grant
+    -- whichever overloads are there instead of naming one (this file is part of
+    -- the cumulative update bundle and must survive a second run).
+    for v_signature in
+      select format('public.%I(%s)', p.proname, pg_get_function_identity_arguments(p.oid))
+      from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = 'public' and p.proname = 'admin_notification_recipients'
+    loop
+      execute format('grant execute on function %s to service_role', v_signature);
+    end loop;
   end if;
-end $$;
+end $do$;
 
 -- ---------------------------------------------------------------------------
 -- notifications: the service role may read recipients and log outcomes
 -- (automatic transitions are notified by the server, not by an admin)
 -- ---------------------------------------------------------------------------
-create or replace function public.admin_notification_recipients()
-returns table (email text, display_name text)
-language sql stable security definer
-set search_path = public, pg_temp
-as $$
-  select p.email, p.display_name
-  from public.profiles p
-  where (private.is_admin() or private.is_service_role()) and p.is_active and p.email is not null;
-$$;
+-- Skipped once the later migration has replaced this helper with the
+-- admins-only overload: recreating it here would make the PostgREST call
+-- ambiguous for the rest of the bundle.
+do $do$ begin
+  if not exists (
+    select 1 from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public' and p.proname = 'admin_notification_recipients'
+      and p.pronargs > 0
+  ) then
+    execute $fn$
+      create or replace function public.admin_notification_recipients()
+      returns table (email text, display_name text)
+      language sql stable security definer
+      set search_path = public, pg_temp
+      as $body$
+        select p.email, p.display_name
+        from public.profiles p
+        where (private.is_admin() or private.is_service_role()) and p.is_active and p.email is not null;
+      $body$;
+    $fn$;
+  end if;
+end $do$;
 
 create or replace function public.log_notification(
   p_kind text, p_subject text, p_recipients integer, p_status text, p_detail text
@@ -1781,7 +1809,6 @@ end $$;
 
 -- league_settings is admin-only for reads, so the token never reaches a manager.
 
-
 -- ===== 20260909290000_availability_samples.sql =====
 -- M15b: availability feed diagnostics (second provider, Big Balls Sports Data).
 --
@@ -2207,3 +2234,4 @@ insert into public.league_settings (key, value) values
   ('notifications_enabled', 'true'),
   ('notifications_free_swap', 'true')
 on conflict (key) do nothing;
+

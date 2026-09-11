@@ -508,3 +508,16 @@ listone,operazioni}`) con exceljs, letture paginate (`fetchAll`) sotto la
   per destinatario, timeout 10 s, errori del fornitore riportati **testuali**
   nel log notifiche (la chiave non compare mai). `EMAIL_FROM` resta
   `Nome <indirizzo>` e l'indirizzo deve essere un mittente verificato.
+
+- 2026-09-11 — **Il pacchetto di aggiornamento SQL resta rieseguibile.**
+  `20260909200000_session_autopilot.sql` concedeva `execute` a `service_role`
+  nominando `admin_notification_recipients()` senza argomenti: dopo
+  `20260909310000` quella firma non esiste più, quindi la **seconda** incollata
+  del file `supabase/deploy/updates/2026-09-10-market-v2.sql` si fermava lì
+  (l'installazione da zero non era toccata, l'ordine è giusto). Ora la migrazione
+  concede i permessi a **qualunque firma presente** (ciclo su `pg_proc`) e
+  ricrea la versione senza argomenti **solo se** l'overload con parametro non
+  c'è ancora. Regola generale: una migrazione che finisce nel pacchetto
+  cumulativo non deve mai nominare una firma che una migrazione successiva
+  sostituisce. Il pacchetto si rigenera con `scripts/build-deploy-update.sh`
+  (prima era cucito a mano e poteva divergere dalle migrazioni).
