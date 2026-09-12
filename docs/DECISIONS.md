@@ -636,3 +636,27 @@ none`, `z-index: -1`. Intensità per tema (`--ambient-opacity`: 0.55 scuro,
   0.3 chiaro) e nessun movimento con `prefers-reduced-motion`. Verificato a
   390px che il testo sul fondo resti leggibile: le luci non passano mai sotto
   i testi con contrasto critico, che stanno su `--surface`.
+
+- 2026-09-12 — **Revisione sicurezza del ripristino e dei gratuiti in sospeso:
+  un buco vero, chiuso.** La revisione (`security-reviewer`) ha riprodotto in
+  locale un aggiramento del limite dei 20 cambi introdotto dai gratuiti
+  `pending`: svincolo fuori lista (apre uno slot gratuito) → svincolo normale di
+  un titolare → acquisto del sostituto **sullo slot gratuito** (non conta) →
+  annullamento dello svincolo gratuito. Risultato: un cambio reale con
+  `swaps_used` a 0 e il fuori lista ancora in rosa. Ora annullare uno svincolo
+  gratuito richiede che il suo slot sia **ancora libero**
+  (`FREE_SLOT_ALREADY_USED`): l'ordine onesto (prima l'acquisto, poi lo
+  svincolo) continua a funzionare. Chiuse nella stessa migrazione
+  (`20260909340000`) anche: un giocatore il cui svincolo è solo `pending` non
+  compare più tra gli svincolati (prima poteva comprarlo un'altra squadra
+  mentre il proprietario poteva ancora annullare); il ripristino rimette lo
+  **stato** delle operazioni che conserva (prima restituiva i cambi stagionali
+  per operazioni che restavano confermate), **rifiuta** se esiste una squadra
+  creata dopo il punto (prima la svuotava lasciandole i crediti spesi),
+  **declassa** le sessioni aperte prima di riapplicare il punto (prima
+  sbatteva sull'indice "una sola sessione aperta"), **richiude la porta**
+  `superlega.restore` e la subordina a `private.is_admin()`, e **archivia nel
+  log di audit le righe che cancella**. Aggiunti RLS su
+  `private.restore_points`, `opens_at`/`closes_at` nel punto, una `version` nel
+  payload, il throttle e il messaggio d'errore sull'eliminazione di un punto.
+  Tutto coperto da `tests/db/m19_review_fixes.test.sql`.

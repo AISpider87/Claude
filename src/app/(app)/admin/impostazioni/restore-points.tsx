@@ -102,6 +102,26 @@ function RestoreForm({ point }: { point: RestorePointView }) {
   );
 }
 
+/** Deleting a point never touches the league: only the photograph goes. */
+function DeleteForm({ point }: { point: RestorePointView }) {
+  const [state, action, pending] = useActionState(deleteRestorePoint, undefined);
+  return (
+    <form action={action} className="flex flex-col items-start gap-1">
+      <input type="hidden" name="id" value={point.id} />
+      <Button
+        type="submit"
+        variant="ghost"
+        size="sm"
+        disabled={pending}
+        aria-label={`Elimina il punto ${point.label}`}
+      >
+        <Trash2 className="size-4" aria-hidden /> {pending ? "…" : "Elimina"}
+      </Button>
+      {state?.status === "error" && <FormMessage>{state.message}</FormMessage>}
+    </form>
+  );
+}
+
 export function RestorePoints({ points }: { points: RestorePointView[] }) {
   return (
     <div className="flex flex-col gap-4">
@@ -132,17 +152,7 @@ export function RestorePoints({ points }: { points: RestorePointView[] }) {
               </p>
               <div className="flex flex-wrap items-start gap-2">
                 <RestoreForm point={p} />
-                <form action={deleteRestorePoint}>
-                  <input type="hidden" name="id" value={p.id} />
-                  <Button
-                    type="submit"
-                    variant="ghost"
-                    size="sm"
-                    aria-label={`Elimina il punto ${p.label}`}
-                  >
-                    <Trash2 className="size-4" aria-hidden /> Elimina
-                  </Button>
-                </form>
+                <DeleteForm point={p} />
               </div>
             </li>
           ))}

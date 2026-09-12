@@ -31,6 +31,8 @@ const MARKET_MESSAGES: Record<string, string> = {
   USE_FREE_RELEASE: "Questo calciatore è uscito dalla Serie A: usa lo svincolo gratuito.",
   NO_ROLE_SLOT:
     "Non hai posti liberi in questo ruolo: svincola prima un calciatore dello stesso ruolo.",
+  FREE_SLOT_ALREADY_USED:
+    "Hai già usato il posto libero di questo svincolo gratuito: annulla prima l'acquisto.",
   RATE_LIMITED: "Troppe operazioni in poco tempo: aspetta un minuto e riprova.",
   FORBIDDEN: "Non puoi operare su questa squadra.",
   TEAM_NOT_FOUND: "Squadra non trovata.",

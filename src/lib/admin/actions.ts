@@ -25,6 +25,9 @@ const ADMIN_MESSAGES: Record<string, string> = {
     "Il punto è più vecchio di una squadra cancellata: non si può ripristinare.",
   RESTORE_PLAYER_MISSING:
     "Il punto contiene un calciatore che non è più nel listone: non si può ripristinare.",
+  RESTORE_TEAM_NEW:
+    "C'è una squadra creata dopo questo punto: eliminala o salva un punto nuovo prima di ripristinare.",
+  RESTORE_VERSION: "Punto di ripristino creato da una versione più recente dell'app.",
   RATE_LIMITED: "Troppe modifiche in poco tempo: riprova tra un minuto.",
   FORBIDDEN: "Operazione riservata all'admin.",
 };
@@ -342,11 +345,17 @@ export async function restoreLeague(_prev: FormState, formData: FormData): Promi
   };
 }
 
-export async function deleteRestorePoint(formData: FormData) {
+export async function deleteRestorePoint(_prev: FormState, formData: FormData): Promise<FormState> {
   await requireAdmin();
+  const limited = await throttle();
+  if (limited) return { status: "error", message: limited };
   const parsed = restoreIdSchema.safeParse({ id: formData.get("id") });
-  if (!parsed.success) return;
+  if (!parsed.success) return { status: "error", message: "Punto di ripristino non valido." };
   const supabase = await createClient();
-  await supabase.rpc("admin_delete_restore_point", { p_id: parsed.data.id });
+  const { error } = await supabase.rpc("admin_delete_restore_point", { p_id: parsed.data.id });
+  if (error) {
+    return { status: "error", message: adminMessage(error.message, "Eliminazione non riuscita.") };
+  }
   revalidatePath("/admin/impostazioni");
+  return { status: "success", message: "Punto di ripristino eliminato." };
 }

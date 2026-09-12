@@ -174,7 +174,13 @@ created_by, auto, payload jsonb)`. Il payload contiene crediti e `swaps_used`
   `admin_restore(id)` (solo admin). Il ripristino rimette rose/crediti/cambi,
   cancella le transazioni non presenti negli id fotografati e riporta le
   sessioni a `scheduled`; è l'unico caso in cui `transactions_guard` consente la
-  cancellazione, dietro il flag di transazione `superlega.restore`.
+  cancellazione, dietro il flag di transazione `superlega.restore` **più**
+  `private.is_admin()`, riazzerato prima di uscire dalla funzione. Le righe
+  cancellate finiscono per intero nel payload dell'audit (`restore.apply`).
+  Il ripristino rifiuta se esiste una squadra creata dopo il punto
+  (`RESTORE_TEAM_NEW`) e rimette lo `status` delle operazioni che conserva.
+- Un giocatore con uno svincolo ancora `pending` **non** è svincolato: la vista
+  `free_agents` lo esclude finché l'operazione non è confermata o annullata.
 - `private.audit(action, entity, entity_id, payload)` — usata da tutte le
   funzioni; `private.setting_int/setting_json` — lettura tipizzata delle
   impostazioni.
