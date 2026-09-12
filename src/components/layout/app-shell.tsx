@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
 import { AppHeader } from "@/components/layout/app-header";
 import { MainNav, type NavItem } from "@/components/layout/main-nav";
+import { AmbientBackdrop } from "@/components/motion/ambient-backdrop";
 import { IntroScript, LoginIntro } from "@/components/motion/login-intro";
 import { PageTransition } from "@/components/motion/page-transition";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
@@ -24,6 +25,8 @@ export function AppShell({ user, children }: { user: CurrentUser; children: Reac
       {/* Paints the intro ground before the first paint when arriving from the
           sign-in, so the cinematic never starts with a flash of the page. */}
       <IntroScript />
+      {/* Slow lights drifting behind every page: decorative, never in the way. */}
+      <AmbientBackdrop />
       {/* Desktop sidebar */}
       <aside className="border-line bg-surface/80 hidden w-60 shrink-0 flex-col border-r p-4 backdrop-blur lg:flex">
         <Link href="/rosa" className="mb-6 px-2" aria-label="The SuperLeague">

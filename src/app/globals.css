@@ -31,6 +31,8 @@
     0 10px 30px -12px color-mix(in srgb, var(--primary) 55%, transparent);
   --card-sheen: 0.1;
   --grain-opacity: 0.5;
+  /* Ambient drift behind the app (src/components/motion/ambient-backdrop.tsx). */
+  --ambient-opacity: 0.55;
   /* Login intro: ground and the hot core of the comet. */
   --intro-ground: var(--bg);
   --intro-core: #ffffff;
@@ -64,6 +66,8 @@
     0 10px 24px -14px color-mix(in srgb, var(--primary) 45%, transparent);
   --card-sheen: 0.5;
   --grain-opacity: 0.16;
+  /* Light theme: the drift is barely there, only a warmth in the corners. */
+  --ambient-opacity: 0.3;
   /* Light theme: a brighter ground, and a deep blue core so the comet reads. */
   --intro-ground: #d8e7f5;
   --intro-core: #075985;
@@ -463,6 +467,75 @@ body::before {
   box-shadow: 0 10px 30px -24px rgb(0 0 0 / 0.9);
   border-color: color-mix(in srgb, var(--primary) 35%, var(--line));
   background-color: color-mix(in srgb, var(--bg) 92%, transparent);
+}
+
+/* ---------- Ambient drift (src/components/motion/ambient-backdrop.tsx) ----- */
+
+.ambient {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  opacity: var(--ambient-opacity);
+  pointer-events: none;
+}
+
+.ambient-glow {
+  position: absolute;
+  display: block;
+  width: 72vmax;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  will-change: transform;
+}
+
+.ambient-glow-a {
+  top: -26vmax;
+  left: -22vmax;
+  background: radial-gradient(
+    circle at 50% 50%,
+    color-mix(in srgb, var(--primary) 20%, transparent) 0%,
+    color-mix(in srgb, var(--primary) 7%, transparent) 42%,
+    transparent 68%
+  );
+}
+
+.ambient-glow-b {
+  right: -30vmax;
+  bottom: -28vmax;
+  background: radial-gradient(
+    circle at 50% 50%,
+    color-mix(in srgb, var(--ember) 14%, transparent) 0%,
+    color-mix(in srgb, var(--ember) 5%, transparent) 40%,
+    transparent 66%
+  );
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ambient-glow-a {
+    animation: ambient-drift-a 52s ease-in-out infinite alternate;
+  }
+  .ambient-glow-b {
+    animation: ambient-drift-b 71s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes ambient-drift-a {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(20vmax, 12vmax, 0) scale(1.16);
+  }
+}
+
+@keyframes ambient-drift-b {
+  from {
+    transform: translate3d(0, 0, 0) scale(1.12);
+  }
+  to {
+    transform: translate3d(-18vmax, -14vmax, 0) scale(0.94);
+  }
 }
 
 /* ---------- Login intro (src/components/motion/login-intro.tsx) ---------- */

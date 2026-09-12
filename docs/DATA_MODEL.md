@@ -118,6 +118,9 @@ mai sovrascritta né cancellata dal feed.
 - `release_out_of_list(team_id, player)` — in qualsiasi momento, `player.status =
 out_of_list`: rimborso = `price_paid` (`free_swap_refund_rule`), riga
   `free_release`, non conta.
+- A sessione aperta anche `free_release` e l'acquisto gratuito nascono
+  `pending` (visibili tra le operazioni, annullabili, confermati alla chiusura);
+  fuori sessione restano `confirmed` subito. Non contano mai nei cambi.
 - `undo_pending_operation(tx)` — il manager annulla una propria operazione
   `pending` (riapre/cancella la riga rosa, inverte i crediti, cancella la riga);
   `confirm_pending_operations(team)` — rende definitive le operazioni in sospeso
@@ -163,6 +166,15 @@ player_id, refund)` — per la rosa iniziale e le correzioni; scalano/rimborsano
   `fail_import(id, error)` — annulla un'anteprima.
 - `admin_set_setting(key, value)` — scrittura di `league_settings` (audit; il
   valore del codice lega non finisce nel log).
+- **Punti di ripristino**: `private.restore_points (id, label, taken_at,
+created_by, auto, payload jsonb)`. Il payload contiene crediti e `swaps_used`
+  per squadra, tutte le righe `roster_players`, lo stato delle sessioni e gli
+  **id** delle transazioni esistenti. `admin_create_restore_point(label, auto)`,
+  `admin_restore_points()`, `admin_delete_restore_point(id)`,
+  `admin_restore(id)` (solo admin). Il ripristino rimette rose/crediti/cambi,
+  cancella le transazioni non presenti negli id fotografati e riporta le
+  sessioni a `scheduled`; è l'unico caso in cui `transactions_guard` consente la
+  cancellazione, dietro il flag di transazione `superlega.restore`.
 - `private.audit(action, entity, entity_id, payload)` — usata da tutte le
   funzioni; `private.setting_int/setting_json` — lettura tipizzata delle
   impostazioni.

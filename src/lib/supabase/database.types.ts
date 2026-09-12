@@ -107,6 +107,16 @@ type AdminUserRow = {
   team_name: string | null;
 };
 
+type RestorePointRow = {
+  id: string;
+  label: string;
+  taken_at: string;
+  auto: boolean;
+  teams: number;
+  roster: number;
+  operations_after: number;
+};
+
 type AuditEntryRow = {
   id: number;
   created_at: string;
@@ -395,6 +405,13 @@ export type Database = {
         Returns: { email: string; display_name: string }[];
       };
       admin_audit_log: { Args: { p_limit?: number }; Returns: AuditEntryRow[] };
+      admin_restore_points: { Args: Record<string, never>; Returns: RestorePointRow[] };
+      admin_create_restore_point: {
+        Args: { p_label: string; p_auto?: boolean };
+        Returns: string;
+      };
+      admin_delete_restore_point: { Args: { p_id: string }; Returns: undefined };
+      admin_restore: { Args: { p_id: string }; Returns: Json };
       admin_cron_token: { Args: Record<string, never>; Returns: string };
       admin_rotate_cron_token: { Args: Record<string, never>; Returns: string };
       verify_cron_token: { Args: { p_token: string }; Returns: boolean };
@@ -457,3 +474,4 @@ export type PlayerLineup = Tables<"player_lineup_status">;
 export type ExternalPlayerMap = Tables<"external_player_map">;
 export type AdminUser = AdminUserRow;
 export type AuditEntry = AuditEntryRow;
+export type RestorePoint = RestorePointRow;

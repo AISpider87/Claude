@@ -11,9 +11,11 @@ import { undoPendingOperation } from "@/lib/market/actions";
 
 export interface PendingRow {
   id: string;
-  kind: "sell" | "buy" | string;
+  kind: "sell" | "buy" | "free_release" | string;
   label: string;
   counts: boolean;
+  /** Out-of-list release, or the purchase filling the slot it left. */
+  free: boolean;
   creditsDelta: number;
 }
 
@@ -39,7 +41,9 @@ function UndoButton({ txId, label }: { txId: string; label: string }) {
 /**
  * The manager's operations of the open session, not yet final: each one can be
  * undone until the session closes; at the closing they become definitive and
- * the purchases count toward the season limit.
+ * the purchases count toward the season limit. Free operations (out-of-list)
+ * are in here too — a manager reported not finding them anywhere — marked as
+ * free, because they never count toward the 20.
  */
 export function PendingOperations({ rows }: { rows: PendingRow[] }) {
   if (rows.length === 0) return null;
@@ -57,11 +61,17 @@ export function PendingOperations({ rows }: { rows: PendingRow[] }) {
           >
             {r.kind === "buy" ? "Acquisto" : "Svincolo"}
           </Badge>
+          {r.free && (
+            <Badge variant="muted" className="shrink-0 px-1.5 text-[10px]">
+              gratuito
+            </Badge>
+          )}
           <span className="min-w-0 flex-1 truncate text-[13px]">
             {r.label}
             {r.kind === "buy" && r.counts && (
               <span className="text-muted"> · conterà 1 cambio</span>
             )}
+            {r.free && <span className="text-muted"> · non conta nei cambi</span>}
           </span>
           <span
             className={`tabular font-semibold ${r.creditsDelta < 0 ? "text-danger" : "text-primary"}`}

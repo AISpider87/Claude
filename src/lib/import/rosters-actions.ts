@@ -206,6 +206,12 @@ export async function applyRostersImport(_prev: FormState, formData: FormData): 
     p_import_id: importId,
     p_error: "Sostituito dall'import applicato",
   });
+  // The state the admin asked to be able to come back to: rosters, credits and
+  // season swaps exactly as the import left them (Admin → Impostazioni).
+  await supabase.rpc("admin_create_restore_point", {
+    p_label: "Rose importate",
+    p_auto: true,
+  });
 
   revalidatePath("/admin/squadre");
   revalidatePath("/rosa");

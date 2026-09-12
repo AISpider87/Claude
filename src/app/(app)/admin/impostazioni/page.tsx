@@ -1,13 +1,14 @@
 import Link from "next/link";
-import { Download, ScrollText, Users } from "lucide-react";
+import { Download, History, ScrollText, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
-import { getLeagueSettings, listNotifications } from "@/lib/admin/queries";
+import { getLeagueSettings, listNotifications, listRestorePoints } from "@/lib/admin/queries";
 import { requireAdmin } from "@/lib/auth/dal";
 import { emailProviderLabel, isEmailConfigured } from "@/lib/email/provider";
 import { formatDateTime, formatInt } from "@/lib/format";
+import { RestorePoints, type RestorePointView } from "./restore-points";
 import { LeagueCodeForm, SettingsForm } from "./settings-form";
 
 export const metadata = { title: "Impostazioni" };
@@ -30,7 +31,20 @@ const EXPORTS = [
 
 export default async function AdminSettingsPage() {
   await requireAdmin();
-  const [settings, notifications] = await Promise.all([getLeagueSettings(), listNotifications()]);
+  const [settings, notifications, restorePoints] = await Promise.all([
+    getLeagueSettings(),
+    listNotifications(),
+    listRestorePoints(),
+  ]);
+  const points: RestorePointView[] = restorePoints.map((p) => ({
+    id: p.id,
+    label: p.label,
+    takenAt: p.taken_at,
+    auto: p.auto,
+    teams: p.teams,
+    roster: p.roster,
+    operationsAfter: p.operations_after,
+  }));
   const emailReady = isEmailConfigured();
   const provider = emailProviderLabel();
 
@@ -110,6 +124,21 @@ export default async function AdminSettingsPage() {
             </CardHeader>
             <CardContent>
               <LeagueCodeForm code={settings.league_code} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <History className="text-primary size-5" aria-hidden /> Punti di ripristino
+              </CardTitle>
+              <CardDescription>
+                Riporta la lega a uno stato salvato: rose, crediti e cambi tornano come allora e le
+                operazioni successive vengono cancellate. Utile dopo una prova.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <RestorePoints points={points} />
             </CardContent>
           </Card>
 

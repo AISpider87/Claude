@@ -19,6 +19,12 @@ const ADMIN_MESSAGES: Record<string, string> = {
   INVALID_STATUS: "Stato non valido.",
   PLAYER_NOT_FOUND: "Calciatore non trovato nel listone.",
   UNKNOWN_SETTING: "Impostazione sconosciuta.",
+  INVALID_LABEL: "Dai un nome al punto di ripristino (almeno 2 caratteri).",
+  RESTORE_POINT_NOT_FOUND: "Punto di ripristino non trovato: forse è già stato cancellato.",
+  RESTORE_TEAM_MISSING:
+    "Il punto è più vecchio di una squadra cancellata: non si può ripristinare.",
+  RESTORE_PLAYER_MISSING:
+    "Il punto contiene un calciatore che non è più nel listone: non si può ripristinare.",
   RATE_LIMITED: "Troppe modifiche in poco tempo: riprova tra un minuto.",
   FORBIDDEN: "Operazione riservata all'admin.",
 };
@@ -249,4 +255,98 @@ export async function setPlayerStatus(_prev: FormState, formData: FormData): Pro
     status: "success",
     message: d.kind === "ok" ? "Stato rimosso: il calciatore torna disponibile." : "Stato salvato.",
   };
+}
+
+// ---------------------------------------------------------------------------
+// restore points: go back to a photograph of the league (rosters, credits,
+// season swaps, sessions). Destructive on purpose, admin only, audited.
+// ---------------------------------------------------------------------------
+const restoreLabelSchema = z.object({
+  label: z
+    .string()
+    .trim()
+    .min(2, { error: "Dai un nome al punto di ripristino." })
+    .max(80, { error: "Nome troppo lungo." }),
+});
+
+export async function createRestorePoint(_prev: FormState, formData: FormData): Promise<FormState> {
+  await requireAdmin();
+  const limited = await throttle();
+  if (limited) return { status: "error", message: limited };
+  const parsed = restoreLabelSchema.safeParse({ label: formData.get("label") });
+  if (!parsed.success) {
+    return { status: "error", errors: fieldErrors(parsed.error) };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("admin_create_restore_point", {
+    p_label: parsed.data.label,
+  });
+  if (error) {
+    return { status: "error", message: adminMessage(error.message, "Salvataggio non riuscito.") };
+  }
+  revalidatePath("/admin/impostazioni");
+  return { status: "success", message: `Punto di ripristino "${parsed.data.label}" salvato.` };
+}
+
+const restoreIdSchema = z.object({ id: z.uuid() });
+
+/**
+ * Puts the league back to the chosen point: rosters, credits and season swaps
+ * as they were, the operations that came after removed, the sessions back to
+ * "not run yet". The typed confirmation is checked here, not only in the form.
+ */
+export async function restoreLeague(_prev: FormState, formData: FormData): Promise<FormState> {
+  await requireAdmin();
+  const limited = await throttle();
+  if (limited) return { status: "error", message: limited };
+  const parsed = restoreIdSchema.safeParse({ id: formData.get("id") });
+  if (!parsed.success) {
+    return { status: "error", message: "Punto di ripristino non valido." };
+  }
+  if (
+    String(formData.get("confirm") ?? "")
+      .trim()
+      .toUpperCase() !== "RIPRISTINA"
+  ) {
+    return {
+      status: "error",
+      message: "Per procedere scrivi RIPRISTINA nel campo di conferma.",
+    };
+  }
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("admin_restore", { p_id: parsed.data.id });
+  if (error) {
+    return { status: "error", message: adminMessage(error.message, "Ripristino non riuscito.") };
+  }
+  const summary = (data ?? {}) as {
+    label?: string;
+    transactions_deleted?: number;
+    sessions_reset?: number;
+  };
+  for (const path of [
+    "/admin/impostazioni",
+    "/admin/operazioni",
+    "/admin/squadre",
+    "/rosa",
+    "/mercato",
+    "/squadre",
+  ]) {
+    revalidatePath(path);
+  }
+  const removed = Number(summary.transactions_deleted ?? 0);
+  return {
+    status: "success",
+    message: `Lega riportata a "${summary.label ?? "punto scelto"}": ${removed} ${
+      removed === 1 ? "operazione rimossa" : "operazioni rimosse"
+    }, sessioni da rigiocare.`,
+  };
+}
+
+export async function deleteRestorePoint(formData: FormData) {
+  await requireAdmin();
+  const parsed = restoreIdSchema.safeParse({ id: formData.get("id") });
+  if (!parsed.success) return;
+  const supabase = await createClient();
+  await supabase.rpc("admin_delete_restore_point", { p_id: parsed.data.id });
+  revalidatePath("/admin/impostazioni");
 }

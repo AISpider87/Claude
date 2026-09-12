@@ -119,9 +119,10 @@ Le operazioni sono due, separate:
    **Qt.A attuale**. Chi costa più dei tuoi crediti è grigio con "crediti
    insufficienti".
 
-**Puoi ripensarci fino alla chiusura.** Svincoli e acquisti fatti in sessione
-compaiono nel riquadro **Operazioni di questa sessione** con il pulsante
-**Annulla**: la rosa e i crediti tornano come prima. Alla chiusura della
+**Puoi ripensarci fino alla chiusura.** Tutto quello che fai a sessione aperta
+— svincoli, acquisti **e cambi gratuiti** — compare nel riquadro **Operazioni
+di questa sessione** con il pulsante **Annulla**: la rosa e i crediti tornano
+come prima. I cambi gratuiti sono segnati "gratuito · non conta nei cambi". Alla chiusura della
 sessione le operazioni rimaste diventano definitive e vengono registrate. Il
 riquadro **Acquista** mostra tutti gli svincolati della sessione: quelli che
 non puoi prendere sono in grigio con il motivo ("nessun posto libero: svincola
@@ -163,6 +164,11 @@ anche per chi era già partito quando l'admin ha caricato le rose.
    gli svincolati liberi **adesso** (non la foto della sessione), pagato a
    **Qt.A attuale**. Anche questo in qualsiasi momento, e **non conta** nei 20
    (nella lista è segnato "non conta nei cambi").
+
+Se li fai **a sessione aperta**, svincolo gratuito e acquisto restano fra le
+**Operazioni di questa sessione** e puoi annullarli come gli altri fino alla
+chiusura. Se li fai **a mercato chiuso** sono definitivi subito: non c'è una
+chiusura che li confermi, quindi per tornare indietro serve l'admin.
 
 Un fuori lista non si può svincolare con lo svincolo normale: l'app risponde
 "usa lo svincolo gratuito".

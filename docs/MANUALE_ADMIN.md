@@ -621,6 +621,27 @@ Tutti i numeri sono interi; valori fuori intervallo vengono rifiutati con un
 messaggio sul campo. Le regole sui prezzi (rientro a Qt.A, rimborso fuori
 lista a prezzo pagato) non sono modificabili dall'interfaccia.
 
+### 10.1 Punti di ripristino (riportare la lega a com'era)
+
+Riquadro **Punti di ripristino** in **Admin → Impostazioni lega**. Un punto è
+una fotografia della lega: rose, crediti, cambi usati e stato delle sessioni.
+
+- **Ne viene salvato uno da sé a ogni import delle rose**, con il nome "Rose
+  importate": è lo stato di partenza della stagione.
+- **Salva lo stato di adesso**: dai un nome (es. "Prima della sessione di
+  prova") e premi **Salva punto**. Vengono tenuti gli ultimi 12.
+- **Ripristina**: riporta rose, crediti e cambi a quel momento, **cancella le
+  operazioni fatte dopo** (il riquadro ti dice quante) e riporta le sessioni a
+  "da rigiocare" — le sessioni programmate non vengono cancellate, così puoi
+  ripetere la prova; se le date sono passate, correggile e riapri.
+  Per evitare disastri va scritto **RIPRISTINA** nel campo di conferma.
+- **Elimina**: cancella solo la fotografia, non tocca la lega.
+
+Serve per le prove con i manager: fai giocare una sessione finta, poi torni a
+"Rose importate" e la stagione riparte pulita. È l'unica funzione dell'app che
+cancella righe dal registro operazioni: ogni ripristino resta scritto
+nell'audit log (chi, quando, quante operazioni rimosse).
+
 ## 11. Export Excel e backup
 
 **Admin → Impostazioni lega → Export Excel**: tre file `.xlsx` scaricabili

@@ -117,6 +117,10 @@ dipendenza, nessun colore fuori dai token.
   sotto l'ora, check disegnato nella conferma, skeleton con shimmer.
 - **Mercato come console**: rosa a sinistra, acquisto a destra da `lg`, con la
   striscia delle operazioni in sospeso fissata sopra le due colonne.
+- **Sfondo in movimento** (`src/components/motion/ambient-backdrop.tsx`): due
+  luci (ciano, brace) che derivano in 52 s e 71 s dietro ogni pagina dell'app.
+  Solo `transform`, decorativo (`aria-hidden`, `z-index -1`), intensità per
+  tema con `--ambient-opacity`, ferme con `prefers-reduced-motion`.
 - **Intro dopo il login** (`src/components/motion/login-intro.tsx`): **4,2 s**,
   fondale renderizzato (`public/intro/backdrop.webp`, vortice generato con
   Higgsfield, 38 KB, solo tema scuro) che spinge lentamente in avanti,

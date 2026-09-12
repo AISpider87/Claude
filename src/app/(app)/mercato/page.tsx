@@ -124,6 +124,7 @@ export default async function MercatoPage({
     kind: t.kind,
     label: t.kind === "buy" ? `entra ${t.playerInName ?? "—"}` : `esce ${t.playerOutName ?? "—"}`,
     counts: t.counts_toward_limit,
+    free: t.kind === "free_release" || (t.kind === "buy" && !t.counts_toward_limit),
     creditsDelta: t.credits_delta,
   }));
 
@@ -236,8 +237,8 @@ export default async function MercatoPage({
                 <CardHeader className="pb-0">
                   <CardTitle className="text-base">Operazioni di questa sessione</CardTitle>
                   <CardDescription>
-                    Finché la sessione è aperta puoi annullarle. Alla chiusura diventano definitive
-                    e ogni acquisto conta un cambio.
+                    Tutte, anche i cambi gratuiti: finché la sessione è aperta puoi annullarle. Alla
+                    chiusura diventano definitive e ogni acquisto non gratuito conta un cambio.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-3">

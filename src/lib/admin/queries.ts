@@ -1,6 +1,12 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import type { AdminUser, AuditEntry, Json, Notification } from "@/lib/supabase/database.types";
+import type {
+  AdminUser,
+  AuditEntry,
+  Json,
+  Notification,
+  RestorePoint,
+} from "@/lib/supabase/database.types";
 
 export async function listUsers(): Promise<AdminUser[]> {
   const supabase = await createClient();
@@ -11,6 +17,13 @@ export async function listUsers(): Promise<AdminUser[]> {
 export async function listAuditLog(limit = 200): Promise<AuditEntry[]> {
   const supabase = await createClient();
   const { data } = await supabase.rpc("admin_audit_log", { p_limit: limit });
+  return data ?? [];
+}
+
+/** Labelled photographs of the league the admin can go back to, newest first. */
+export async function listRestorePoints(): Promise<RestorePoint[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("admin_restore_points");
   return data ?? [];
 }
 

@@ -588,3 +588,51 @@ listone,operazioni}`) con exceljs, letture paginate (`fetchAll`) sotto la
   l'accesso col marker `?welcome=1`. Una volta per sessione, un tocco la salta,
   si rivede da Profilo. Lo script pre-paint dell'app shell dipinge il fondo
   anche in questo caso, così la pagina non lampeggia prima dell'animazione.
+
+- 2026-09-12 — **I cambi gratuiti stanno tra le operazioni della sessione.**
+  Riscontro di un manager: «il cambio gratuito non lo conteggia e va bene, ma
+  non risulta tra le operazioni della sessione, quindi mentre gli altri posso
+  ancora annullarli quello non lo vedo più» (con l'acquisto di Woltemade
+  associato allo svincolo, anche lui invisibile). Erano scritti subito come
+  `confirmed`, quindi fuori dalla lista delle operazioni in sospeso e non
+  annullabili. Ora, **a sessione aperta**, lo svincolo fuori lista e l'acquisto
+  che riempie il suo posto nascono `pending` come tutti: si vedono, si possono
+  annullare, e alla chiusura diventano definitivi. **Fuori sessione** restano
+  immediati, perché non ci sarebbe nessuna chiusura a confermarli. In nessun
+  caso contano nei 20 (`counts_toward_limit` resta `false`). `undo_pending_operation`
+  gestisce anche `free_release` con lo stesso vincolo H1 (il posto deve essere
+  ancora libero). L'email agli admin parte come prima, ma dice se l'operazione
+  è «in attesa di conferma» o «definitiva», così l'admin non rincorre un
+  cambio che il manager può ancora annullare.
+
+- 2026-09-12 — **Punti di ripristino ("riporta tutto a com'era").** Richiesta
+  dell'admin: un pulsante per riportare mercato, cambi e crediti allo stato di
+  quando ha caricato le rose, per poter provare con la gente e poi ricominciare.
+  Implementati come _fotografie_ della lega in `private.restore_points`
+  (payload jsonb: crediti e cambi di ogni squadra, tutte le righe rosa, stato
+  delle sessioni, **e gli id delle operazioni esistenti**). Una viene scattata
+  da sé a ogni import rose ("Rose importate"); l'admin può salvarne altre.
+  `admin_restore(id)` rimette rose, crediti e `swaps_used`, **cancella le
+  operazioni nate dopo il punto** e riporta le sessioni a "da rigiocare"
+  (le sessioni create dopo il punto **non** vengono eliminate: l'admin le ha
+  programmate e il senso di tornare indietro è poterle ripetere).
+  Scelte degne di nota: (1) gli **id** delle operazioni e non un confronto sui
+  timestamp, perché dentro una transazione `now()` non avanza e un punto
+  scattato accanto a un'operazione non saprebbe distinguerla; (2)
+  `private.transactions_guard` continua a rifiutare ogni modifica al registro,
+  con una sola porta aperta — `superlega.restore = 'on'`, che solo
+  `admin_restore` imposta e solo per la propria transazione (PostgREST non può
+  impostarla, quindi un manager non ha modo di aprirla); (3) l'operazione è
+  **distruttiva per scelta** e chiede di scrivere RIPRISTINA (verificato anche
+  dal server), è solo admin ed è registrata nell'audit log. Questo è l'unico
+  punto in cui il registro non è append-only: annotato qui perché `docs/SPEC.md`
+  lo dichiara immutabile, e resta vero per ogni altra strada.
+
+- 2026-09-12 — **Sfondo in movimento lento in tutta l'app.** Due luci morbide
+  (ciano e brace) che attraversano lo schermo in 52 e 71 secondi, dietro ogni
+  pagina: `src/components/motion/ambient-backdrop.tsx`, solo CSS, `transform`
+  su due livelli compositati (nessun ripaint), `aria-hidden`, `pointer-events:
+none`, `z-index: -1`. Intensità per tema (`--ambient-opacity`: 0.55 scuro,
+  0.3 chiaro) e nessun movimento con `prefers-reduced-motion`. Verificato a
+  390px che il testo sul fondo resti leggibile: le luci non passano mai sotto
+  i testi con contrasto critico, che stanno su `--surface`.

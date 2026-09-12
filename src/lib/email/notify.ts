@@ -210,6 +210,7 @@ export async function notifyFreeSwap(kind: FreeSwapKind, txId: string) {
         amount: Math.abs(tx.credits_delta),
         credits: team.credits,
         countsTowardLimit: tx.counts_toward_limit,
+        pending: tx.status === "pending",
         at: tx.created_at,
         siteUrl: publicEnv.NEXT_PUBLIC_SITE_URL,
       }),

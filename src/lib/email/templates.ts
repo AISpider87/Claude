@@ -75,6 +75,8 @@ export function freeSwapEmail(input: {
   amount: number;
   credits: number;
   countsTowardLimit: boolean;
+  /** Inside an open session the operation is still undoable by the manager. */
+  pending?: boolean;
   at: string;
   siteUrl: string;
 }): EmailContent {
@@ -85,6 +87,9 @@ export function freeSwapEmail(input: {
   const when = formatDateTime(input.at);
   const url = `${input.siteUrl.replace(/\/$/, "")}/admin/operazioni`;
   const counts = input.countsTowardLimit ? "sì" : "no";
+  const state = input.pending
+    ? "in attesa di conferma (il manager può ancora annullarla fino alla chiusura della sessione)"
+    : "definitiva";
   const movement =
     input.kind === "free_release"
       ? {
@@ -108,6 +113,7 @@ export function freeSwapEmail(input: {
         movement.html,
         `<strong>Crediti residui:</strong> ${formatInt(input.credits)}`,
         `<strong>Conta nei cambi stagionali:</strong> ${counts}`,
+        `<strong>Stato:</strong> ${state}`,
         `<strong>Quando:</strong> ${when} (ora italiana)`,
       ],
       { label: "Apri il registro operazioni", url },
@@ -119,6 +125,7 @@ export function freeSwapEmail(input: {
       movement.text,
       `Crediti residui: ${input.credits}`,
       `Conta nei cambi stagionali: ${counts}`,
+      `Stato: ${state}`,
       `Quando: ${when} (ora italiana)`,
       "",
       `Registro operazioni: ${url}`,

@@ -65,6 +65,7 @@ describe("freeSwapEmail (admin alert)", () => {
       "Esce: Rui Patricio (Portiere) — rimborso 12 crediti",
       "Crediti residui: 37",
       "Conta nei cambi stagionali: no",
+      "Stato: definitiva",
       "Quando: 11/09/2026, 20:30 (ora italiana)",
       "",
       "Registro operazioni: https://superlega.example/admin/operazioni",
@@ -89,6 +90,25 @@ describe("freeSwapEmail (admin alert)", () => {
     expect(buy.text).toContain("Acquisto gratuito (posto libero)");
     expect(buy.text).toContain("Entra: Falcone (Portiere) — costo 8 crediti");
     expect(buy.text).toContain("Conta nei cambi stagionali: no");
+    expect(buy.text).toContain("Stato: definitiva");
+  });
+
+  it("says when the free swap is still undoable, so the admin does not chase it", () => {
+    const pending = freeSwapEmail({
+      kind: "free_release",
+      teamName: "Tettenham",
+      managerName: "Luca",
+      playerName: "Woltemade",
+      roleLabel: "Attaccante",
+      amount: 14,
+      credits: 40,
+      countsTowardLimit: false,
+      pending: true,
+      at: "2026-09-12T09:00:00.000Z",
+      siteUrl: "https://superlega.example",
+    });
+    expect(pending.text).toContain("Stato: in attesa di conferma");
+    expect(pending.text).toContain("annullarla fino alla chiusura della sessione");
   });
 
   it("escapes team and player names in the HTML", () => {
